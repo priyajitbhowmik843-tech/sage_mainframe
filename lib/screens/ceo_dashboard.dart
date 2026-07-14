@@ -9369,7 +9369,7 @@ class _CeoDashboardState extends State<CeoDashboard> {
                           backgroundColor: SageColors.primary,
                         ),
                         onPressed: () {
-                          context.read<AppState>().addEmployee(
+                          final creds = context.read<AppState>().addEmployee(
                             name: nameCtrl.text,
                             role: selectedRoles.join(', '),
                             department: 'Operations',
@@ -9383,6 +9383,22 @@ class _CeoDashboardState extends State<CeoDashboard> {
                                 double.tryParse(rateCtrl1.text) ?? 0.0,
                           );
                           Navigator.pop(ctx);
+                          if (creds != null && creds.containsKey('id')) {
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: SageColors.background,
+                                title: const Text("Employee Created", style: TextStyle(color: Colors.white)),
+                                content: Text("ID: ${creds['id']}\nPassword: ${creds['password']}\n\nPlease save these credentials before closing.", style: const TextStyle(color: Colors.white)),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text("OK", style: TextStyle(color: SageColors.primary)),
+                                  )
+                                ],
+                              )
+                            );
+                          }
                         },
                         child: const Text("SAVE"),
                       ),
