@@ -1921,6 +1921,7 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
   final _employeeRateCtrl = TextEditingController();
   final _employeeSessionsCtrl = TextEditingController();
   final _employeeSkuCtrl = TextEditingController();
+  final _employeeDesignRateCtrl = TextEditingController();
   List<String> _employeeRoles = ['Video Editor'];
 
   void _showPaySessionsDialog(BuildContext context, AppState state, Employee e, int unpaidItemsCount, bool isForSessions) {
@@ -2206,6 +2207,8 @@ Widget _buildPersonnelTab() {
                 SageTextField(controller: _employeeSessionsCtrl, label: "Per Session Rate (Rs)", keyboardType: TextInputType.number),
                 const SizedBox(height: 10),
                 SageTextField(controller: _employeeSkuCtrl, label: "Per SKU Rate (Rs)", keyboardType: TextInputType.number),
+                const SizedBox(height: 10),
+                SageTextField(controller: _employeeDesignRateCtrl, label: "Per Design Rate (Rs)", keyboardType: TextInputType.number),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
@@ -2215,15 +2218,17 @@ Widget _buildPersonnelTab() {
                       double perVideoRate = double.tryParse(_employeeRateCtrl.text) ?? 0.0;
                       double perSessionRate = double.tryParse(_employeeSessionsCtrl.text) ?? 0.0;
                       double perSkuRate = double.tryParse(_employeeSkuCtrl.text) ?? 0.0;
+                      double perDesignRate = double.tryParse(_employeeDesignRateCtrl.text) ?? 0.0;
 
 
-                      state.addEmployee(
+                      final creds = state.addEmployee(
                         name: _employeeNameCtrl.text, 
                         role: _employeeRoles.join(', '), 
                         department: "", 
                         monthlySalary: monthlySalary,
                         perSessionRate: perSessionRate,
                         perSkuRate: perSkuRate,
+                        perDesignRate: perDesignRate,
                         perVideoRate: perVideoRate,
                       );
                       setState(() {
@@ -2233,7 +2238,24 @@ Widget _buildPersonnelTab() {
                         _employeeSalaryCtrl.clear();
                         _employeeRateCtrl.clear();
                         _employeeSkuCtrl.clear();
+                        _employeeDesignRateCtrl.clear();
                       });
+                      if (creds != null && creds.containsKey('id')) {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            backgroundColor: SageColors.background,
+                            title: const Text("Employee Created", style: TextStyle(color: Colors.white)),
+                            content: Text("ID: ${creds['id']}\nPassword: ${creds['password']}\n\nPlease save these credentials before closing.", style: const TextStyle(color: Colors.white)),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text("OK", style: TextStyle(color: SageColors.primary)),
+                              )
+                            ],
+                          )
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
                     child: const Text("CREATE RECORD"),
@@ -4525,6 +4547,7 @@ Widget _buildPersonnelTab() {
     final rateCtrl1 = TextEditingController(text: e.perVideoRate.toString());
     final rateCtrl2 = TextEditingController(text: e.perSessionRate.toString());
     final rateCtrl3 = TextEditingController(text: e.perSkuRate.toString());
+    final rateCtrl4 = TextEditingController(text: e.perDesignRate.toString());
 
     showDialog(
       context: context,
@@ -4590,6 +4613,8 @@ Widget _buildPersonnelTab() {
                     SageTextField(controller: rateCtrl2, label: "Per Session Rate (Rs)", keyboardType: TextInputType.number),
                     const SizedBox(height: 10),
                     SageTextField(controller: rateCtrl3, label: "Per SKU Rate (Rs)", keyboardType: TextInputType.number),
+                    const SizedBox(height: 10),
+                    SageTextField(controller: rateCtrl4, label: "Per Design Rate (Rs)", keyboardType: TextInputType.number),
                   ],
                 ),
               ),
@@ -4607,6 +4632,7 @@ Widget _buildPersonnelTab() {
                       perVideoRate: double.tryParse(rateCtrl1.text),
                       perSessionRate: double.tryParse(rateCtrl2.text),
                       perSkuRate: double.tryParse(rateCtrl3.text),
+                      perDesignRate: double.tryParse(rateCtrl4.text),
                     );
                     Navigator.pop(ctx);
                   },
