@@ -2675,6 +2675,7 @@ Widget _buildPersonnelTab() {
   final TextEditingController _newTaskDescCtrl = TextEditingController();
   TimeOfDay _newTaskTime = const TimeOfDay(hour: 17, minute: 0);
   String? _dailyVideoAssigneeId;
+  String? _dailyPostAssigneeId;
   bool _isAddTaskExpanded = false;
   // Session booking state
   String? _sessionVideographerId;
@@ -3153,6 +3154,7 @@ Widget _buildPersonnelTab() {
                             _newTaskClients = [];
                             _sessionVideographerId = null;
                             _dailyVideoAssigneeId = null;
+                            _dailyPostAssigneeId = null;
                             _sessionClientIds = [];
                             _meetingIsPhysical = true;
                           }),
@@ -3466,62 +3468,42 @@ Widget _buildPersonnelTab() {
                             },
                             child: const Text("SCHEDULE MEETING"),
                           ),
-                        ]
-                        
-                        else if (_newTaskType == 'Daily Post')
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.secondaryContainer, foregroundColor: Colors.black),
-                                    onPressed: () {
-                                      if (_newTaskClients.isEmpty) return;
-                                      final ritam = AppState.personas.where((p) => p.id == 'COF-RIT-001').firstOrNull;
-                                      if (ritam == null) return;
+                          ] else if (_newTaskType == 'Daily Post')
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  DropdownButtonFormField<String>(
+                                    value: _dailyPostAssigneeId,
+                                    decoration: const InputDecoration(labelText: "Select Graphics Editor"),
+                                    dropdownColor: Colors.white,
+                                    items: [
+                                      const DropdownMenuItem(value: 'COF-RIT-001', child: Text("CFO Ritam")),
+                                      ...state.employees.where((e) => e.hasRole('graphic') || e.name.toLowerCase().contains('subhajit')).map(
+                                        (e) => DropdownMenuItem(value: e.id, child: Text(e.name))
+                                      ),
+                                    ],
+                                    onChanged: (v) => setState(() => _dailyPostAssigneeId = v),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary, foregroundColor: Colors.black),
+                                    onPressed: _dailyPostAssigneeId == null || _newTaskClients.isEmpty ? null : () {
                                       final finalDeadline = DateTime(_selectedCalendarDate!.year, _selectedCalendarDate!.month, _selectedCalendarDate!.day, _newTaskTime.hour, _newTaskTime.minute);
                                       for (final client in _newTaskClients) {
                                         context.read<AppState>().assignTask(
                                           title: 'Daily Post - $client',
                                           description: 'Automatically assigned daily post task for $client.',
-                                          assignedTo: ritam.id,
+                                          assignedTo: _dailyPostAssigneeId!,
                                           deadline: finalDeadline,
                                           taskType: 'Daily Post',
                                         );
                                       }
-                                      setState(() { _isAddTaskExpanded = false; _newTaskClients = []; });
+                                      setState(() { _isAddTaskExpanded = false; _newTaskClients = []; _dailyPostAssigneeId = null; });
                                     },
-                                    child: const Text("ASSIGN TO RITAM (CFO)", textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                    child: const Text("ASSIGN TASK", style: TextStyle(fontWeight: FontWeight.bold)),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.tertiaryContainer, foregroundColor: Colors.black),
-                                    onPressed: () {
-                                      if (_newTaskClients.isEmpty) return;
-                                      // Assign to Graphic Designer (Assume Subhajit or any graphic designer)
-                                      final designer = state.employees.where((e) => e.hasRole('graphic') || e.name.toLowerCase().contains('subhajit')).firstOrNull;
-                                      if (designer == null) {
-                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No Graphic Designer found in employees!')));
-                                        return;
-                                      }
-                                      final finalDeadline = DateTime(_selectedCalendarDate!.year, _selectedCalendarDate!.month, _selectedCalendarDate!.day, _newTaskTime.hour, _newTaskTime.minute);
-                                      for (final client in _newTaskClients) {
-                                        context.read<AppState>().assignTask(
-                                          title: 'Daily Post - $client',
-                                          description: 'Automatically assigned daily post task for $client.',
-                                          assignedTo: designer.id,
-                                          deadline: finalDeadline,
-                                          taskType: 'Daily Post',
-                                        );
-                                      }
-                                      setState(() { _isAddTaskExpanded = false; _newTaskClients = []; });
-                                    },
-                                    child: const Text("ASSIGN TO GRAPHIC DESIGNER", textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                                  ),
-                                ),
-                              ],
-                            )
+                                ],
+                              )
                           else if (_newTaskType == 'Product Listing' || _newTaskType == 'Photo Generation')
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
