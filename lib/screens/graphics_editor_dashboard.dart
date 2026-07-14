@@ -185,11 +185,40 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
   Widget _buildHomeTab(BuildContext context, AppState state, Persona persona) {
     final myTasks = state.tasks.where((t) => t.assignedTo == persona.id).toList();
     final pendingTasks = myTasks.where((t) => !t.isCompleted).toList();
+    final completedDesigns = myTasks.where((t) => t.isCompleted).toList();
+    final unpaidDesigns = completedDesigns.where((t) => !t.isPaidToGraphicsEditor).toList();
+    final emp = state.employees.where((e) => e.id == persona.id).firstOrNull;
+    final numUnpaid = unpaidDesigns.length;
+    final perDesignRate = emp?.perDesignRate ?? 0.0;
+    final unpaidAmount = numUnpaid * perDesignRate;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 10),
+        TerminalPanel(
+          title: 'UNPAID PAYMENT TRACKER',
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Column(
+                children: [
+                  const Text('UNPAID DESIGNS', style: TextStyle(fontSize: 10, color: Colors.black54, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text('$numUnpaid', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                ],
+              ),
+              Column(
+                children: [
+                  const Text('PENDING PAYOUT', style: TextStyle(fontSize: 10, color: Colors.black54, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text('\u20B9${unpaidAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: SageColors.error)),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
         _buildCalendar(state, persona, myTasks),
         const SizedBox(height: 14),
         if (_selectedDate != null) ...[
@@ -206,10 +235,21 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(child: Text(t.title.isNotEmpty ? t.title : 'Task', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
-                    Checkbox(
-                      value: t.isSubmitted,
-                      onChanged: (v) => context.read<AppState>().toggleTask(t.id),
-                    ),
+                    if (t.isCompleted)
+                      const Icon(Icons.check_circle, color: SageColors.primary, size: 20)
+                    else if (t.isSubmitted)
+                      const Text('PENDING APPROVAL', style: TextStyle(fontSize: 10, color: SageColors.error, fontWeight: FontWeight.bold))
+                    else
+                      Checkbox(
+                        value: t.isSubmitted,
+                        onChanged: (v) {
+                          if (v == true) {
+                            context.read<AppState>().submitTask(t.id);
+                          } else {
+                            context.read<AppState>().unsubmitTask(t.id);
+                          }
+                        },
+                      ),
                   ],
                 ),
               )).toList(),
@@ -356,7 +396,7 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
     if (dayTasks.isEmpty) {
       return TerminalPanel(
         title: dateLabel.toUpperCase(),
-        child: const Text('No sessions on this date.', style: TextStyle(color: Colors.black54, fontSize: 12)),
+        child: const Text('No tasks on this date.', style: TextStyle(color: Colors.black54, fontSize: 12)),
       );
     }
 
@@ -364,81 +404,33 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
       title: dateLabel.toUpperCase(),
       child: Column(
         children: dayTasks.map((t) {
-          final client = state.clients.where((c) => c.id == t.clientId).firstOrNull;
-          final statusColor = t.isCompleted ? SageColors.primary : SageColors.error;
-          
-          String statusText = t.isCompleted ? 'COMPLETED' : 'PENDING';
-          if (t.isSubmitted && !t.isCompleted) statusText = 'COMPLETION REQUESTED';
-          if (t.isPostponeRequested) statusText = 'POSTPONE REQUESTED TO ${t.postponeRequestedDate?.day}/${t.postponeRequestedDate?.month}';
-
-          return Container(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: SageColors.background,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.black, width: 1),
-            ),
-            child: Column(
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(width: 4, height: 44, decoration: BoxDecoration(color: statusColor, borderRadius: BorderRadius.circular(4))),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(t.title.isNotEmpty ? t.title : 'Task', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          if (client != null) Text('Client: ${client.name}', style: const TextStyle(fontSize: 11, color: Colors.black54)),
-                          Text(statusText, style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                        ],
-                      ),
-                    ),
-                    Icon(t.isCompleted ? Icons.check_circle : Icons.hourglass_top,
-                        color: statusColor, size: 20),
-                  ],
+                Expanded(
+                  child: Text(
+                    t.title.isNotEmpty ? t.title : 'Task',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                if (!t.isCompleted && !t.isSubmitted && !t.isPostponeRequested) ...[
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                          side: const BorderSide(color: Colors.black),
-                        ),
-                        onPressed: () async {
-                          final selected = await showDatePicker(
-                            context: context,
-                            initialDate: t.deadline,
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime(2100),
-                          );
-                          if (selected != null) {
-                            context.read<AppState>().requestPostponeTask(t.id, selected);
-                          }
-                        },
-                        child: const Text('POSTPONE'),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: SageColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: () => context.read<AppState>().submitTask(t.id),
-                        child: const Text('COMPLETE'),
-                      ),
-                    ],
-                  )
-                ]
+                if (t.isCompleted)
+                  const Icon(Icons.check_circle, color: SageColors.primary, size: 20)
+                else if (t.isSubmitted)
+                  const Text('PENDING APPROVAL', style: TextStyle(fontSize: 10, color: SageColors.error, fontWeight: FontWeight.bold))
+                else
+                  Checkbox(
+                    value: t.isSubmitted,
+                    onChanged: (v) {
+                      if (v == true) {
+                        context.read<AppState>().submitTask(t.id);
+                      } else {
+                        context.read<AppState>().unsubmitTask(t.id);
+                      }
+                    },
+                  ),
               ],
             ),
           );
