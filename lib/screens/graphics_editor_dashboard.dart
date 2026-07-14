@@ -184,38 +184,28 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
   // â”€â”€â”€ HOME TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildHomeTab(BuildContext context, AppState state, Persona persona) {
     final myTasks = state.tasks.where((t) => t.assignedTo == persona.id).toList();
-    final pendingApprovals = myTasks.where((t) => t.taskType == 'Session' && !t.isApprovedByGraphicsEditor && !t.isCompleted).toList();
-    final miscTasks = myTasks.where((t) => (t.taskType ?? '').toLowerCase() != 'session' && !t.isCompleted).toList();
+    final pendingTasks = myTasks.where((t) => !t.isCompleted).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 10),
-        _buildCalendar(state, persona),
+        _buildCalendar(state, persona, myTasks),
         const SizedBox(height: 14),
         if (_selectedDate != null) ...[
-          _buildSelectedDateInfo(state, persona),
+          _buildSelectedDateInfo(state, persona, myTasks),
           const SizedBox(height: 14),
         ],
-        if (pendingApprovals.isNotEmpty) ...[
+        if (pendingTasks.isNotEmpty) ...[
           TerminalPanel(
-            title: 'PENDING SESSION APPROVALS',
+            title: 'PENDING TASKS',
             child: Column(
-              children: pendingApprovals.map((t) => _buildSessionApprovalCard(context, state, t)).toList(),
-            ),
-          ),
-          const SizedBox(height: 14),
-        ],
-        if (miscTasks.isNotEmpty)
-          TerminalPanel(
-            title: 'OTHER TASKS',
-            child: Column(
-              children: miscTasks.map((t) => Padding(
+              children: pendingTasks.map((t) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(child: Text(t.title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+                    Expanded(child: Text(t.title.isNotEmpty ? t.title : 'Task', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
                     Checkbox(
                       value: t.isSubmitted,
                       onChanged: (v) => context.read<AppState>().toggleTask(t.id),
@@ -225,15 +215,16 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
               )).toList(),
             ),
           ),
+          const SizedBox(height: 14),
+        ],
       ],
     );
   }
 
-  Widget _buildCalendar(AppState state, Persona persona) {
+  Widget _buildCalendar(AppState state, Persona persona, List<Task> myTasks) {
     final now = DateTime.now();
     final daysInMonth = DateUtils.getDaysInMonth(_calendarMonth.year, _calendarMonth.month);
     final startOffset = DateTime(_calendarMonth.year, _calendarMonth.month, 1).weekday % 7;
-    final mySessionTasks = state.tasks.where((t) => t.assignedTo == persona.id && t.taskType == 'Session').toList();
     final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
     return Container(
@@ -284,19 +275,17 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
               if (i < startOffset) return const SizedBox();
               final day = i - startOffset + 1;
               final date = DateTime(_calendarMonth.year, _calendarMonth.month, day);
-              final sessions = mySessionTasks.where((t) {
+              final dayTasks = myTasks.where((t) {
                 final dd = t.deadline;
                 return dd.year == date.year && dd.month == date.month && dd.day == date.day;
               }).toList();
-              final hasBooked = sessions.any((t) => t.isApprovedByGraphicsEditor && !t.isCompleted);
-              final hasPending = sessions.any((t) => !t.isApprovedByGraphicsEditor && !t.isCompleted);
-              final hasCompleted = sessions.any((t) => t.isCompleted);
+              final hasCompleted = dayTasks.any((t) => t.isCompleted);
+              final hasPending = dayTasks.any((t) => !t.isCompleted);
               final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
               final isSel = _selectedDate?.year == date.year && _selectedDate?.month == date.month && _selectedDate?.day == date.day;
 
               Color bgColor = Colors.transparent;
-              if (hasCompleted) bgColor = SageColors.primary;
-              else if (hasBooked) bgColor = SageColors.tertiary;
+              if (hasCompleted && !hasPending) bgColor = SageColors.primary;
               else if (hasPending) bgColor = SageColors.error;
               else if (isToday) bgColor = Colors.pinkAccent;
 
@@ -340,8 +329,6 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
             children: [
               _legend(SageColors.primary, 'Completed'),
               const SizedBox(width: 14),
-              _legend(SageColors.tertiary, 'Booked'),
-              const SizedBox(width: 14),
               _legend(SageColors.error, 'Pending'),
             ],
           ),
@@ -356,10 +343,9 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
     Text(label, style: const TextStyle(fontSize: 10, color: Colors.black54, fontWeight: FontWeight.bold)),
   ]);
 
-  Widget _buildSelectedDateInfo(AppState state, Persona persona) {
+  Widget _buildSelectedDateInfo(AppState state, Persona persona, List<Task> myTasks) {
     final d = _selectedDate!;
-    final sessions = state.tasks.where((t) {
-      if (t.assignedTo != persona.id || t.taskType != 'Session') return false;
+    final dayTasks = myTasks.where((t) {
       final dd = t.deadline;
       return dd.year == d.year && dd.month == d.month && dd.day == d.day;
     }).toList();
@@ -367,7 +353,7 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
     final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     final dateLabel = '${d.day} ${months[d.month-1]} ${d.year}';
 
-    if (sessions.isEmpty) {
+    if (dayTasks.isEmpty) {
       return TerminalPanel(
         title: dateLabel.toUpperCase(),
         child: const Text('No sessions on this date.', style: TextStyle(color: Colors.black54, fontSize: 12)),
@@ -377,11 +363,11 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
     return TerminalPanel(
       title: dateLabel.toUpperCase(),
       child: Column(
-        children: sessions.map((t) {
+        children: dayTasks.map((t) {
           final client = state.clients.where((c) => c.id == t.clientId).firstOrNull;
-          final statusColor = t.isCompleted ? SageColors.primary : t.isApprovedByGraphicsEditor ? SageColors.tertiary : SageColors.error;
+          final statusColor = t.isCompleted ? SageColors.primary : SageColors.error;
           
-          String statusText = t.isCompleted ? 'COMPLETED' : t.isApprovedByGraphicsEditor ? 'CONFIRMED' : 'PENDING APPROVAL';
+          String statusText = t.isCompleted ? 'COMPLETED' : 'PENDING';
           if (t.isSubmitted && !t.isCompleted) statusText = 'COMPLETION REQUESTED';
           if (t.isPostponeRequested) statusText = 'POSTPONE REQUESTED TO ${t.postponeRequestedDate?.day}/${t.postponeRequestedDate?.month}';
 
@@ -403,18 +389,17 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(client?.name ?? 'Unknown Client', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          if (t.isCompleted && client != null)
-                            Text('Rate: \u20B9${client?.sessionRate.toStringAsFixed(0) ?? 0}', style: TextStyle(fontSize: 11, color: SageColors.primary, fontWeight: FontWeight.bold)),
+                          Text(t.title.isNotEmpty ? t.title : 'Task', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          if (client != null) Text('Client: ${client.name}', style: const TextStyle(fontSize: 11, color: Colors.black54)),
                           Text(statusText, style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                         ],
                       ),
                     ),
-                    Icon(t.isCompleted ? Icons.check_circle : t.isApprovedByGraphicsEditor ? Icons.videocam : Icons.hourglass_top,
+                    Icon(t.isCompleted ? Icons.check_circle : Icons.hourglass_top,
                         color: statusColor, size: 20),
                   ],
                 ),
-                if (!t.isCompleted && !t.isSubmitted && !t.isPostponeRequested && t.isApprovedByGraphicsEditor) ...[
+                if (!t.isCompleted && !t.isSubmitted && !t.isPostponeRequested) ...[
                   const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -493,55 +478,54 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
     );
   }
 
-  // â”€â”€â”€ FINANCE TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     Widget _buildFinanceTab(BuildContext context, AppState state, Persona persona) {
-    final now = DateTime.now();
-    final myTasks = state.tasks.where((t) => t.assignedTo == persona.id && t.taskType == 'Session').toList();
-    final monthSessions = myTasks.where((t) => t.deadline.year == now.year && t.deadline.month == now.month).toList();
-    final completedThisMonth = monthSessions.where((t) => t.isCompleted).length;
+    final emp = state.employees.firstWhere((e) => e.id == persona.id);
+    final myTasks = state.tasks.where((t) => t.assignedTo == persona.id).toList();
+    final completedDesigns = myTasks.where((t) => t.isCompleted).toList();
     
-    final completedSessions = myTasks.where((t) => t.isCompleted).toList();
-
-    double collectedAmount = 0;
-    for (final t in completedSessions.where((x) => x.isPaymentAcknowledgedByGraphicsEditor)) {
-      final c = state.clients.where((c) => c.id == t.clientId).firstOrNull;
-      if (c != null) collectedAmount += c.sessionRate;
-    }
+    final int completedCount = completedDesigns.length;
+    final double perDesignRate = emp.perDesignRate;
     
-    double pendingAmount = 0;
-    for (final t in completedSessions.where((x) => !x.isPaymentAcknowledgedByGraphicsEditor)) {
-      final c = state.clients.where((c) => c.id == t.clientId).firstOrNull;
-      if (c != null) pendingAmount += c.sessionRate;
-    }
+    final numPaid = completedDesigns.where((t) => t.isPaymentAcknowledgedByGraphicsEditor).length;
+    final numPending = completedDesigns.length - numPaid;
     
-    final sessionsPendingApproval = completedSessions.where((t) => t.isPaidToGraphicsEditor && !t.isPaymentAcknowledgedByGraphicsEditor).toList();
+    final double amountPaid = numPaid * perDesignRate;
+    final double amountPending = numPending * perDesignRate;
+    
+    final designsPendingApproval = completedDesigns.where((t) => t.isPaidToGraphicsEditor && !t.isPaymentAcknowledgedByGraphicsEditor).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 10),
         TerminalPanel(
-          title: 'MONTHLY OVERVIEW',
+          title: 'FINANCE OVERVIEW',
           child: Column(
             children: [
               Row(
                 children: [
-                  Expanded(child: StatChip(label: 'SESSIONS THIS MONTH', value: '$completedThisMonth', valueColor: SageColors.primary, icon: Icons.check_circle)),
+                  Expanded(child: StatChip(label: 'COMPLETED DESIGNS', value: '$completedCount', valueColor: SageColors.primary, icon: Icons.check_circle)),
                   const SizedBox(width: 12),
-                  Expanded(child: StatChip(label: 'PAYMENT PENDING', value: '\u20B9${pendingAmount.toStringAsFixed(0)}', valueColor: SageColors.error, icon: Icons.pending)),
+                  Expanded(child: StatChip(label: 'PER DESIGN RATE', value: '\u20B9${perDesignRate.toStringAsFixed(0)}', valueColor: Colors.black87, icon: Icons.price_change)),
                 ],
               ),
               const SizedBox(height: 12),
-              StatChip(label: 'AMOUNT COLLECTED', value: '\u20B9${collectedAmount.toStringAsFixed(0)}', valueColor: SageColors.tertiary, icon: Icons.currency_rupee),
+              Row(
+                children: [
+                  Expanded(child: StatChip(label: 'AMOUNT PAID', value: '\u20B9${amountPaid.toStringAsFixed(0)}', valueColor: SageColors.tertiary, icon: Icons.currency_rupee)),
+                  const SizedBox(width: 12),
+                  Expanded(child: StatChip(label: 'PENDING PAYMENTS', value: '\u20B9${amountPending.toStringAsFixed(0)}', valueColor: SageColors.error, icon: Icons.pending)),
+                ],
+              ),
             ],
           ),
         ),
         const SizedBox(height: 14),
-        if (sessionsPendingApproval.isNotEmpty) ...[
+        if (designsPendingApproval.isNotEmpty) ...[
           TerminalPanel(
             title: 'PAYMENT PENDING APPROVAL',
             child: Column(
-              children: sessionsPendingApproval.map((t) {
+              children: designsPendingApproval.map((t) {
                 final client = state.clients.where((c) => c.id == t.clientId).firstOrNull;
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
@@ -551,9 +535,8 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(client?.name ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                            Text('${t.title} | \u20B9${client?.sessionRate.toStringAsFixed(0) ?? 0}',
-                                style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                            Text(t.title.isNotEmpty ? t.title : 'Task', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            if (client != null) Text('Client: ${client.name}', style: const TextStyle(fontSize: 11, color: Colors.black54)),
                           ],
                         ),
                       ),
@@ -614,24 +597,17 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
   
   Widget _buildProfileTab(BuildContext context, AppState state, Persona persona) {
     final emp = state.employees.firstWhere((e) => e.id == persona.id);
-    final isVideoEditor = emp.role.toLowerCase().contains('video editor');
-    final unpaidSessionsList = state.tasks.where((t) => t.assignedTo == emp.id && (isVideoEditor ? true : t.taskType == 'Session') && t.isCompleted && !t.isPaidToGraphicsEditor).toList();
-    final int unpaidSessionsCount = unpaidSessionsList.length;
+    final myTasks = state.tasks.where((t) => t.assignedTo == persona.id).toList();
+    final completedDesigns = myTasks.where((t) => t.isCompleted).toList();
     
-    double pendingPayout = 0;
-    for (var t in unpaidSessionsList) {
-      if (isVideoEditor) {
-        pendingPayout += emp.perSessionRate;
-      } else {
-        final c = state.clients.where((client) => client.id == t.clientId).firstOrNull;
-        if (c != null) {
-          pendingPayout += c.sessionRate;
-        }
-      }
-    }
+    final numPaid = completedDesigns.where((t) => t.isPaymentAcknowledgedByGraphicsEditor).length;
+    final numUnpaid = completedDesigns.length - numPaid;
+    
+    final double amountPaid = numPaid * emp.perDesignRate;
+    final double amountUnpaid = numUnpaid * emp.perDesignRate;
 
-    final displayPayout = emp.paymentCleared ? emp.pendingPayAmount : pendingPayout;
-    final displaySessions = emp.paymentCleared ? (emp.pendingPayMonth ?? "$unpaidSessionsCount") : "$unpaidSessionsCount";
+    final displayPayout = emp.paymentCleared ? emp.pendingPayAmount : amountUnpaid;
+    final displaySessions = emp.paymentCleared ? (emp.pendingPayMonth ?? "$numUnpaid") : "$numUnpaid";
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -664,8 +640,10 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
           title: "FINANCE DATA",
           child: Column(
             children: [
-              _profileRow("PENDING PAYOUT", "\u20B9$displayPayout"),
-              _profileRow("UNPAID SESSIONS", displaySessions),
+              _profileRow("AMOUNT PAID", "\u20B9${amountPaid.toStringAsFixed(0)}"),
+              _profileRow("UNPAID AMOUNT", "\u20B9$displayPayout"),
+              _profileRow("PAID DESIGNS", "$numPaid"),
+              _profileRow("UNPAID DESIGNS", displaySessions),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
