@@ -552,35 +552,6 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
           ),
           const SizedBox(height: 14),
         ],
-
-        TerminalPanel(
-          title: 'MY CLIENTS',
-          child: Builder(
-            builder: (ctx) {
-              final myClients = state.clients.where((c) => c.assignedGraphicsEditorId == persona.id).toList();
-              if (myClients.isEmpty) {
-                return const Text('No clients currently assigned.', style: TextStyle(color: Colors.black54, fontSize: 12));
-              }
-              return Column(
-                children: myClients.map((c) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                        ),
-                        Text('\u20B9${c.sessionRate.toStringAsFixed(0)} / session',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: SageColors.primary)),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              );
-            }
-          ),
-        ),
-        const SizedBox(height: 14),
       ],
     );
   }
