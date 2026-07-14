@@ -1,0 +1,1 @@
+import 'dart:io'; import 'dart:convert'; void main() async { var request = await HttpClient().getUrl(Uri.parse('https://date.nager.at/api/v3/PublicHolidays/2026/IN')); var response = await request.close(); var body = await response.transform(utf8.decoder).join(); print(body); }

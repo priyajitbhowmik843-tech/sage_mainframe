@@ -1,0 +1,394 @@
+void _showPayEmployeeDialog(BuildContext context, AppState state, Employee e) {
+    if (e.role.toLowerCase().contains('videographer')) {
+      final unpaidSessions = state.tasks.where((t) => t.assignedTo == e.id && t.taskType == 'Session' && t.isCompleted && !t.isPaidToVideographer).toList();
+      final sessionsCtrl = TextEditingController(text: unpaidSessions.length.toString());
+      showDialog(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            backgroundColor: SageColors.background,
+            title: Text("PAY VIDEOGRAPHER", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("Unpaid Completed Sessions: \${unpaidSessions.length}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                SageTextField(controller: sessionsCtrl, label: "Number of Sessions to Pay", keyboardType: TextInputType.number),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+                onPressed: () {
+                  final count = int.tryParse(sessionsCtrl.text) ?? 0;
+                  if (count > 0 && count <= unpaidSessions.length) {
+                    context.read<AppState>().payVideographerSessions(e.id, count);
+                    Navigator.pop(ctx);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid session count!")));
+                  }
+                },
+                child: const Text("PAY SESSIONS"),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      List<String> selectedMonths = [];
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      showDialog(
+        context: context,
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (ctx, setDialogState) {
+              return AlertDialog(
+                backgroundColor: SageColors.background,
+                title: Text("PAY \${e.name.toUpperCase()}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text("Select month(s) to pay for:"),
+                      const SizedBox(height: 10),
+                      ...months.map((m) {
+                        return CheckboxListTile(
+                          title: Text(m),
+                          value: selectedMonths.contains(m) || e.paidMonths.contains(m),
+                          onChanged: e.paidMonths.contains(m) ? null : (val) {
+                            setDialogState(() {
+                              if (val == true) selectedMonths.add(m);
+                              else selectedMonths.remove(m);
+                            });
+                          },
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+                    onPressed: () {
+                      if (selectedMonths.isNotEmpty) {
+                        context.read<AppState>().payEmployeeSalary(e.id, selectedMonths, e.monthlySalary * selectedMonths.length);
+                        Navigator.pop(ctx);
+                      }
+                    },
+                    child: const Text("PAY SALARY"),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
+  }
+
+  Widget _buildPersonnelTab() {
+    final state = context.watch<AppState>();
+    final pastelColors = [
+      Color(0xFFFFB3BA),
+      Color(0xFFFFDFBA),
+      Color(0xFFFFFFBA),
+      Color(0xFFBAFFC9),
+      Color(0xFFBAE1FF),
+      Color(0xFFE6B3FF),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text("REGISTERED TEAM MEMBERS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: SageColors.onSurfaceVariant)),
+            ElevatedButton(
+              onPressed: () => setState(() => _showTeamForm = !_showTeamForm),
+              style: ElevatedButton.styleFrom(backgroundColor: SageColors.secondary),
+              child: Text(_showTeamForm ? "CANCEL" : "+ ADD MEMBER"),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        if (_showTeamForm) ...[
+          TerminalPanel(
+            title: "ADD TEAM RECORD",
+            child: Column(
+              children: [
+                SageTextField(controller: _employeeNameCtrl, label: "Full Name"),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: _employeeRole,
+                  decoration: const InputDecoration(labelText: "Role"),
+                  dropdownColor: Colors.white,
+                  items: ['Video Editor', 'Graphics Editor', 'Videographer/Cinematographer', 'Marketing Executive', 'Page Management Executive', 'Graphics Designer cum Marketing Exec', 'Videographer cum Editor cum Marketing Exec'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                  onChanged: (v) => setState(() => _employeeRole = v ?? 'Video Editor'),
+                ),
+                const SizedBox(height: 10),
+                SageTextField(controller: _employeeDeptCtrl, label: "Department"),
+                const SizedBox(height: 10),
+                if (_employeeRole != 'Videographer/Cinematographer')
+                  SageTextField(controller: _employeeSalaryCtrl, label: "Monthly Salary (Rs)", keyboardType: TextInputType.number),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final emp = Employee(
+                        id: '\${_employeeRole.substring(0, 3).toUpperCase()}-\${_employeeNameCtrl.text.substring(0, min(3, _employeeNameCtrl.text.length)).toUpperCase()}-\${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
+                        name: _employeeNameCtrl.text,
+                        role: _employeeRole,
+                        department: _employeeDeptCtrl.text,
+                        password: 'X\${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
+                        monthlySalary: double.tryParse(_employeeSalaryCtrl.text) ?? 0.0,
+                        joiningDate: DateTime.now(),
+                        lastPaidDate: DateTime.now(),
+                      );
+                      state.addEmployee(emp);
+                      setState(() {
+                        _showTeamForm = false;
+                        _employeeNameCtrl.clear();
+                        _employeeDeptCtrl.clear();
+                        _employeeSalaryCtrl.clear();
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+                    child: const Text("CREATE RECORD"),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        ...AppState.personas.asMap().entries.map((entry) {
+          final i = entry.key;
+          final p = entry.value;
+          final color = pastelColors[i % pastelColors.length];
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.black, width: 1.5),
+              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0)],
+            ),
+            child: ExpansionTile(
+              shape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),
+              collapsedShape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),
+              leading: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black, width: 1.5),
+                ),
+                alignment: Alignment.center,
+                child: Text(p.initials, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black)),
+              ),
+              title: Text(p.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black)),
+              subtitle: Text(p.roleLabel, style: const TextStyle(fontSize: 10, color: Colors.black54)),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: const BoxDecoration(
+                    border: Border(top: BorderSide(color: Colors.black, width: 1.5)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("System Core Persona", style: TextStyle(fontWeight: FontWeight.bold)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.black), borderRadius: BorderRadius.circular(8)),
+                        child: const Text("ACCESS: FULL", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          );
+        }),
+
+        ...state.employees.asMap().entries.map((entry) {
+          final i = entry.key + AppState.personas.length;
+          final e = entry.value;
+          final color = pastelColors[i % pastelColors.length];
+          final isVideo = e.role.toLowerCase().contains('videographer');
+          
+          double pendingPayout = 0;
+          int unpaidSessionsCount = 0;
+          if (isVideo) {
+            final unpaidSessions = state.tasks.where((t) => t.assignedTo == e.id && t.taskType == 'Session' && t.isCompleted && !t.isPaidToVideographer).toList();
+            unpaidSessionsCount = unpaidSessions.length;
+            for (final t in unpaidSessions) {
+              final c = state.clients.where((c) => c.id == t.clientId).firstOrNull;
+              if (c != null) pendingPayout += c.sessionRate;
+            }
+          }
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.black, width: 1.5),
+              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0)],
+            ),
+            child: ExpansionTile(
+              shape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),
+              collapsedShape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),
+              leading: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black, width: 1.5),
+                ),
+                alignment: Alignment.center,
+                child: Text(e.name.isNotEmpty ? e.name[0].toUpperCase() : 'E', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+              ),
+              title: Text(e.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black)),
+              subtitle: Text("\${e.role} // \${e.department}", style: const TextStyle(fontSize: 10, color: Colors.black54)),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: const BoxDecoration(
+                    border: Border(top: BorderSide(color: Colors.black, width: 1.5)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (isVideo) ...[
+                        Text("PENDING PAYOUT: Rs.\${pendingPayout.toStringAsFixed(0)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black)),
+                        Text("UNPAID SESSIONS: \$unpaidSessionsCount", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      ] else ...[
+                        Text("SALARY: Rs.\${e.monthlySalary.toStringAsFixed(0)} / mo", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black)),
+                        Text("Paid Months: \${e.paidMonths.join(", ")}", style: const TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.bold)),
+                      ],
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black),
+                            onPressed: () => _showPayEmployeeDialog(context, state, e),
+                            child: Text(isVideo ? "PAY SESSIONS" : "PAY SALARY", style: const TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined, color: Colors.black),
+                                onPressed: () => _showEditEmployeeDialog(context, e),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: SageColors.error),
+                                onPressed: () async {
+                                  final ok = await showConfirmDialog(context, "TERMINATE EMPLOYEE", "Are you sure you want to terminate \${e.name}?");
+                                  if (ok && context.mounted) {
+                                    context.read<AppState>().terminateEmployee(e.id);
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+''';
+
+  String beforeReplacement = content.substring(0, startIdx);
+  String afterReplacement = content.substring(endIdx);
+  content = beforeReplacement + newBuildPersonnelTab + "\n  " + afterReplacement;
+
+  // Now replace _showEditEmployeeDialog to remove rate and sessions
+  int editStart = content.indexOf('void _showEditEmployeeDialog');
+  int editEnd = content.indexOf('void _showEditClientDialog');
+  
+  if (editStart == -1 || editEnd == -1) {
+    print('Could not find _showEditEmployeeDialog in ceo_dashboard.dart!');
+    return;
+  }
+
+  var newEditDialog = '''
+  void _showEditEmployeeDialog(BuildContext context, Employee e) {
+    final nameCtrl = TextEditingController(text: e.name);
+    final deptCtrl = TextEditingController(text: e.department);
+    final salaryCtrl = TextEditingController(text: e.monthlySalary.toString());
+    String role = e.role;
+    final validRoles = ['Video Editor', 'Graphics Editor', 'Videographer/Cinematographer', 'Marketing Executive', 'Page Management Executive', 'Graphics Designer cum Marketing Exec', 'Videographer cum Editor cum Marketing Exec'];
+    if (!validRoles.contains(role)) role = validRoles[0];
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            return AlertDialog(
+              backgroundColor: SageColors.background,
+              title: const Text("EDIT EMPLOYEE", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SageTextField(controller: nameCtrl, label: "Name"),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: role,
+                      decoration: const InputDecoration(labelText: "Role"),
+                      dropdownColor: Colors.white,
+                      items: validRoles.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
+                      onChanged: (v) => setState(() => role = v ?? validRoles[0]),
+                    ),
+                    const SizedBox(height: 10),
+                    SageTextField(controller: deptCtrl, label: "Department"),
+                    const SizedBox(height: 10),
+                    if (role != 'Videographer/Cinematographer') ...[
+                      SageTextField(controller: salaryCtrl, label: "Monthly Salary", keyboardType: TextInputType.number),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+                  onPressed: () {
+                    context.read<AppState>().updateEmployee(
+                      e.id,
+                      name: nameCtrl.text,
+                      role: role,
+                      department: deptCtrl.text,
+                      monthlySalary: double.tryParse(salaryCtrl.text),
+                    );
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text("SAVE"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+

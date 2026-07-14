@@ -1,0 +1,686 @@
+Widget _buildTaskCalendarSubTab() {
+    final state = context.watch<AppState>();
+    final now = DateTime.now();
+    final firstDay = DateTime(_calendarMonth.year, _calendarMonth.month, 1);
+    final daysInMonth = DateTime(_calendarMonth.year, _calendarMonth.month + 1, 0).day;
+    final startOffset = firstDay.weekday % 7;
+    
+    final allTasks = state.tasks;
+    final monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+    List<Task> selectedTasks = [];
+    if (_selectedCalendarDate != null) {
+      selectedTasks = allTasks.where((t) => t.deadline.day == _selectedCalendarDate!.day && t.deadline.month == _selectedCalendarDate!.month && t.deadline.year == _selectedCalendarDate!.year && !t.isCompleted).toList();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0F4FF),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.black, width: 1.5),
+            boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0)],
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: () => setState(() => _calendarMonth = DateTime(_calendarMonth.year, _calendarMonth.month - 1, 1)),
+                  ),
+                  Text("${monthNames[_calendarMonth.month - 1]} ${_calendarMonth.year}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: () => setState(() => _calendarMonth = DateTime(_calendarMonth.year, _calendarMonth.month + 1, 1)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'].map((d) => SizedBox(width: 30, child: Center(child: Text(d, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54))))).toList(),
+              ),
+              const SizedBox(height: 8),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  childAspectRatio: 0.8,
+                  crossAxisSpacing: 6,
+                  mainAxisSpacing: 6,
+                ),
+                  itemCount: daysInMonth + startOffset,
+                  itemBuilder: (context, index) {
+                    if (index < startOffset) return const SizedBox();
+                    final day = index - startOffset + 1;
+                    final dateStr = "${_calendarMonth.year}-${_calendarMonth.month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}";
+                    final holiday = _googleHolidays[dateStr];
+                    
+                    final dateForDay = DateTime(_calendarMonth.year, _calendarMonth.month, day);
+                    final isWeekend = dateForDay.weekday == DateTime.saturday || dateForDay.weekday == DateTime.sunday;
+                    final isToday = day == now.day && _calendarMonth.month == now.month && _calendarMonth.year == now.year;
+                    final isSelected = _selectedCalendarDate?.day == day && _selectedCalendarDate?.month == _calendarMonth.month && _selectedCalendarDate?.year == _calendarMonth.year;
+                    
+                    final dayTasks = allTasks.where((t) => t.deadline.day == day && t.deadline.month == _calendarMonth.month && t.deadline.year == _calendarMonth.year && !t.isCompleted).toList();
+                    
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedCalendarDate = dateForDay),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.black, width: isSelected ? 2.5 : 1.0),
+                          color: isSelected ? const Color(0xFFFFF9C4) : (isToday ? SageColors.primaryContainer : (holiday != null ? SageColors.secondaryContainer : (isWeekend ? const Color(0xFFEEEEEE) : Colors.white))),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: isSelected ? const [BoxShadow(color: Colors.black, offset: Offset(2, 2))] : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 4),
+                            Text("$day", style: TextStyle(fontWeight: FontWeight.bold, color: holiday != null ? SageColors.secondary : Colors.black, fontSize: 12)),
+                            if (holiday != null) Padding(padding: const EdgeInsets.symmetric(horizontal: 2.0), child: Text(holiday, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 8, color: SageColors.secondary, fontWeight: FontWeight.bold, height: 1.1))),
+                            const SizedBox(height: 2),
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              spacing: 2,
+                              runSpacing: 2,
+                              children: dayTasks.take(6).map((t) {
+                                Color dotColor = Colors.blue;
+                                final title = t.title.toLowerCase();
+                                if (title.contains('video')) dotColor = Colors.green;
+                                else if (title.contains('post') || title.contains('design')) dotColor = Colors.pink;
+                                else if (title.contains('lead') || title.contains('marketing')) dotColor = Colors.purple;
+                                
+                                return Container(width: 6, height: 6, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle));
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+        if (_selectedCalendarDate != null) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF5E1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.black, width: 1.5),
+              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3))],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("TASKS FOR ${_selectedCalendarDate!.day}/${_selectedCalendarDate!.month}/${_selectedCalendarDate!.year}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    ElevatedButton.icon(
+                      onPressed: () => setState(() => _isAddTaskExpanded = !_isAddTaskExpanded),
+                      icon: Icon(_isAddTaskExpanded ? Icons.close : Icons.add, size: 16),
+                      label: Text(_isAddTaskExpanded ? "CLOSE" : "ADD TASK"),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                    ),
+                  ],
+                ),
+                if (_isAddTaskExpanded) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.black12)),
+                    child: Column(
+                      children: [
+                        DropdownButtonFormField<String>(
+                          value: _newTaskType,
+                          decoration: const InputDecoration(labelText: "Type of Task"),
+                          dropdownColor: Colors.white,
+                          items: ['Daily Video', 'Daily Post', 'Miscellaneous', 'Session'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                          onChanged: (v) => setState(() {
+                            _newTaskType = v!;
+                            _newTaskAssigneeIds = [];
+                            _newTaskClients = [];
+                            _sessionVideographerId = null;
+                            _dailyVideoAssigneeId = null;
+                            _sessionClientIds = [];
+                          }),
+                        ),
+                        const SizedBox(height: 12),
+
+                        if (_newTaskType == 'Session') ...[
+                          DropdownButtonFormField<String>(
+                            value: _sessionVideographerId,
+                            decoration: const InputDecoration(labelText: "Select Videographer"),
+                            dropdownColor: Colors.white,
+                            items: [
+                              const DropdownMenuItem(value: 'COF-PRI-001', child: Text("CFO Priyajit")),
+                              ...state.employees.where((e) => e.hasRole('videographer')).map(
+                                (e) => DropdownMenuItem(value: e.id, child: Text(e.name))
+                              ),
+                            ],
+                            onChanged: (v) => setState(() { _sessionVideographerId = v; _sessionClientIds = []; }),
+                          ),
+                          const SizedBox(height: 10),
+                          if (_sessionVideographerId != null) ...[
+                            Builder(builder: (ctx) {
+                              final videographerClients = state.clients.where((c) { if (c.status.toLowerCase() == 'lead') return false; if (_sessionVideographerId == 'COF-PRI-001') return true; return c.assignedVideographerId == _sessionVideographerId; }).toList();
+                              final dateKey = _selectedCalendarDate?.toString().substring(0,10) ?? '';
+                              final existingSessionsOnDate = state.tasks.where((t) => t.taskType == 'Session' && t.assignedTo == _sessionVideographerId && t.deadline.toString().substring(0,10) == dateKey && !t.isCompleted).length;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (existingSessionsOnDate >= 3)
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red)),
+                                      child: const Text("â€¢ Max 3 clients already booked on this date.", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    )
+                                  else ...[
+                                    Text("Select Clients (max ${3 - existingSessionsOnDate} more allowed)", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                    const SizedBox(height: 6),
+                                    if (videographerClients.isEmpty)
+                                      const Text("No clients assigned to this videographer.", style: TextStyle(fontSize: 12, color: Colors.black54))
+                                    else
+                                      ...videographerClients.map((c) {
+                                        final isSelected = _sessionClientIds.contains(c.id);
+                                        return CheckboxListTile(
+                                          dense: true,
+                                          contentPadding: EdgeInsets.zero,
+                                          title: Text(_sessionVideographerId == 'COF-PRI-001' ? c.name : "${c.name} - ₹${c.sessionRate.toStringAsFixed(0)}/session", style: const TextStyle(fontSize: 12)),
+                                          value: isSelected,
+                                          onChanged: (val) {
+                                            setState(() {
+                                              if (val == true && _sessionClientIds.length < (3 - existingSessionsOnDate)) {
+                                                _sessionClientIds.add(c.id);
+                                              } else if (val == false) {
+                                                _sessionClientIds.remove(c.id);
+                                              }
+                                            });
+                                          },
+                                        );
+                                      }),
+                                    const SizedBox(height: 10),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white),
+                                        onPressed: _sessionClientIds.isEmpty ? null : () async {
+                                          final deadline = DateTime(_selectedCalendarDate!.year, _selectedCalendarDate!.month, _selectedCalendarDate!.day, 9, 0);
+                                          for (final clientId in _sessionClientIds) {
+                                            final clientName = state.clients.firstWhere((c) => c.id == clientId).name;
+                                            await context.read<AppState>().assignTask(
+                                              title: 'Session - $clientName',
+                                              description: 'Videography session for $clientName on ${_selectedCalendarDate!.toString().substring(0,10)}',
+                                              assignedTo: _sessionVideographerId!,
+                                              deadline: deadline,
+                                              clientId: clientId,
+                                              taskType: 'Session',
+                                              sessionClientIds: [clientId],
+                                              isApprovedByVideographer: _sessionVideographerId == 'COF-PRI-001',
+                                            );
+                                          }
+                                          setState(() {
+                                            _isAddTaskExpanded = false;
+                                            _sessionVideographerId = null;
+                                            _sessionClientIds = [];
+                                          });
+                                        },
+                                        child: const Text("BOOK SESSION (PENDING APPROVAL)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              );
+                            }),
+                          ],
+                        ] else if (_newTaskType == 'Miscellaneous') ...[
+                          SageMultiSelectDropdown<Map<String, String>>(
+                            selectedItems: (() {
+                               final options = _getAssigneesForRole('General', state);
+                               return options.where((e) => _newTaskAssigneeIds.contains(e['id'])).toList();
+                            })(),
+                            items: _getAssigneesForRole('General', state),
+                            labelBuilder: (item) => item['name']!,
+                            labelText: "Assign To",
+                            onChanged: (v) => setState(() => _newTaskAssigneeIds = v.map((e) => e['id']!).toList()),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: SageTextField(controller: _newTaskTitleCtrl, label: "Title"),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () async {
+                                    final time = await showTimePicker(context: context, initialTime: _newTaskTime);
+                                    if (time != null) setState(() => _newTaskTime = time);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                                    decoration: BoxDecoration(border: Border.all(color: Colors.black), borderRadius: BorderRadius.circular(12)),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text("Deadline Time"),
+                                        Text(_newTaskTime.format(context), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          SageTextField(controller: _newTaskDescCtrl, label: "Description (Optional)", maxLines: 2),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                if (_newTaskAssigneeIds.isEmpty || _newTaskTitleCtrl.text.isEmpty) return;
+                                final finalDeadline = DateTime(_selectedCalendarDate!.year, _selectedCalendarDate!.month, _selectedCalendarDate!.day, _newTaskTime.hour, _newTaskTime.minute);
+                                for (final assigneeId in _newTaskAssigneeIds) {
+                                  context.read<AppState>().assignTask(
+                                    title: _newTaskTitleCtrl.text,
+                                    description: _newTaskDescCtrl.text,
+                                    assignedTo: assigneeId,
+                                    deadline: finalDeadline,
+                                  );
+                                }
+                                setState(() {
+                                  _isAddTaskExpanded = false;
+                                  _newTaskTitleCtrl.clear();
+                                  _newTaskDescCtrl.clear();
+                                  _newTaskAssigneeIds = [];
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary, foregroundColor: Colors.black),
+                              child: const Text("CREATE TASK", style: TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ] else ...[
+                          SageMultiSelectDropdown<Client>(
+                            selectedItems: state.clients.where((c) => _newTaskClients.contains(c.name)).toList(),
+                            items: state.clients.where((c) => c.status != 'Lead' && c.isApprovedByCeo).toList(),
+                            labelBuilder: (c) => c.name,
+                            labelText: "Select Clients",
+                            emptyText: "Select active clients",
+                            onChanged: (v) => setState(() => _newTaskClients = v.map((c) => c.name).toList()),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () async {
+                                    final time = await showTimePicker(context: context, initialTime: _newTaskTime);
+                                    if (time != null) setState(() => _newTaskTime = time);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                                    decoration: BoxDecoration(border: Border.all(color: Colors.black), borderRadius: BorderRadius.circular(12)),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text("Deadline Time"),
+                                        Text(_newTaskTime.format(context), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          if (_newTaskType == 'Daily Video')
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                DropdownButtonFormField<String>(
+                                  value: _dailyVideoAssigneeId,
+                                  decoration: const InputDecoration(labelText: "Select Video Editor"),
+                                  dropdownColor: Colors.white,
+                                  items: [
+                                    const DropdownMenuItem(value: 'COF-PRI-001', child: Text("CFO Priyajit")),
+                                    ...state.employees.where((e) => e.hasRole('video editor')).map(
+                                      (e) => DropdownMenuItem(value: e.id, child: Text(e.name))
+                                    ),
+                                  ],
+                                  onChanged: (v) => setState(() => _dailyVideoAssigneeId = v),
+                                ),
+                                const SizedBox(height: 12),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary, foregroundColor: Colors.black),
+                                  onPressed: _dailyVideoAssigneeId == null || _newTaskClients.isEmpty ? null : () {
+                                    final finalDeadline = DateTime(_selectedCalendarDate!.year, _selectedCalendarDate!.month, _selectedCalendarDate!.day, _newTaskTime.hour, _newTaskTime.minute);
+                                    for (final client in _newTaskClients) {
+                                      context.read<AppState>().assignTask(
+                                        title: 'Daily Video - $client',
+                                        description: 'Automatically assigned daily video task for $client.',
+                                        assignedTo: _dailyVideoAssigneeId!,
+                                        deadline: finalDeadline,
+                                      );
+                                    }
+                                    setState(() { _isAddTaskExpanded = false; _newTaskClients = []; _dailyVideoAssigneeId = null; });
+                                  },
+                                  child: const Text("ASSIGN TASK", style: TextStyle(fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            )
+                          else if (_newTaskType == 'Daily Post')
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.secondaryContainer, foregroundColor: Colors.black),
+                                    onPressed: () {
+                                      if (_newTaskClients.isEmpty) return;
+                                      final ritam = AppState.personas.where((p) => p.id == 'COF-RIT-001').firstOrNull;
+                                      if (ritam == null) return;
+                                      final finalDeadline = DateTime(_selectedCalendarDate!.year, _selectedCalendarDate!.month, _selectedCalendarDate!.day, _newTaskTime.hour, _newTaskTime.minute);
+                                      for (final client in _newTaskClients) {
+                                        context.read<AppState>().assignTask(
+                                          title: 'Daily Post - $client',
+                                          description: 'Automatically assigned daily post task for $client.',
+                                          assignedTo: ritam.id,
+                                          deadline: finalDeadline,
+                                        );
+                                      }
+                                      setState(() { _isAddTaskExpanded = false; _newTaskClients = []; });
+                                    },
+                                    child: const Text("ASSIGN TO RITAM (CFO)", textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.tertiaryContainer, foregroundColor: Colors.black),
+                                    onPressed: () {
+                                      if (_newTaskClients.isEmpty) return;
+                                      // Assign to Graphic Designer (Assume Subhajit or any graphic designer)
+                                      final designer = state.employees.where((e) => e.hasRole('graphic') || e.name.toLowerCase().contains('subhajit')).firstOrNull;
+                                      if (designer == null) {
+                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No Graphic Designer found in employees!')));
+                                        return;
+                                      }
+                                      final finalDeadline = DateTime(_selectedCalendarDate!.year, _selectedCalendarDate!.month, _selectedCalendarDate!.day, _newTaskTime.hour, _newTaskTime.minute);
+                                      for (final client in _newTaskClients) {
+                                        context.read<AppState>().assignTask(
+                                          title: 'Daily Post - $client',
+                                          description: 'Automatically assigned daily post task for $client.',
+                                          assignedTo: designer.id,
+                                          deadline: finalDeadline,
+                                        );
+                                      }
+                                      setState(() { _isAddTaskExpanded = false; _newTaskClients = []; });
+                                    },
+                                    child: const Text("ASSIGN TO GRAPHIC DESIGNER", textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                if (selectedTasks.isEmpty)
+                  const Text("No tasks scheduled.", style: TextStyle(color: Colors.black54, fontStyle: FontStyle.italic))
+                else
+                  ...selectedTasks.map((t) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.black12),
+                      ),
+                      child: ExpansionTile(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        tilePadding: const EdgeInsets.only(right: 12),
+                        title: Row(
+                          children: [
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, decoration: t.isCompleted ? TextDecoration.lineThrough : null)),
+                            ),
+                          ],
+                        ),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (t.description.isNotEmpty) ...[
+                                  Text(t.description, style: const TextStyle(fontSize: 11, color: Colors.black87)),
+                                  const SizedBox(height: 12),
+                                ],
+                                Row(
+                                  children: [
+                                    const Icon(Icons.person, size: 14, color: Colors.black54),
+                                    const SizedBox(width: 4),
+                                    Text("Assigned To: ${_getAssigneeName(t.assignedTo, state)}", style: const TextStyle(fontSize: 11)),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.assignment_ind, size: 14, color: Colors.black54),
+                                    const SizedBox(width: 4),
+                                    Text("Assigned By: ${_getAssigneeName(t.assignedBy, state)}", style: const TextStyle(fontSize: 11)),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.calendar_today, size: 14, color: Colors.black54),
+                                    const SizedBox(width: 4),
+                                    Text("Deadline: ${t.deadline.day.toString().padLeft(2, '0')}/${t.deadline.month.toString().padLeft(2, '0')}/${t.deadline.year} at ${t.deadline.hour.toString().padLeft(2, '0')}:${t.deadline.minute.toString().padLeft(2, '0')}", style: const TextStyle(fontSize: 11)),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.category, size: 14, color: Colors.black54),
+                                    const SizedBox(width: 4),
+                                    Text("Type: ${t.taskType ?? 'General Task'}", style: const TextStyle(fontSize: 11)),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                    onPressed: () => context.read<AppState>().approveAndDeleteTask(t.id),
+                                    tooltip: 'Delete Task',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // --- Popup Dialog: Add Client / Lead ---
+  void _showAddClientDialog(BuildContext context) {
+    final state = context.read<AppState>();
+    final isLead = _clientSubTab == 'LEADS';
+    String localPkg = _clientPackageType;
+    String localPeriod = _clientContractPeriod;
+    String localLeadProb = _clientLeadProbability;
+    String localPaymentMode = 'Running';
+    final dueDateDayCtrl = TextEditingController(text: "10");
+    String? localVidId;
+    _clientNameCtrl.clear(); _clientContactNameCtrl.clear();
+    _clientContactEmailCtrl.clear(); _clientContactPhoneCtrl.clear();
+    _clientPayableCtrl.clear(); _clientContactAddressCtrl.clear();
+    _clientContactWebsiteCtrl.clear(); _clientLeadNoteCtrl.clear();
+    _clientLeadFollowupCtrl.clear(); _clientSessionRateCtrl.clear();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Dialog(
+          backgroundColor: SageColors.background,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: TerminalPanel(
+              title: isLead ? "INITIALIZE NEW LEAD" : "INITIALIZE NEW CLIENT",
+              child: Column(children: [
+                SageTextField(controller: _clientNameCtrl, label: "Company Name"),
+                const SizedBox(height: 10),
+                SageTextField(controller: _clientContactNameCtrl, label: "Contact Person"),
+                const SizedBox(height: 10),
+                SageTextField(controller: _clientContactEmailCtrl, label: "Contact Email", keyboardType: TextInputType.emailAddress),
+                const SizedBox(height: 10),
+                SageTextField(controller: _clientContactPhoneCtrl, label: "Contact Phone", keyboardType: TextInputType.phone),
+                const SizedBox(height: 10),
+                if (isLead) ...[
+                  SageTextField(controller: _clientContactAddressCtrl, label: "Address"),
+                  const SizedBox(height: 10),
+                  SageTextField(controller: _clientContactWebsiteCtrl, label: "Website"),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: localLeadProb,
+                    decoration: const InputDecoration(labelText: "Conversion Probability"),
+                    dropdownColor: Colors.white,
+                    items: ['High','Medium','Low'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (v) => setS(() => localLeadProb = v ?? 'Medium'),
+                  ),
+                  const SizedBox(height: 10),
+                  SageTextField(controller: _clientLeadNoteCtrl, label: "Initial Note / Comment"),
+                  const SizedBox(height: 10),
+                  SageTextField(controller: _clientLeadFollowupCtrl, label: "Follow-up Date (YYYY-MM-DD)", hint: "e.g. 2026-07-01"),
+                ] else ...[
+                  SageTextField(controller: _clientPayableCtrl, label: "Monthly Payable (Ã¢â€šÂ¹)", keyboardType: TextInputType.number),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: localPkg,
+                    decoration: const InputDecoration(labelText: "Package Type"),
+                    dropdownColor: Colors.white,
+                    items: ['Growth','Performance'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (v) => setS(() => localPkg = v ?? 'Growth'),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: localPeriod,
+                    decoration: const InputDecoration(labelText: "Contract Period"),
+                    dropdownColor: Colors.white,
+                    items: ['3 Months','6 Months','1 Year'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (v) => setS(() => localPeriod = v ?? '3 Months'),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String?>(
+                    value: state.employees.any((e) => e.id == localVidId && e.hasRole('videographer')) ? localVidId : null,
+                    decoration: const InputDecoration(labelText: "Assigned Videographer"),
+                    dropdownColor: Colors.white,
+                    items: [
+                      const DropdownMenuItem<String?>(value: null, child: Text("None")),
+                      const DropdownMenuItem<String?>(value: 'COF-PRI-001', child: Text("CFO Priyajit")),
+                      ...state.employees.where((e) => e.hasRole('videographer')).map((e) => DropdownMenuItem<String?>(value: e.id, child: Text(e.name))),
+                    ],
+                    onChanged: (v) => setS(() => localVidId = v),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: localPaymentMode,
+                    decoration: const InputDecoration(labelText: "Payment Mode"),
+                    dropdownColor: Colors.white,
+                    items: ['Advance','Running','Late'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (v) => setS(() => localPaymentMode = v ?? 'Running'),
+                  ),
+                  const SizedBox(height: 10),
+                  SageTextField(controller: dueDateDayCtrl, label: "Due Date (1-31)", keyboardType: TextInputType.number),
+                  const SizedBox(height: 10),
+                  SageTextField(controller: _clientSessionRateCtrl, label: "Session Rate (Ã¢â€šÂ¹)", keyboardType: TextInputType.number),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(width: double.infinity, child: ElevatedButton(
+                  onPressed: () {
+                    if (_clientNameCtrl.text.trim().isEmpty) return;
+                    final c = Client(
+                      id: 'CL-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
+                      name: _clientNameCtrl.text,
+                      contact: ClientContact(name: _clientContactNameCtrl.text, email: _clientContactEmailCtrl.text, phone: _clientContactPhoneCtrl.text, address: isLead ? _clientContactAddressCtrl.text : '', website: isLead ? _clientContactWebsiteCtrl.text : ''),
+                      monthlyPayable: isLead ? 0.0 : (double.tryParse(_clientPayableCtrl.text) ?? 0.0),
+                      packageType: isLead ? 'Growth' : localPkg,
+                      contractPeriod: isLead ? '3 Months' : localPeriod,
+                      contractDate: DateTime.now(),
+                      status: isLead ? 'Lead' : 'Active',
+                      conversionProbability: isLead ? localLeadProb : 'Medium',
+                      notes: isLead && _clientLeadNoteCtrl.text.isNotEmpty ? [_clientLeadNoteCtrl.text] : [],
+                      followUpDates: isLead && _clientLeadFollowupCtrl.text.isNotEmpty ? [_clientLeadFollowupCtrl.text] : [],
+                      assignedVideographerId: isLead ? null : localVidId,
+                      paymentMode: isLead ? 'Running' : localPaymentMode,
+                      dueDateDay: isLead ? 10 : (int.tryParse(dueDateDayCtrl.text) ?? 10),
+                      sessionRate: isLead ? 0 : (double.tryParse(_clientSessionRateCtrl.text) ?? 0.0),
+                    );
+                    state.addClient(c);
+                    Navigator.pop(ctx);
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: SageColors.yellowAccent),
+                  child: Text(isLead ? "SAVE LEAD" : "INITIALIZE CONTRACT"),
+                )),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Map<String, String>> _getAssigneesForRole(String? role, AppState state) {
+    if (role == null) return [];
+    List<Map<String, String>> list = [];
+    if (role == 'Video Editor') {
+      list.add({'id': 'COF-PRI-001', 'name': 'Priyajit (CFO)'});
+      final debjit = state.employees.where((e) => e.name.toLowerCase().contains('debjit')).firstOrNull;
+      if (debjit != null) list.add({'id': debjit.id, 'name': debjit.name});
+    } else if (role == 'Videographer') {
+      list.add({'id': 'COF-PRI-001', 'name': 'Priyajit (CFO)'});
+      final poulom = state.employees.where((e) => e.name.toLowerCase().contains('poulom')).firstOrNull;
+      if (poulom != null) list.add({'id': poulom.id, 'name': poulom.name});
+    } else if (role == 'Marketing Executive') {
+      list.add({'id': 'CEO-SOH-001', 'name': 'Sohini (CEO)'});
+      list.add({'id': 'COF-PRI-001', 'name': 'Priyajit (CFO)'});
+      list.add({'id': 'COF-RIT-001', 'name': 'Ritam (CFO)'});
+    } else {
+      list.addAll(AppState.personas.map((p) => {'id': p.id, 'name': "${p.name} (${p.roleLabel})"}));
+      list.addAll(state.employees.map((e) => {'id': e.id, 'name': e.name}));
+    }
+    return list;
+  }
+
+  String _getAssigneeName(String id, AppState state) {
+    final p = AppState.personas.where((p) => p.id == id).firstOrNull;
+    if (p != null) return p.name;
+    final e = state.employees.where((e) => e.id == id).firstOrNull;
+    if (e != null) return e.name;
+    return id;
+  }
+
+
+  

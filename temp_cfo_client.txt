@@ -1,0 +1,1244 @@
+import 'executive_profile_dashboard.dart';
+import 'package:intl/intl.dart';
+import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:sage_mainframe/state/app_state.dart';
+import 'package:sage_mainframe/theme/app_theme.dart';
+import 'package:sage_mainframe/widgets/common_widgets.dart';
+import 'package:sage_mainframe/models/models.dart';
+import 'package:sage_mainframe/main.dart';
+import 'package:sage_mainframe/screens/employee_dashboard.dart';
+import 'package:sage_mainframe/widgets/income_combo_chart.dart';
+
+class CofounderDashboard extends StatefulWidget {
+  const CofounderDashboard({super.key});
+  @override
+  State<CofounderDashboard> createState() => _CofounderDashboardState();
+}
+
+class _CofounderDashboardState extends State<CofounderDashboard> {
+  int _tab = 0; // 0: Home, 1: Clients, 2: Personnel/Team, 3: Tasks/Activity, 4: Finance
+  int _tabKeyCounter = 0;
+  PageStorageBucket _bucket = PageStorageBucket();
+  DateTime _selectedDate = DateTime.now();
+
+  void _showPaymentDialog(BuildContext context, Client c, int month) {
+    String paymentMethod = 'UPI';
+    DateTime paymentDate = DateTime.now();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            return AlertDialog(
+              backgroundColor: SageColors.background,
+              title: Text("Record Payment for ${c.name} - Month $month", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: paymentMethod,
+                    decoration: const InputDecoration(labelText: "Payment Method"),
+                    dropdownColor: Colors.white,
+                    items: ['UPI', 'Cash', 'Cheque'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 12)))).toList(),
+                    onChanged: (v) => setState(() => paymentMethod = v ?? 'UPI'),
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    title: const Text("Payment Date", style: TextStyle(fontSize: 12)),
+                    subtitle: Text("${paymentDate.day}/${paymentDate.month}/${paymentDate.year}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                    trailing: const Icon(Icons.calendar_today, size: 16),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: paymentDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setState(() => paymentDate = picked);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text("CANCEL", style: TextStyle(color: SageColors.outline)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+                  onPressed: () {
+                    context.read<AppState>().toggleClientPaidMonth(c.id, month, paymentMethod, paymentDate);
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text("RECORD"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final persona = state.activePersona;
+    
+    return WillPopScope(
+      onWillPop: () async {
+        if (_tab != 0) {
+          _switchTab(0);
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+      backgroundColor: SageColors.background,
+      body: Stack(
+        children: [
+          // Header Background Color Block
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 180,
+              decoration: BoxDecoration(
+                color: _getHeaderColor(),
+                border: const Border(bottom: BorderSide(color: Colors.black, width: 1.5)),
+              ),
+            ),
+          ),
+          
+          SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                // Top Custom Header Row
+                _buildTopHeader(context, persona),
+                
+                // Active Page Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 100),
+                    child: _buildActiveTab(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Floating Bottom Navigation Bar (5 icons)
+          Positioned(
+            bottom: 20,
+            left: 16,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              decoration: BoxDecoration(
+                color: SageColors.yellowAccent,
+                borderRadius: BorderRadius.circular(40),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black,
+                    offset: Offset(4, 4),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildBottomIcon(0, Icons.home_outlined, Icons.home),
+                  _buildBottomIcon(1, Icons.business_outlined, Icons.business, badgeCount: state.clients.where((c) => !c.isApprovedByCeo).length),
+                  _buildBottomIcon(2, Icons.badge_outlined, Icons.badge),
+                  _buildBottomIcon(3, Icons.assignment_outlined, Icons.assignment, badgeCount: state.tasks.where((t) => !t.isCompleted).length),
+                  _buildBottomIcon(4, Icons.account_balance_outlined, Icons.account_balance),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+    );
+  }
+
+  Color _getHeaderColor() {
+    switch (_tab) {
+      case 0: return SageColors.yellowAccentContainer;
+      case 1: return SageColors.primaryContainer; // Light green for clients
+      case 2: return SageColors.secondaryContainer; // Coral for team
+      case 3: return SageColors.primaryContainer; // Green for tasks
+      case 4: return SageColors.tertiaryContainer; // Purple for finance
+      default: return SageColors.background;
+    }
+  }
+
+  Widget _buildTopHeader(BuildContext context, Persona persona) {
+    String title = "HOME";
+    if (_tab == 1) title = "CLIENTS";
+    if (_tab == 2) title = "PERSONNEL";
+    if (_tab == 3) title = "ACTIVITY";
+    if (_tab == 4) title = "FINANCE";
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+            // Logo
+            Image.asset('assets/logo/sage_logo.png', height: 32, width: 80, fit: BoxFit.contain),
+            const Spacer(),
+            // Profile Button
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => ExecutiveProfileDashboard()),
+                );
+              },
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: SageColors.primary,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black, width: 1.5),
+                ),
+                child: const Icon(Icons.person, color: Colors.white, size: 18),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Circular Logout Button
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              );
+            },
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: SageColors.yellowAccent,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.black, width: 1.5),
+              ),
+              child: const Icon(Icons.power_settings_new, color: SageColors.error, size: 18),
+            ),
+          ),
+          
+          Column(
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                  color: Colors.black,
+                ),
+              ),
+              Text(
+                "${persona.name.toUpperCase()} // ${persona.roleLabel}",
+                style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(width: 38),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomIcon(int index, IconData outlineIcon, IconData filledIcon, {int badgeCount = 0}) {
+    final isSelected = _tab == index;
+    Widget iconWidget = Icon(
+      isSelected ? filledIcon : outlineIcon,
+      color: isSelected ? SageColors.yellowAccent : Colors.black,
+      size: 22,
+    );
+
+    if (badgeCount > 0) {
+      iconWidget = Badge(
+        label: Text('$badgeCount'),
+        child: iconWidget,
+      );
+    }
+
+    return GestureDetector(
+      onTap: () => _switchTab(index),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: isSelected
+            ? const BoxDecoration(
+                color: Colors.black,
+                shape: BoxShape.circle,
+              )
+            : null,
+        child: iconWidget,
+      ),
+    );
+  }
+
+
+  void _switchTab(int index) {
+    if (_tab == index) return;
+    setState(() {
+      _tab = index;
+      _tabKeyCounter++;
+      _bucket = PageStorageBucket();
+      _clientExpControllers.clear();
+      _empExpControllers.clear();
+      _personaExpControllers.clear();
+      _clientSubTab = 'ACTIVE';
+      _taskSubTab = 'CALENDAR';
+    });
+  }
+  Widget _buildActiveTab() {
+    Widget active;
+    switch (_tab) {
+      case 0: active = _buildHomeTab(); break;
+      case 1: active = _buildClientsTab(); break;
+      case 2: active = _buildPersonnelTab(); break;
+      case 3: active = _buildTasksTab(); break;
+      case 4: active = _buildFinanceTab(); break;
+      default: active = const SizedBox(); break;
+    
+    }
+    return KeyedSubtree(
+      key: ValueKey('tab_${_tab}_$_tabKeyCounter'),
+      child: active,
+    );
+  }
+
+  // --- TAB 0: HOME ---
+  Widget _buildHomeTab() {
+    final state = context.watch<AppState>();
+    final pendingTasks = state.tasks.where((t) => !t.isCompleted).length;
+    final now = DateTime.now();
+    final overdueTasks = state.tasks.where((t) => !t.isCompleted && t.deadline.isBefore(now)).toList();
+
+    int ceoCount = AppState.personas.where((p) => p.role == PersonaRole.ceo).length;
+    int cfoCount = AppState.personas.where((p) => p.role == PersonaRole.cofounder).length;
+    Map<String, int> roleCounts = {};
+    for (var emp in state.employees) {
+      roleCounts[emp.role] = (roleCounts[emp.role] ?? 0) + 1;
+    }
+    List<String> teamParts = [];
+    if (ceoCount > 0) teamParts.add("$ceoCount CEO");
+    if (cfoCount > 0) teamParts.add("$cfoCount CFO");
+    roleCounts.forEach((role, count) => teamParts.add("$count $role"));
+    String teamSubtitle = "${teamParts.join(', ')}\nManage your growing team";
+    
+    int activeClients = state.clients.where((c) => c.status != 'Lead' && c.isApprovedByCeo).length;
+    int leads = state.clients.where((c) => c.status == 'Lead').length;
+    String clientsSubtitle = "$activeClients active, $leads leads\nManage your portfolio";
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 10),
+        const LiveClockWidget(),
+        const SizedBox(height: 10),
+        
+        Row(
+          children: [
+            Expanded(
+              child: DashboardTile(
+                title: "Team",
+                subtitle: teamSubtitle,
+                backgroundColor: const Color(0xFFFFE4CD),
+                iconBackgroundColor: const Color(0xFFFFF0A0),
+                icon: Icons.groups,
+                onTap: () => _switchTab(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: DashboardTile(
+                title: "Active Tasks",
+                subtitle: "$pendingTasks tasks pending\nTrack pending work",
+                backgroundColor: const Color(0xFFE0E0FF),
+                iconBackgroundColor: const Color(0xFFC0F0E0),
+                icon: Icons.assignment_late,
+                onTap: () => _switchTab(3),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: DashboardTile(
+                title: "Clients",
+                subtitle: clientsSubtitle,
+                backgroundColor: const Color(0xFFD1F2EB),
+                iconBackgroundColor: const Color(0xFFA0C0D0),
+                icon: Icons.business,
+                onTap: () => _switchTab(1),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: DashboardTile(
+                title: "Finances",
+                subtitle: "₹${state.netBalance.toStringAsFixed(0)}\nControl your revenue",
+                backgroundColor: const Color(0xFFFFA09E),
+                iconBackgroundColor: const Color(0xFFE07070),
+                icon: Icons.account_balance_wallet,
+                onTap: () => _switchTab(4),
+              ),
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 16),
+        _buildNotificationsPanel(state),
+        const SizedBox(height: 16),
+        TerminalPanel(
+          title: "PENDING PAYMENTS",
+          child: _buildPendingPaymentsList(state),
+        ),
+      ],
+    );
+  }
+  Widget _buildNotificationsPanel(AppState state) {
+    final notifs = state.notifications;
+    final unread = state.unreadNotificationCount;
+
+    IconData _iconForType(String type) {
+      switch (type) {
+        case 'task_assigned': return Icons.assignment_turned_in;
+        case 'client_added': return Icons.business;
+        case 'client_updated': return Icons.edit_note;
+        case 'client_removed': return Icons.business_center;
+        case 'employee_added': return Icons.person_add;
+        case 'employee_updated': return Icons.person;
+        case 'employee_terminated': return Icons.person_remove;
+        case 'finance': return Icons.account_balance_wallet;
+        default: return Icons.notifications;
+      }
+    }
+
+    Color _colorForType(String type) {
+      switch (type) {
+        case 'task_assigned': return SageColors.primary;
+        case 'client_added': case 'client_updated': return SageColors.tertiary;
+        case 'client_removed': return SageColors.error;
+        case 'employee_added': return SageColors.secondary;
+        case 'employee_updated': return Colors.blueGrey;
+        case 'employee_terminated': return SageColors.error;
+        case 'finance': return Colors.amber.shade800;
+        default: return Colors.grey;
+      }
+    }
+
+    return TerminalPanel(
+      title: "NOTIFICATIONS${unread > 0 ? ' ($unread NEW)' : ''}",
+      child: Column(
+        children: [
+          if (notifs.isNotEmpty)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (unread > 0)
+                  TextButton(
+                    onPressed: () => state.markAllNotificationsRead(),
+                    child: const Text("MARK ALL READ", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: SageColors.primary)),
+                  ),
+                TextButton(
+                  onPressed: () => state.clearNotifications(),
+                  child: const Text("CLEAR", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.red)),
+                ),
+              ],
+            ),
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              color: SageColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.black, width: 1.5),
+            ),
+            child: notifs.isEmpty
+                ? const Center(child: Text("NO NOTIFICATIONS YET", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)))
+                : ListView.separated(
+                    padding: const EdgeInsets.all(10),
+                    itemCount: notifs.length,
+                    separatorBuilder: (_, __) => const Divider(color: Colors.black12, height: 8),
+                    itemBuilder: (context, index) {
+                      final n = notifs[index];
+                      final timeStr = "${n.timestamp.hour.toString().padLeft(2, '0')}:${n.timestamp.minute.toString().padLeft(2, '0')}";
+                      final dateStr = "${n.timestamp.day}/${n.timestamp.month}";
+                      return GestureDetector(
+                        onTap: () {
+                          if (!n.isRead) state.markNotificationRead(n.id);
+                        },
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: _colorForType(n.type).withOpacity(0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(_iconForType(n.type), size: 14, color: _colorForType(n.type)),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    n.message,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: n.isRead ? FontWeight.normal : FontWeight.bold,
+                                      color: n.isRead ? Colors.black54 : Colors.black,
+                                    ),
+                                  ),
+                                  Text(
+                                    "$dateStr $timeStr - by ${n.triggeredBy}",
+                                    style: const TextStyle(fontSize: 8, color: Colors.black38),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (!n.isRead)
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: SageColors.error,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPendingPaymentsList(AppState state) {
+    final pendingClients = state.clients.where((c) => c.status != 'Lead' && c.dynamicPaymentsDue > 0).toList();
+    final pendingEmployees = state.employees.where((e) => e.isActive && !e.paymentCleared).toList();
+
+    if (pendingClients.isEmpty && pendingEmployees.isEmpty) {
+      return Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: SageColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.black, width: 1.5),
+        ),
+        child: const Center(
+          child: Text(
+            "NO PENDING PAYMENTS",
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    final totalClientsDue = pendingClients.fold<double>(0.0, (sum, c) => sum + (c.monthlyPayable * c.dynamicPaymentsDue));
+
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        color: SageColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black, width: 1.5),
+      ),
+      child: ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+          if (pendingClients.isNotEmpty) ...[
+            Text("CLIENTS DUE (₹${totalClientsDue.toStringAsFixed(0)})", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: SageColors.primary)),
+            const SizedBox(height: 4),
+            ...pendingClients.map((c) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: Text(c.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+                  const SizedBox(width: 4),
+                  Text("₹${(c.monthlyPayable * c.dynamicPaymentsDue).toStringAsFixed(0)} (${c.dynamicPaymentsDue} mo)", style: const TextStyle(fontSize: 12, color: SageColors.error, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            )),
+            const Divider(color: Colors.black26),
+          ],
+          if (pendingEmployees.isNotEmpty) ...[
+            const Text("EMPLOYEES DUE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: SageColors.secondary)),
+            const SizedBox(height: 4),
+            ...pendingEmployees.map((e) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(child: Text(e.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+                    const SizedBox(width: 4),
+                    Text(
+                      e.paymentApprovedByEmployee ? "APPROVED" : "WAITING",
+                      style: TextStyle(fontSize: 10, color: e.paymentApprovedByEmployee ? SageColors.primary : Colors.orange, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // --- --- --- --- TAB 1: CLIENTS --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+  // Accordion controllers --- ensures only one card is open at a time
+  final Map<String, ExpansionTileController> _clientExpControllers = {};
+  final Map<String, ExpansionTileController> _empExpControllers = {};
+  final Map<int, ExpansionTileController> _personaExpControllers = {};
+  String _clientSubTab = 'ACTIVE';
+  final _clientNameCtrl = TextEditingController();
+  final _clientContactNameCtrl = TextEditingController();
+  final _clientContactEmailCtrl = TextEditingController();
+  final _clientContactPhoneCtrl = TextEditingController();
+  final _clientContactAddressCtrl = TextEditingController();
+  final _clientContactWebsiteCtrl = TextEditingController();
+  final _clientPayableCtrl = TextEditingController();
+  String _clientPackageType = 'Growth';
+  String _clientServiceType = 'Marketing';
+  bool _clientHasMarketingCommission = false;
+  String? _clientMarketingExecutiveId;
+  bool _showDetailedShares = false;
+  String _clientContractPeriod = '3 Months';
+  String _clientLeadProbability = 'Medium';
+  final _clientLeadNoteCtrl = TextEditingController();
+  final _clientLeadFollowupCtrl = TextEditingController();
+  String? _clientAssignedVideographerId;
+  final _clientSessionRateCtrl = TextEditingController();
+
+  Widget _buildClientDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 140, child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black54))),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHealthBadge(String health) {
+    Color color;
+    switch (health) {
+      case 'Great': color = Colors.green; break;
+      case 'Good': color = Colors.orange; break;
+      case 'Bad': color = Colors.red; break;
+      default: color = Colors.grey;
+    }
+    return StatusBadge(label: health, color: color);
+  }
+
+  Widget _buildPaymentModeBadge(String mode) {
+    Color color;
+    switch (mode) {
+      case 'Advance': color = Colors.green; break;
+      case 'Running': color = Colors.blue; break;
+      case 'Late': color = Colors.red; break;
+      default: color = Colors.grey;
+    }
+    return StatusBadge(label: mode.toUpperCase(), color: color);
+  }
+
+  Widget _buildProbabilityBadge(String prob) {
+    Color color;
+    switch (prob) {
+      case 'High': color = Colors.green; break;
+      case 'Medium': color = Colors.orange; break;
+      case 'Low': color = Colors.red; break;
+      default: color = Colors.grey;
+    }
+    return StatusBadge(label: prob, color: color);
+  }
+
+  Widget _buildClientsTab() {
+    final state = context.watch<AppState>();
+    
+    final activeClients = state.clients.where((c) => c.status != 'Lead' && c.isApprovedByCeo).toList();
+    final leadClients = state.clients.where((c) => c.status == 'Lead').toList();
+    final reviewClients = state.clients.where((c) => !c.isApprovedByCeo).toList();
+    final displayedClients = _clientSubTab == 'ACTIVE' ? activeClients : leadClients;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: () => setState(() => _clientSubTab = 'ACTIVE'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _clientSubTab == 'ACTIVE' ? Colors.black : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.black, width: 1.5),
+                ),
+                child: Text(
+                  "ACTIVE (${activeClients.length})",
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: _clientSubTab == 'ACTIVE' ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: () => setState(() => _clientSubTab = 'LEADS'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _clientSubTab == 'LEADS' ? Colors.black : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.black, width: 1.5),
+                ),
+                child: Text(
+                  "LEADS (${leadClients.length})",
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: _clientSubTab == 'LEADS' ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Text(
+                  _clientSubTab == 'ACTIVE' ? "ACTIVE CLIENT CONTRACTS" : (_clientSubTab == 'LEADS' ? "LEADS DATABASE" : "CLIENTS PENDING APPROVAL"),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: SageColors.onSurfaceVariant),
+                ),
+              ],
+            ),
+            ElevatedButton(
+              onPressed: () => _showAddClientDialog(context),
+              style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+              child: Text(_clientSubTab == 'LEADS' ? "+ ADD LEAD" : "+ ADD CLIENT"),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+
+        if (displayedClients.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.black, width: 1.5),
+            ),
+            child: Center(
+              child: Text(_clientSubTab == 'ACTIVE' ? "NO ACTIVE CLIENT CONTRACTS" : (_clientSubTab == 'LEADS' ? "NO LEADS FOUND" : "NO CLIENTS PENDING APPROVAL"), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+            ),
+          )
+        else
+          ...displayedClients.map((c) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                image: const DecorationImage(
+                  image: AssetImage('assets/logo/5l.png'),
+                  fit: BoxFit.scaleDown,
+                  opacity: 0.35,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black,
+                    offset: Offset(3, 3),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: ExpansionTile(
+                controller: _clientExpControllers.putIfAbsent(c.id, () => ExpansionTileController()),
+                onExpansionChanged: (expanded) {
+                  if (expanded) {
+                    _clientExpControllers.forEach((key, controller) {
+                      if (key != c.id && controller.isExpanded) controller.collapse();
+                    });
+                  }
+                },
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black)),
+                subtitle: Text("Contact: ${c.contact.name} (${c.contact.phone})", style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_clientSubTab == 'ACTIVE' || _clientSubTab == 'REVIEW') ...[
+                      _buildPaymentModeBadge(c.paymentMode),
+                      const SizedBox(width: 8),
+                    ],
+                    _clientSubTab == 'LEADS'
+                        ? _buildProbabilityBadge(c.conversionProbability)
+                        : _buildHealthBadge(c.retentionHealth ?? 'Unknown'),
+                  ],
+                ),
+                childrenPadding: const EdgeInsets.all(16),
+                expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildClientDetailRow("Contact Name", c.contact.name),
+                  _buildClientDetailRow("Contact Email", c.contact.email),
+                  _buildClientDetailRow("Contact Phone", c.contact.phone),
+                  if (c.contact.address.isNotEmpty)
+                    _buildClientDetailRow("Address", c.contact.address),
+                  if (c.contact.website.isNotEmpty)
+                    _buildClientDetailRow("Website", c.contact.website),
+                  _buildClientDetailRow("Starting Date", c.contractDate.toString().substring(0, 10)),
+                  const Divider(color: Colors.black26),
+
+                  if (_clientSubTab == 'LEADS') ...[
+                    _buildClientDetailRow("Conversion Probability", c.conversionProbability),
+                    const SizedBox(height: 8),
+                    const Text("ASSIGN TO ME", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: SageColors.onSurfaceVariant)),
+                    const SizedBox(height: 4),
+                    DropdownButtonFormField<String?>(
+                      value: c.marketingExecutiveId,
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      dropdownColor: Colors.white,
+                      items: [
+                        const DropdownMenuItem<String?>(value: null, child: Text("None", style: TextStyle(fontSize: 12))),
+                        ...state.employees.where((e) => e.hasRole('marketing')).map((e) => DropdownMenuItem<String?>(value: e.id, child: Text(e.name, style: const TextStyle(fontSize: 12)))).toList(),
+                      ],
+                      onChanged: (v) {
+                        context.read<AppState>().updateClient(
+                          c.id,
+                          marketingExecutiveId: v,
+                          hasMarketingCommission: v != null,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    const Text("FOLLOW-UP DATES", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: SageColors.onSurfaceVariant)),
+                    const SizedBox(height: 4),
+                    if (c.followUpDates.isEmpty)
+                      const Text("No follow-ups scheduled", style: TextStyle(fontSize: 11, color: Colors.black38, fontStyle: FontStyle.italic))
+                    else
+                      ...c.followUpDates.map((d) => Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_today, size: 12, color: SageColors.primary),
+                            const SizedBox(width: 6),
+                            Text(d, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      )),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now().add(const Duration(days: 1)),
+                                firstDate: DateTime.now(),
+                                lastDate: DateTime.now().add(const Duration(days: 365)),
+                              );
+                              if (picked != null && context.mounted) {
+                                context.read<AppState>().addClientFollowUp(c.id, picked.toString().substring(0, 10));
+                              }
+                            },
+                            icon: const Icon(Icons.add, size: 14),
+                            label: const Text("ADD FOLLOW-UP", style: TextStyle(fontSize: 10)),
+                            style: ElevatedButton.styleFrom(backgroundColor: SageColors.primaryContainer, foregroundColor: Colors.black),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text("NOTES / COMMENTS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: SageColors.onSurfaceVariant)),
+                    const SizedBox(height: 4),
+                    if (c.notes.isEmpty)
+                      const Text("No notes yet", style: TextStyle(fontSize: 11, color: Colors.black38, fontStyle: FontStyle.italic))
+                    else
+                      ...c.notes.take(5).map((n) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text("• $n", style: const TextStyle(fontSize: 10)),
+                      )),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SageTextField(
+                            controller: TextEditingController(),
+                            label: "Add a note...",
+                            onSubmitted: (val) {
+                              if (val.trim().isNotEmpty) {
+                                context.read<AppState>().addClientNote(c.id, val);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (_clientSubTab == 'ACTIVE' || _clientSubTab == 'REVIEW') ...[
+                    _buildClientDetailRow("Payment Mode", c.paymentMode),
+                    _buildClientDetailRow("Starting Date", c.contractDate.toString().substring(0, 10)),
+                    _buildClientDetailRow("Due Date", "${c.dueDateDay}th of month"),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("2026 Payment Tracker", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black54)),
+                          const SizedBox(height: 8),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 6,
+                              childAspectRatio: 2.0,
+                              crossAxisSpacing: 6,
+                              mainAxisSpacing: 6,
+                            ),
+                            itemCount: 12,
+                            itemBuilder: (context, i) {
+                              final month = i + 1;
+                              final isPaid = c.paidMonths.contains(month);
+                              final currentMonth = DateTime.now().month;
+                              final currentYear = DateTime.now().year;
+                              final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                              
+                              bool isBeforeJoinDate = false;
+                              if (c.contractDate.year == currentYear && month < c.contractDate.month) {
+                                isBeforeJoinDate = true;
+                              } else if (c.contractDate.year > currentYear) {
+                                isBeforeJoinDate = true;
+                              }
+                              Color bgColor;
+                              if (isBeforeJoinDate) {
+                                bgColor = Colors.grey.shade300;
+                              } else if (isPaid) {
+                                bgColor = const Color(0xFFC5E1A5); // Pastel Green
+                              } else if (c.isMonthDue(month)) {
+                                bgColor = const Color(0xFFEF9A9A); // Pastel Red
+                              } else {
+                                bgColor = const Color(0xFFF48FB1); // Pastel Pink
+                              }
+
+                              return ElevatedButton(
+                                onPressed: isBeforeJoinDate ? null : () {
+                                  if (isPaid) {
+                                    context.read<AppState>().toggleClientPaidMonth(c.id, month);
+                                  } else {
+                                    _showPaymentDialog(context, c, month);
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: bgColor,
+                                  padding: EdgeInsets.zero,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                    side: const BorderSide(color: Colors.black, width: 1.0),
+                                  ),
+                                ),
+                                child: Text(monthNames[i], style: const TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold)),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    _buildClientDetailRow("Payments Due", "${c.dynamicPaymentsDue} Months"),
+                    _buildClientDetailRow("Weekly Deliverables", "${c.weeklyReels} Reels, ${c.weeklyPosts} Posts, ${c.weeklyCarousels} Carousels, ${c.weeklyStories} Stories"),
+                    _buildClientDetailRow("On Track End Deadline", c.contractDate.add(Duration(days: c.contractPeriod.contains('3') ? 90 : (c.contractPeriod.contains('6') ? 180 : 365))).toString().substring(0, 10)),
+                    _buildClientDetailRow("Package Type", c.packageType),
+                    _buildClientDetailRow("Contract Tenure", c.contractPeriod),
+                    _buildClientDetailRow("Discount", "${c.discountPercent}%"),
+                    _buildClientDetailRow("Monthly Fee", "₹${c.monthlyPayable.toStringAsFixed(0)}"),
+                    _buildClientDetailRow("Service Type", c.serviceType),
+                    _buildClientDetailRow("Marketing Commission", c.hasMarketingCommission ? "Yes (20%)" : "No"),
+                    if (c.hasMarketingCommission && c.marketingExecutiveId != null)
+                      _buildClientDetailRow("Marketing Executive", context.read<AppState>().employees.where((e) => e.id == c.marketingExecutiveId).firstOrNull?.name ?? "Unknown"),
+                    if (c.assignedVideographerId != null && c.assignedVideographerId != 'COF-PRI-001') ...[
+                      _buildClientDetailRow("Assigned Videographer", (context.read<AppState>().employees.where((e) => e.id == c.assignedVideographerId).isNotEmpty ? context.read<AppState>().employees.where((e) => e.id == c.assignedVideographerId).first.name : 'Unknown')),
+                      _buildClientDetailRow("Session Rate", "₹${c.sessionRate.toStringAsFixed(0)}"),
+                    ],
+                    if (c.packageType == 'Performance') ...[
+                      _buildClientDetailRow("Campaigns", "${c.campaigns}"),
+                      _buildClientDetailRow("Campaign Reach", c.campaignReach),
+                    ],
+                    const Divider(color: Colors.black26),
+                    if (c.postRequirements.isNotEmpty && c.postRequirements != 'TBD')
+                      _buildClientDetailRow("Description / Requirements", c.postRequirements)
+                    else
+                      _buildClientDetailRow("Description / Requirements", "Not provided"),
+                  ],
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (_clientSubTab == 'LEADS')
+                        ElevatedButton(
+                          onPressed: () => context.read<AppState>().updateClientStatus(c.id, 'Active'),
+                          style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+                          child: const Text("CONVERT TO ACTIVE"),
+                        ),
+                      if (_clientSubTab == 'REVIEW') ...[
+                        TextButton(
+                          onPressed: () {
+                            context.read<AppState>().rejectClientConversion(c.id);
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Client conversion rejected.")));
+                          },
+                          child: const Text("REJECT", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            context.read<AppState>().approveClientConversion(c.id);
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Client conversion approved.")));
+                          },
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                          child: const Text("APPROVE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                      if (_clientSubTab == 'LEADS')
+                        const SizedBox(width: 8),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton(
+                            onPressed: () => _showEditClientDialog(context, c),
+                            child: const Text("EDIT", style: TextStyle(color: SageColors.primary, fontWeight: FontWeight.bold, fontSize: 11)),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              final ok = await showConfirmDialog(context, "REMOVE CLIENT", "Are you sure you want to delete ${c.name}?");
+                              if (ok && context.mounted) {
+                                context.read<AppState>().removeClient(c.id);
+                              }
+                            },
+                            child: const Text("TERMINATE", style: TextStyle(color: SageColors.error, fontWeight: FontWeight.bold, fontSize: 11)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+      ],
+    );
+  }
+  
+  final _employeeNameCtrl = TextEditingController();
+  final _employeeDeptCtrl = TextEditingController();
+  final _employeeSalaryCtrl = TextEditingController();
+  final _employeeRateCtrl = TextEditingController();
+  final _employeeSessionsCtrl = TextEditingController();
+  String _employeeRole = 'Video Editor';
+  String _videoEditorPaymentStructure = 'Salary';
+
+  void _showPaySessionsDialog(BuildContext context, AppState state, Employee e, int unpaidItemsCount, bool isForSessions) {
+    final isVideoEditor = e.hasRole('video editor');
+    final typeStr = isForSessions ? "Sessions" : "Videos";
+    final sessionsCtrl = TextEditingController(text: unpaidItemsCount.toString());
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: SageColors.background,
+          title: Text("PAY ${e.name.toUpperCase()}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Unpaid Completed $typeStr: $unpaidItemsCount", style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              SageTextField(controller: sessionsCtrl, label: "Number of $typeStr to Pay", keyboardType: TextInputType.number),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+              onPressed: () {
+                final count = int.tryParse(sessionsCtrl.text) ?? 0;
+                if (count > 0 && count <= unpaidItemsCount) {
+                  // Reusing the same backend function as both use isPaidToVideographer on tasks
+                  context.read<AppState>().payVideographerSessions(e.id, count, isForSessions);
+                  Navigator.pop(ctx);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Invalid $typeStr count!")));
+                }
+              },
+              child: Text("PAY $typeStr".toUpperCase()),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showPayEmployeeDialog(BuildContext context, AppState state, Employee e) {
+    final isME = e.hasRole('marketing');
+    List<String> selectedMonths = [];
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    final activeClients = isME ? state.clients.where((c) => c.marketingExecutiveId == e.id && c.status == 'Active' && c.hasMarketingCommission).toList() : [];
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              backgroundColor: SageColors.background,
+              title: Text(isME ? "CLEAR PAYMENT FOR ${e.name.toUpperCase()}" : "PAY ${e.name.toUpperCase()}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text("Select month(s) to pay for:"),
+                    const SizedBox(height: 10),
+                    ...months.asMap().entries.map((entry) {
+                      final mIndex = entry.key + 1;
+                      final m = entry.value;
+                      bool isPaidByEmployee = e.paidMonths.contains(m);
+                      
+                      List<String> blockingClients = [];
+                      if (isME && activeClients.isNotEmpty) {
+                        for (var c in activeClients) {
+                          // If client contracted after this month, they don't block this month
+                          if (c.contractDate.month <= mIndex && !c.paidMonths.contains(mIndex)) {
+                            blockingClients.add(c.name.trim());
+                          }
+                        }
+                      }
+                      bool isBlockedForME = blockingClients.isNotEmpty;
+
+                      return CheckboxListTile(
+                        title: Row(
+                          children: [
+                            Text(m),
+                            if (isBlockedForME && !isPaidByEmployee)
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 8.0),
+                                  child: Text(
+                                    "(Blocked by: ${blockingClients.join(', ')})", 
+                                    style: const TextStyle(color: SageColors.error, fontSize: 10),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
+                          ],
+                        ),
+                        value: selectedMonths.contains(m) || isPaidByEmployee,
+                        onChanged: (isPaidByEmployee || isBlockedForME) ? null : (val) {
+                          setDialogState(() {
+                            if (val == true) selectedMonths.add(m);
+                            else selectedMonths.remove(m);
+                          });
+                        },
+                      );
+                    }),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+                  onPressed: () {
+                    if (selectedMonths.isNotEmpty) {
+                      if (isME) {
+                        double totalCommission = e.monthlySalary * selectedMonths.length;
+                        for (String m in selectedMonths) {
+                           int mIdx = months.indexOf(m) + 1;
+                           for (var c in activeClients) {
+                             if (c.contractDate.month <= mIdx) {
+                               totalCommission += c.monthlyPayable * 0.20;
+                             }
+                           }
+                        }
+                        context.read<AppState>().clearMarketingCommission(e.id, selectedMonths.join(', '), totalCommission);
+                      } else {
+                        context.read<AppState>().payEmployeeSalary(e.id, selectedMonths, e.monthlySalary * selectedMonths.length);
+                      }
+                      Navigator.pop(ctx);
+                    } else {
+                      try {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                          content: Text("Error: You must check at least one month box first! If the box is disabled, you cannot clear payment for it."),
+                          backgroundColor: Colors.red,
+                        ));
+                      } catch (e) {}
+                    }
+                  },
+                  child: Text(isME ? "CLEAR PAYMENT" : "PAY SALARY"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Color _getRoleColor(String role) {
+    final r = role.toLowerCase();
+    if (r.contains('ceo')) return const Color(0xFFFFB3BA);
+    if (r.contains('founder') || r.contains('cfo')) return const Color(0xFFFFDFBA);
+    if (r.contains('videographer')) return const Color(0xFFBAE1FF);
+    if (r.contains('video editor')) return const Color(0xFFE6B3FF);
+    if (r.contains('marketing')) return const Color(0xFFBAFFC9);
+    return const Color(0xFFFFFFBA);
+  }
+
+  

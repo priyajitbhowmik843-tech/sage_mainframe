@@ -1,0 +1,2710 @@
+import 'package:intl/intl.dart';
+import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:sage_mainframe/state/app_state.dart';
+import 'package:sage_mainframe/theme/app_theme.dart';
+import 'package:sage_mainframe/widgets/common_widgets.dart';
+import 'package:sage_mainframe/models/models.dart';
+import 'package:sage_mainframe/main.dart';
+import 'package:sage_mainframe/screens/employee_dashboard.dart';
+
+class CeoDashboard extends StatefulWidget {
+  const CeoDashboard({super.key});
+  @override
+  State<CeoDashboard> createState() => _CeoDashboardState();
+}
+
+class _CeoDashboardState extends State<CeoDashboard> {
+  int _tab = 0; // 0: Home, 1: Clients, 2: Personnel/Team, 3: Tasks/Activity, 4: Finance
+  DateTime _selectedDate = DateTime.now();
+
+  void _showPaymentDialog(BuildContext context, Client c, int month) {
+    String paymentMethod = 'UPI';
+    DateTime paymentDate = DateTime.now();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            return AlertDialog(
+              backgroundColor: SageColors.background,
+              title: Text("Record Payment for ${c.name} - Month $month", style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: paymentMethod,
+                    decoration: const InputDecoration(labelText: "Payment Method"),
+                    dropdownColor: Colors.white,
+                    items: ['UPI', 'Cash', 'Cheque'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 12)))).toList(),
+                    onChanged: (v) => setState(() => paymentMethod = v ?? 'UPI'),
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    title: const Text("Payment Date", style: TextStyle(fontSize: 12)),
+                    subtitle: Text("${paymentDate.day}/${paymentDate.month}/${paymentDate.year}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                    trailing: const Icon(Icons.calendar_today, size: 16),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: paymentDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setState(() => paymentDate = picked);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text("CANCEL", style: TextStyle(color: SageColors.outline)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+                  onPressed: () {
+                    context.read<AppState>().toggleClientPaidMonth(c.id, month, paymentMethod, paymentDate);
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text("RECORD"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final persona = context.watch<AppState>().activePersona;
+    
+    return Scaffold(
+      backgroundColor: SageColors.background,
+      body: Stack(
+        children: [
+          // Header Background Color Block
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 180,
+              decoration: BoxDecoration(
+                color: _getHeaderColor(),
+                border: const Border(bottom: BorderSide(color: Colors.black, width: 1.5)),
+              ),
+            ),
+          ),
+          
+          SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                // Top Custom Header Row
+                _buildTopHeader(context, persona),
+                
+                // Active Page Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 100),
+                    child: _buildActiveTab(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Floating Bottom Navigation Bar (5 icons)
+          Positioned(
+            bottom: 20,
+            left: 16,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              decoration: BoxDecoration(
+                color: SageColors.yellowAccent,
+                borderRadius: BorderRadius.circular(40),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black,
+                    offset: Offset(4, 4),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildBottomIcon(0, Icons.home_outlined, Icons.home),
+                  _buildBottomIcon(1, Icons.location_on_outlined, Icons.location_on),
+                  _buildBottomIcon(2, Icons.pie_chart_outline, Icons.pie_chart),
+                  _buildBottomIcon(3, Icons.analytics_outlined, Icons.analytics),
+                  _buildBottomIcon(4, Icons.account_balance_outlined, Icons.account_balance),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getHeaderColor() {
+    switch (_tab) {
+      case 0: return SageColors.yellowAccentContainer;
+      case 1: return SageColors.primaryContainer; // Light green for clients
+      case 2: return SageColors.secondaryContainer; // Coral for team
+      case 3: return SageColors.primaryContainer; // Green for tasks
+      case 4: return SageColors.tertiaryContainer; // Purple for finance
+      default: return SageColors.background;
+    }
+  }
+
+  Widget _buildTopHeader(BuildContext context, Persona persona) {
+    String title = "HOME";
+    if (_tab == 1) title = "CLIENTS";
+    if (_tab == 2) title = "PERSONNEL";
+    if (_tab == 3) title = "ACTIVITY";
+    if (_tab == 4) title = "FINANCE";
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Logo
+            Image.asset('assets/logo/sage_logo.png', height: 32),
+            const SizedBox(width: 8),
+            // Circular Logout Button
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              );
+            },
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: SageColors.yellowAccent,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.black, width: 1.5),
+              ),
+              child: const Icon(Icons.power_settings_new, color: SageColors.error, size: 18),
+            ),
+          ),
+          
+          Column(
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                  color: Colors.black,
+                ),
+              ),
+              Text(
+                "${persona.name.toUpperCase()} // ${persona.roleLabel}",
+                style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+          
+          // Share Button
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: SageColors.yellowAccent,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.black, width: 1.5),
+            ),
+            child: const Icon(Icons.share_outlined, color: Colors.black, size: 18),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomIcon(int index, IconData outlineIcon, IconData filledIcon) {
+    final isSelected = _tab == index;
+    return GestureDetector(
+      onTap: () => setState(() => _tab = index),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: isSelected
+            ? const BoxDecoration(
+                color: Colors.black,
+                shape: BoxShape.circle,
+              )
+            : null,
+        child: Icon(
+          isSelected ? filledIcon : outlineIcon,
+          color: isSelected ? SageColors.yellowAccent : Colors.black,
+          size: 22,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActiveTab() {
+    switch (_tab) {
+      case 0: return _buildHomeTab();
+      case 1: return _buildClientsTab();
+      case 2: return _buildPersonnelTab();
+      case 3: return _buildTasksTab();
+      case 4: return _buildFinanceTab();
+      default: return const SizedBox();
+    }
+  }
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ TAB 0: HOME Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  Widget _buildHomeTab() {
+    final state = context.watch<AppState>();
+    final pendingTasks = state.tasks.where((t) => !t.isCompleted).length;
+    final now = DateTime.now();
+    final overdueTasks = state.tasks.where((t) => !t.isCompleted && t.deadline.isBefore(now)).toList();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 10),
+        const LiveClockWidget(),
+        const SizedBox(height: 10),
+        
+        Row(
+          children: [
+            Expanded(
+              child: DashboardTile(
+                title: "Team Size",
+                subtitle: "${state.employees.length + AppState.personas.length} active members\nManage your growing team",
+                backgroundColor: const Color(0xFFFFE4CD),
+                iconBackgroundColor: const Color(0xFFFFF0A0),
+                icon: Icons.groups,
+                onTap: () => setState(() => _tab = 2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: DashboardTile(
+                title: "Active Tasks",
+                subtitle: "$pendingTasks tasks pending\nTrack pending work",
+                backgroundColor: const Color(0xFFE0E0FF),
+                iconBackgroundColor: const Color(0xFFC0F0E0),
+                icon: Icons.assignment_late,
+                onTap: () => setState(() => _tab = 3),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: DashboardTile(
+                title: "Clients",
+                subtitle: "${state.clients.length} active clients\nManage your portfolio",
+                backgroundColor: const Color(0xFFD1F2EB),
+                iconBackgroundColor: const Color(0xFFA0C0D0),
+                icon: Icons.business,
+                onTap: () => setState(() => _tab = 1),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: DashboardTile(
+                title: "Finances",
+                subtitle: "₹${state.netBalance.toStringAsFixed(0)}\nControl your revenue",
+                backgroundColor: const Color(0xFFFFA09E),
+                iconBackgroundColor: const Color(0xFFE07070),
+                icon: Icons.account_balance_wallet,
+                onTap: () => setState(() => _tab = 4),
+              ),
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 16),
+        _buildNotificationsPanel(state),
+        const SizedBox(height: 16),
+        TerminalPanel(
+          title: "PENDING PAYMENTS",
+          child: _buildPendingPaymentsList(state),
+        ),
+      ],
+    );
+  }
+  Widget _buildNotificationsPanel(AppState state) {
+    final notifs = state.notifications;
+    final unread = state.unreadNotificationCount;
+
+    IconData _iconForType(String type) {
+      switch (type) {
+        case 'task_assigned': return Icons.assignment_turned_in;
+        case 'client_added': return Icons.business;
+        case 'client_updated': return Icons.edit_note;
+        case 'client_removed': return Icons.business_center;
+        case 'employee_added': return Icons.person_add;
+        case 'employee_updated': return Icons.person;
+        case 'employee_terminated': return Icons.person_remove;
+        case 'finance': return Icons.account_balance_wallet;
+        default: return Icons.notifications;
+      }
+    }
+
+    Color _colorForType(String type) {
+      switch (type) {
+        case 'task_assigned': return SageColors.primary;
+        case 'client_added': case 'client_updated': return SageColors.tertiary;
+        case 'client_removed': return SageColors.error;
+        case 'employee_added': return SageColors.secondary;
+        case 'employee_updated': return Colors.blueGrey;
+        case 'employee_terminated': return SageColors.error;
+        case 'finance': return Colors.amber.shade800;
+        default: return Colors.grey;
+      }
+    }
+
+    return TerminalPanel(
+      title: "NOTIFICATIONS${unread > 0 ? ' ($unread NEW)' : ''}",
+      child: Column(
+        children: [
+          if (unread > 0)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => state.markAllNotificationsRead(),
+                child: const Text("MARK ALL READ", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: SageColors.primary)),
+              ),
+            ),
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              color: SageColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.black, width: 1.5),
+            ),
+            child: notifs.isEmpty
+                ? const Center(child: Text("NO NOTIFICATIONS YET", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)))
+                : ListView.separated(
+                    padding: const EdgeInsets.all(10),
+                    itemCount: notifs.length,
+                    separatorBuilder: (_, __) => const Divider(color: Colors.black12, height: 8),
+                    itemBuilder: (context, index) {
+                      final n = notifs[index];
+                      final timeStr = "${n.timestamp.hour.toString().padLeft(2, '0')}:${n.timestamp.minute.toString().padLeft(2, '0')}";
+                      final dateStr = "${n.timestamp.day}/${n.timestamp.month}";
+                      return GestureDetector(
+                        onTap: () {
+                          if (!n.isRead) state.markNotificationRead(n.id);
+                        },
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: _colorForType(n.type).withOpacity(0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(_iconForType(n.type), size: 14, color: _colorForType(n.type)),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    n.message,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: n.isRead ? FontWeight.normal : FontWeight.bold,
+                                      color: n.isRead ? Colors.black54 : Colors.black,
+                                    ),
+                                  ),
+                                  Text(
+                                    "$dateStr $timeStr Ã¢â‚¬Â¢ by ${n.triggeredBy}",
+                                    style: const TextStyle(fontSize: 8, color: Colors.black38),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (!n.isRead)
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: SageColors.error,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPendingPaymentsList(AppState state) {
+    final pendingClients = state.clients.where((c) => c.status != 'Lead' && c.paymentsDue > 0).toList();
+    final pendingEmployees = state.employees.where((e) => e.isActive && !e.paymentCleared).toList();
+
+    if (pendingClients.isEmpty && pendingEmployees.isEmpty) {
+      return Container(
+        height: 140,
+        decoration: BoxDecoration(
+          color: SageColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.black, width: 1.5),
+        ),
+        child: const Center(
+          child: Text(
+            "NO PENDING PAYMENTS",
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      height: 140,
+      decoration: BoxDecoration(
+        color: SageColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black, width: 1.5),
+      ),
+      child: ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+          if (pendingClients.isNotEmpty) ...[
+            const Text("CLIENTS DUE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: SageColors.primary)),
+            const SizedBox(height: 4),
+            ...pendingClients.map((c) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(c.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text("₹${(c.monthlyPayable * c.paymentsDue).toStringAsFixed(0)} (${c.paymentsDue} mo)", style: const TextStyle(fontSize: 12, color: SageColors.error, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            )),
+            const Divider(color: Colors.black26),
+          ],
+          if (pendingEmployees.isNotEmpty) ...[
+            const Text("EMPLOYEES DUE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: SageColors.secondary)),
+            const SizedBox(height: 4),
+            ...pendingEmployees.map((e) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(e.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text(
+                      e.paymentApprovedByEmployee ? "APPROVED BY EMP" : "WAITING EMP APPROVAL",
+                      style: TextStyle(fontSize: 10, color: e.paymentApprovedByEmployee ? SageColors.primary : Colors.orange, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ TAB 1: CLIENTS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  bool _showClientForm = false;
+  String _clientSubTab = 'ACTIVE';
+  final _clientNameCtrl = TextEditingController();
+  final _clientContactNameCtrl = TextEditingController();
+  final _clientContactEmailCtrl = TextEditingController();
+  final _clientContactPhoneCtrl = TextEditingController();
+  final _clientContactAddressCtrl = TextEditingController();
+  final _clientContactWebsiteCtrl = TextEditingController();
+  final _clientPayableCtrl = TextEditingController();
+  String _clientPackageType = 'Growth';
+  String _clientServiceType = 'Marketing';
+  bool _clientHasMarketingCommission = false;
+  String? _clientMarketingExecutiveId;
+  bool _showDetailedShares = false;
+  String _clientContractPeriod = '3 Months';
+  String _clientLeadProbability = 'Medium';
+  final _clientLeadNoteCtrl = TextEditingController();
+  final _clientLeadFollowupCtrl = TextEditingController();
+  String? _clientAssignedVideographerId;
+  final _clientSessionRateCtrl = TextEditingController();
+
+  Widget _buildClientDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 140, child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black54))),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHealthBadge(String health) {
+    Color color;
+    switch (health) {
+      case 'Great': color = Colors.green; break;
+      case 'Good': color = Colors.orange; break;
+      case 'Bad': color = Colors.red; break;
+      default: color = Colors.grey;
+    }
+    return StatusBadge(label: health, color: color);
+  }
+
+  Widget _buildProbabilityBadge(String prob) {
+    Color color;
+    switch (prob) {
+      case 'High': color = Colors.green; break;
+      case 'Medium': color = Colors.orange; break;
+      case 'Low': color = Colors.red; break;
+      default: color = Colors.grey;
+    }
+    return StatusBadge(label: prob, color: color);
+  }
+
+  Widget _buildClientsTab() {
+    final state = context.watch<AppState>();
+    
+    final activeClients = state.clients.where((c) => c.status != 'Lead').toList();
+    final leadClients = state.clients.where((c) => c.status == 'Lead').toList();
+    final displayedClients = _clientSubTab == 'ACTIVE' ? activeClients : leadClients;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: () => setState(() => _clientSubTab = 'ACTIVE'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _clientSubTab == 'ACTIVE' ? Colors.black : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.black, width: 1.5),
+                ),
+                child: Text(
+                  "ACTIVE (${activeClients.length})",
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: _clientSubTab == 'ACTIVE' ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: () => setState(() => _clientSubTab = 'LEADS'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _clientSubTab == 'LEADS' ? Colors.black : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.black, width: 1.5),
+                ),
+                child: Text(
+                  "LEADS (${leadClients.length})",
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: _clientSubTab == 'LEADS' ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Text(
+                  _clientSubTab == 'ACTIVE' ? "ACTIVE CLIENT CONTRACTS" : "LEADS DATABASE",
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: SageColors.onSurfaceVariant),
+                ),
+                if (_clientSubTab == 'LEADS' && leadClients.isEmpty) ...[
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      context.read<AppState>().generateMockLeads();
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.primaryContainer, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), minimumSize: Size.zero),
+                    child: const Text("GENERATE 30 MOCK LEADS", style: TextStyle(fontSize: 10)),
+                  ),
+                ],
+              ],
+            ),
+            ElevatedButton(
+              onPressed: () => setState(() => _showClientForm = !_showClientForm),
+              style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+              child: Text(_showClientForm ? "CANCEL" : (_clientSubTab == 'LEADS' ? "+ ADD LEAD" : "+ ADD CLIENT")),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        if (_showClientForm) ...[
+          TerminalPanel(
+            title: _clientSubTab == 'ACTIVE' ? "INITIALIZE NEW CLIENT" : "INITIALIZE NEW LEAD",
+            child: Column(
+              children: [
+                SageTextField(controller: _clientNameCtrl, label: "Company Name"),
+                const SizedBox(height: 10),
+                SageTextField(controller: _clientContactNameCtrl, label: "Contact Person"),
+                const SizedBox(height: 10),
+                SageTextField(controller: _clientContactEmailCtrl, label: "Contact Email", keyboardType: TextInputType.emailAddress),
+                const SizedBox(height: 10),
+                SageTextField(controller: _clientContactPhoneCtrl, label: "Contact Phone", keyboardType: TextInputType.phone),
+                const SizedBox(height: 10),
+                if (_clientSubTab == 'LEADS') ...[
+                  SageTextField(controller: _clientContactAddressCtrl, label: "Address"),
+                  const SizedBox(height: 10),
+                  SageTextField(controller: _clientContactWebsiteCtrl, label: "Website"),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: _clientLeadProbability,
+                    decoration: const InputDecoration(labelText: "Conversion Probability"),
+                    dropdownColor: Colors.white,
+                    items: ['High', 'Medium', 'Low'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (v) => setState(() => _clientLeadProbability = v ?? 'Medium'),
+                  ),
+                  const SizedBox(height: 10),
+                  SageTextField(controller: _clientLeadNoteCtrl, label: "Initial Note / Comment"),
+                  const SizedBox(height: 10),
+                  SageTextField(controller: _clientLeadFollowupCtrl, label: "Follow-up Date (YYYY-MM-DD)", hint: "e.g. 2026-07-01"),
+                ] else ...[
+                  SageTextField(controller: _clientPayableCtrl, label: "Monthly Payable (₹)", keyboardType: TextInputType.number),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: _clientPackageType,
+                    decoration: const InputDecoration(labelText: "Package Type"),
+                    dropdownColor: Colors.white,
+                    items: ['Growth', 'Performance'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (v) => setState(() => _clientPackageType = v ?? 'Growth'),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: _clientContractPeriod,
+                    decoration: const InputDecoration(labelText: "Contract Period"),
+                    dropdownColor: Colors.white,
+                    items: ['3 Months', '6 Months', '1 Year'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (v) => setState(() => _clientContractPeriod = v ?? '3 Months'),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: _clientAssignedVideographerId,
+                    decoration: const InputDecoration(labelText: "Assigned Videographer"),
+                    dropdownColor: Colors.white,
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text("None")),
+                      const DropdownMenuItem(value: 'COF-PRI-001', child: Text("CFO Priyajit")),
+                      ...context.read<AppState>().employees.where((e) => e.role.toLowerCase().contains('videographer')).map(
+                        (e) => DropdownMenuItem(value: e.id, child: Text(e.name))
+                      ),
+                    ],
+                    onChanged: (v) => setState(() => _clientAssignedVideographerId = v),
+                  ),
+                  const SizedBox(height: 10),
+                  SageTextField(controller: _clientSessionRateCtrl, label: "Session Rate (₹)", keyboardType: TextInputType.number),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (_clientNameCtrl.text.trim().isEmpty) return;
+                      final isLead = _clientSubTab == 'LEADS';
+                      final c = Client(
+                        id: 'CL-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
+                        name: _clientNameCtrl.text,
+                        contact: ClientContact(
+                          name: _clientContactNameCtrl.text,
+                          email: _clientContactEmailCtrl.text,
+                          phone: _clientContactPhoneCtrl.text,
+                          address: isLead ? _clientContactAddressCtrl.text : '',
+                          website: isLead ? _clientContactWebsiteCtrl.text : '',
+                        ),
+                        monthlyPayable: isLead ? 0.0 : (double.tryParse(_clientPayableCtrl.text) ?? 0.0),
+                        packageType: isLead ? 'Growth' : _clientPackageType,
+                        contractPeriod: isLead ? '3 Months' : _clientContractPeriod,
+                        contractDate: DateTime.now(),
+                        status: isLead ? 'Lead' : 'Active',
+                        conversionProbability: isLead ? _clientLeadProbability : 'Medium',
+                        notes: isLead && _clientLeadNoteCtrl.text.isNotEmpty ? [_clientLeadNoteCtrl.text] : [],
+                        followUpDates: isLead && _clientLeadFollowupCtrl.text.isNotEmpty ? [_clientLeadFollowupCtrl.text] : [],
+                        assignedVideographerId: isLead ? null : _clientAssignedVideographerId,
+                        sessionRate: isLead ? 0 : (double.tryParse(_clientSessionRateCtrl.text) ?? 0.0),
+                      );
+                      context.read<AppState>().addClient(c);
+                      setState(() {
+                        _showClientForm = false;
+                      });
+                      _clientNameCtrl.clear();
+                      _clientContactNameCtrl.clear();
+                      _clientContactEmailCtrl.clear();
+                      _clientContactPhoneCtrl.clear();
+                      _clientPayableCtrl.clear();
+                      _clientContactAddressCtrl.clear();
+                      _clientContactWebsiteCtrl.clear();
+                      _clientLeadNoteCtrl.clear();
+                      _clientLeadFollowupCtrl.clear();
+                      _clientSessionRateCtrl.clear();
+                      _clientAssignedVideographerId = null;
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.yellowAccent),
+                    child: Text(_clientSubTab == 'LEADS' ? "SAVE LEAD" : "INITIALIZE CONTRACT"),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        if (displayedClients.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.black, width: 1.5),
+            ),
+            child: Center(
+              child: Text(_clientSubTab == 'ACTIVE' ? "NO ACTIVE CLIENT CONTRACTS" : "NO LEADS FOUND", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+            ),
+          )
+        else
+          ...displayedClients.map((c) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black,
+                    offset: Offset(3, 3),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: ExpansionTile(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                title: Row(
+                  children: [
+                    Expanded(child: Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black))),
+                    if (_clientSubTab == 'ACTIVE')
+                      _buildHealthBadge(c.retentionHealth),
+                  ],
+                ),
+                subtitle: Text("Contact: ${c.contact.name} (${c.contact.phone})", style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                trailing: _clientSubTab == 'LEADS'
+                    ? _buildProbabilityBadge(c.conversionProbability)
+                    : StatusBadge(label: c.status, color: SageColors.primary),
+                childrenPadding: const EdgeInsets.all(16),
+                expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildClientDetailRow("Contact Name", c.contact.name),
+                  _buildClientDetailRow("Contact Email", c.contact.email),
+                  _buildClientDetailRow("Contact Phone", c.contact.phone),
+                  if (c.contact.address.isNotEmpty)
+                    _buildClientDetailRow("Address", c.contact.address),
+                  if (c.contact.website.isNotEmpty)
+                    _buildClientDetailRow("Website", c.contact.website),
+                  const Divider(color: Colors.black26),
+
+                  if (_clientSubTab == 'LEADS') ...[
+                    // Ã¢â€â‚¬Ã¢â€â‚¬ Lead-specific sections Ã¢â€â‚¬Ã¢â€â‚¬
+                    _buildClientDetailRow("Conversion Probability", c.conversionProbability),
+                    const SizedBox(height: 8),
+                    const Text("FOLLOW-UP DATES", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: SageColors.onSurfaceVariant)),
+                    const SizedBox(height: 4),
+                    if (c.followUpDates.isEmpty)
+                      const Text("No follow-ups scheduled", style: TextStyle(fontSize: 11, color: Colors.black38, fontStyle: FontStyle.italic))
+                    else
+                      ...c.followUpDates.map((d) => Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_today, size: 12, color: SageColors.primary),
+                            const SizedBox(width: 6),
+                            Text(d, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      )),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now().add(const Duration(days: 1)),
+                                firstDate: DateTime.now(),
+                                lastDate: DateTime.now().add(const Duration(days: 365)),
+                              );
+                              if (picked != null && context.mounted) {
+                                context.read<AppState>().addClientFollowUp(c.id, picked.toString().substring(0, 10));
+                              }
+                            },
+                            icon: const Icon(Icons.add, size: 14),
+                            label: const Text("ADD FOLLOW-UP", style: TextStyle(fontSize: 10)),
+                            style: ElevatedButton.styleFrom(backgroundColor: SageColors.primaryContainer, foregroundColor: Colors.black),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text("NOTES / COMMENTS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: SageColors.onSurfaceVariant)),
+                    const SizedBox(height: 4),
+                    if (c.notes.isEmpty)
+                      const Text("No notes yet", style: TextStyle(fontSize: 11, color: Colors.black38, fontStyle: FontStyle.italic))
+                    else
+                      ...c.notes.take(5).map((n) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text("Ã¢â‚¬Â¢ $n", style: const TextStyle(fontSize: 10)),
+                      )),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SageTextField(
+                            controller: TextEditingController(),
+                            label: "Add a note...",
+                            onSubmitted: (val) {
+                              if (val.trim().isNotEmpty) {
+                                context.read<AppState>().addClientNote(c.id, val);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (_clientSubTab == 'ACTIVE') ...[
+                    // â”€â”€ Active client details â”€â”€
+                    _buildClientDetailRow("Retention Health", c.retentionHealth),
+                    _buildClientDetailRow("Starting Date", c.contractDate.toString().substring(0, 10)),
+                    _buildClientDetailRow("Due Date", c.nextDueDate),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("2026 Payment Tracker", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black54)),
+                          const SizedBox(height: 8),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 6,
+                              childAspectRatio: 2.0,
+                              crossAxisSpacing: 6,
+                              mainAxisSpacing: 6,
+                            ),
+                            itemCount: 12,
+                            itemBuilder: (context, i) {
+                              final month = i + 1;
+                              final isPaid = c.paidMonths.contains(month);
+                              final currentMonth = DateTime.now().month;
+                              final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                              
+                              Color bgColor;
+                              if (isPaid) {
+                                bgColor = const Color(0xFFC5E1A5); // Pastel Green
+                              } else if (month <= currentMonth) {
+                                bgColor = const Color(0xFFEF9A9A); // Pastel Red
+                              } else {
+                                bgColor = const Color(0xFFF48FB1); // Pastel Pink
+                              }
+
+                              return ElevatedButton(
+                                onPressed: () {
+                                  if (isPaid) {
+                                    context.read<AppState>().toggleClientPaidMonth(c.id, month);
+                                  } else {
+                                    _showPaymentDialog(context, c, month);
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: bgColor,
+                                  padding: EdgeInsets.zero,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                    side: const BorderSide(color: Colors.black, width: 1.0),
+                                  ),
+                                ),
+                                child: Text(monthNames[i], style: const TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold)),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    _buildClientDetailRow("Payments Due", "${c.paymentsDue} Months"),
+                    _buildClientDetailRow("Weekly Deliverables", "${c.weeklyReels} Reels, ${c.weeklyPosts} Posts, ${c.weeklyCarousels} Carousels, ${c.weeklyStories} Stories"),
+                    _buildClientDetailRow("On Track End Deadline", c.contractDate.add(Duration(days: c.contractPeriod.contains('3') ? 90 : (c.contractPeriod.contains('6') ? 180 : 365))).toString().substring(0, 10)),
+                    _buildClientDetailRow("Package Type", c.packageType),
+                    _buildClientDetailRow("Contract Tenure", c.contractPeriod),
+                    _buildClientDetailRow("Discount", "${c.discountPercent}%"),
+                    _buildClientDetailRow("Monthly Fee", "₹${c.monthlyPayable.toStringAsFixed(0)}"),
+                    _buildClientDetailRow("Service Type", c.serviceType),
+                    _buildClientDetailRow("Marketing Commission", c.hasMarketingCommission ? "Yes (20%)" : "No"),
+                    if (c.hasMarketingCommission && c.marketingExecutiveId != null)
+                      _buildClientDetailRow("Marketing Executive", context.read<AppState>().employees.where((e) => e.id == c.marketingExecutiveId).firstOrNull?.name ?? "Unknown"),
+                    if (c.assignedVideographerId != null) ...[
+                      _buildClientDetailRow("Assigned Videographer", c.assignedVideographerId == 'COF-PRI-001' ? 'CFO Priyajit' : (context.read<AppState>().employees.where((e) => e.id == c.assignedVideographerId).isNotEmpty ? context.read<AppState>().employees.where((e) => e.id == c.assignedVideographerId).first.name : 'Unknown')),
+                      _buildClientDetailRow("Session Rate", "₹${c.sessionRate.toStringAsFixed(0)}"),
+                    ],
+                    if (c.packageType == 'Performance') ...[
+                      _buildClientDetailRow("Campaigns", "${c.campaigns}"),
+                      _buildClientDetailRow("Campaign Reach", c.campaignReach),
+                    ],
+                    const Divider(color: Colors.black26),
+                    if (c.postRequirements.isNotEmpty && c.postRequirements != 'TBD')
+                      _buildClientDetailRow("Description / Requirements", c.postRequirements)
+                    else
+                      _buildClientDetailRow("Description / Requirements", "MOCK GUIDELINES: \n1. Use consistent brand colors.\n2. Keep reels under 30s.\n3. Focus on organic engagement.\n4. Minimalist aesthetic."),
+                  ],
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (_clientSubTab == 'LEADS')
+                        ElevatedButton(
+                          onPressed: () => context.read<AppState>().updateClientStatus(c.id, 'Active'),
+                          style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+                          child: const Text("CONVERT TO ACTIVE"),
+                        ),
+                      if (_clientSubTab == 'LEADS')
+                        const SizedBox(width: 8),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton(
+                            onPressed: () => _showEditClientDialog(context, c),
+                            child: const Text("EDIT", style: TextStyle(color: SageColors.primary, fontWeight: FontWeight.bold, fontSize: 11)),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              final ok = await showConfirmDialog(context, "REMOVE CLIENT", "Are you sure you want to delete ${c.name}?");
+                              if (ok && context.mounted) {
+                                context.read<AppState>().removeClient(c.id);
+                              }
+                            },
+                            child: const Text("TERMINATE", style: TextStyle(color: SageColors.error, fontWeight: FontWeight.bold, fontSize: 11)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+      ],
+    );
+  }
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ TAB 2: PERSONNEL & REVIEW Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  bool _showTeamForm = false;
+  final _employeeNameCtrl = TextEditingController();
+  final _employeeDeptCtrl = TextEditingController();
+  final _employeeSalaryCtrl = TextEditingController();
+  final _employeeRateCtrl = TextEditingController();
+  final _employeeSessionsCtrl = TextEditingController();
+  String _employeeRole = 'Video Editor';
+  String _videoEditorPaymentStructure = 'Salary';
+
+    void _showPayEmployeeDialog(BuildContext context, AppState state, Employee e) {
+    if (e.role.toLowerCase().contains('videographer')) {
+      final unpaidSessions = state.tasks.where((t) => t.assignedTo == e.id && t.taskType == 'Session' && t.isCompleted && !t.isPaidToVideographer).toList();
+      final sessionsCtrl = TextEditingController(text: unpaidSessions.length.toString());
+      showDialog(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            backgroundColor: SageColors.background,
+            title: Text("PAY VIDEOGRAPHER", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("Unpaid Completed Sessions: ${unpaidSessions.length}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                SageTextField(controller: sessionsCtrl, label: "Number of Sessions to Pay", keyboardType: TextInputType.number),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+                onPressed: () {
+                  final count = int.tryParse(sessionsCtrl.text) ?? 0;
+                  if (count > 0 && count <= unpaidSessions.length) {
+                    context.read<AppState>().payVideographerSessions(e.id, count);
+                    Navigator.pop(ctx);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid session count!")));
+                  }
+                },
+                child: const Text("PAY SESSIONS"),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      List<String> selectedMonths = [];
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      showDialog(
+        context: context,
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (ctx, setDialogState) {
+              return AlertDialog(
+                backgroundColor: SageColors.background,
+                title: Text("PAY ${e.name.toUpperCase()}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text("Select month(s) to pay for:"),
+                      const SizedBox(height: 10),
+                      ...months.map((m) {
+                        return CheckboxListTile(
+                          title: Text(m),
+                          value: selectedMonths.contains(m) || e.paidMonths.contains(m),
+                          onChanged: e.paidMonths.contains(m) ? null : (val) {
+                            setDialogState(() {
+                              if (val == true) selectedMonths.add(m);
+                              else selectedMonths.remove(m);
+                            });
+                          },
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+                    onPressed: () {
+                      if (selectedMonths.isNotEmpty) {
+                        context.read<AppState>().payEmployeeSalary(e.id, selectedMonths, e.monthlySalary * selectedMonths.length);
+                        Navigator.pop(ctx);
+                      }
+                    },
+                    child: const Text("PAY SALARY"),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
+  }
+
+  Widget _buildPersonnelTab() {
+    final state = context.watch<AppState>();
+    final pastelColors = [
+      Color(0xFFFFB3BA),
+      Color(0xFFFFDFBA),
+      Color(0xFFFFFFBA),
+      Color(0xFFBAFFC9),
+      Color(0xFFBAE1FF),
+      Color(0xFFE6B3FF),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text("REGISTERED TEAM MEMBERS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: SageColors.onSurfaceVariant)),
+            ElevatedButton(
+              onPressed: () => setState(() => _showTeamForm = !_showTeamForm),
+              style: ElevatedButton.styleFrom(backgroundColor: SageColors.secondary),
+              child: Text(_showTeamForm ? "CANCEL" : "+ ADD MEMBER"),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        if (_showTeamForm) ...[
+          TerminalPanel(
+            title: "ADD TEAM RECORD",
+            child: Column(
+              children: [
+                SageTextField(controller: _employeeNameCtrl, label: "Full Name"),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: _employeeRole,
+                  decoration: const InputDecoration(labelText: "Role"),
+                  dropdownColor: Colors.white,
+                  items: ['Video Editor', 'Graphics Editor', 'Videographer/Cinematographer', 'Marketing Executive', 'Page Management Executive'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                  onChanged: (v) => setState(() => _employeeRole = v ?? 'Video Editor'),
+                ),
+                const SizedBox(height: 10),
+                if (_employeeRole == 'Video Editor') ...[
+                  DropdownButtonFormField<String>(
+                    value: _videoEditorPaymentStructure,
+                    decoration: const InputDecoration(labelText: "Payment Structure"),
+                    dropdownColor: Colors.white,
+                    items: ['Salary', 'Per Video Rate'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (v) => setState(() => _videoEditorPaymentStructure = v ?? 'Salary'),
+                  ),
+                  const SizedBox(height: 10),
+                  if (_videoEditorPaymentStructure == 'Salary')
+                    SageTextField(controller: _employeeSalaryCtrl, label: "Monthly Salary (Rs)", keyboardType: TextInputType.number)
+                  else
+                    SageTextField(controller: _employeeRateCtrl, label: "Per Video Rate (Max 300 Rs)", keyboardType: TextInputType.number),
+                ] else if (_employeeRole == 'Graphics Editor') ...[
+                  SageTextField(controller: _employeeRateCtrl, label: "Per Design Rate (Rs)", keyboardType: TextInputType.number),
+                ] else if (_employeeRole == 'Videographer/Cinematographer') ...[
+                  SageTextField(controller: _employeeRateCtrl, label: "Base Session Charge (Rs)", keyboardType: TextInputType.number),
+                ] else if (_employeeRole == 'Marketing Executive') ...[
+                  SageTextField(controller: _employeeRateCtrl, label: "Commission % / Rate (Rs)", keyboardType: TextInputType.number),
+                ] else if (_employeeRole == 'Page Management Executive') ...[
+                  SageTextField(controller: _employeeRateCtrl, label: "Per Page Rate (Rs)", keyboardType: TextInputType.number),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      double monthlySalary = 0.0;
+                      double perSessionRate = 0.0;
+                      
+                      if (_employeeRole == 'Video Editor') {
+                        if (_videoEditorPaymentStructure == 'Salary') {
+                          monthlySalary = double.tryParse(_employeeSalaryCtrl.text) ?? 0.0;
+                        } else {
+                          perSessionRate = double.tryParse(_employeeRateCtrl.text) ?? 0.0;
+                          if (perSessionRate > 300) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Per Video Rate cannot exceed 300 Rs.", style: TextStyle(color: Colors.white)), backgroundColor: SageColors.error));
+                            return;
+                          }
+                        }
+                      } else {
+                        perSessionRate = double.tryParse(_employeeRateCtrl.text) ?? 0.0;
+                      }
+
+                      state.addEmployee(
+                        name: _employeeNameCtrl.text, 
+                        role: _employeeRole, 
+                        department: "", 
+                        monthlySalary: monthlySalary,
+                        perSessionRate: perSessionRate,
+                      );
+                      setState(() {
+                        _showTeamForm = false;
+                        _employeeNameCtrl.clear();
+                        _employeeDeptCtrl.clear();
+                        _employeeSalaryCtrl.clear();
+                        _employeeRateCtrl.clear();
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+                    child: const Text("CREATE RECORD"),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        ...AppState.personas.asMap().entries.map((entry) {
+          final i = entry.key;
+          final p = entry.value;
+          final color = pastelColors[i % pastelColors.length];
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.black, width: 1.5),
+              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0)],
+            ),
+            child: ExpansionTile(
+              shape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),
+              collapsedShape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),
+              leading: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black, width: 1.5),
+                ),
+                alignment: Alignment.center,
+                child: ClipOval(child: Image.asset('assets/avatars/avatar${(p.id.hashCode.abs() % 8) + 1}.png', fit: BoxFit.cover, width: 44, height: 44)),
+              ),
+              title: Text(p.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black)),
+              subtitle: Text(p.roleLabel, style: const TextStyle(fontSize: 10, color: Colors.black54)),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: const BoxDecoration(
+                    border: Border(top: BorderSide(color: Colors.black, width: 1.5)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("System Core Persona", style: TextStyle(fontWeight: FontWeight.bold)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.black), borderRadius: BorderRadius.circular(8)),
+                        child: const Text("ACCESS: FULL", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          );
+        }),
+
+        ...state.employees.asMap().entries.map((entry) {
+          final i = entry.key + AppState.personas.length;
+          final e = entry.value;
+          final color = pastelColors[i % pastelColors.length];
+          final isVideo = e.role.toLowerCase().contains('videographer');
+          
+          double pendingPayout = 0;
+          int unpaidSessionsCount = 0;
+          if (isVideo) {
+            final unpaidSessions = state.tasks.where((t) => t.assignedTo == e.id && t.taskType == 'Session' && t.isCompleted && !t.isPaidToVideographer).toList();
+            unpaidSessionsCount = unpaidSessions.length;
+            for (final t in unpaidSessions) {
+              final c = state.clients.where((c) => c.id == t.clientId).firstOrNull;
+              if (c != null) pendingPayout += c.sessionRate;
+            }
+          }
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.black, width: 1.5),
+              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0)],
+            ),
+            child: ExpansionTile(
+              shape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),
+              collapsedShape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),
+              leading: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black, width: 1.5),
+                ),
+                alignment: Alignment.center,
+                child: ClipOval(child: Image.asset('assets/avatars/avatar${(e.id.hashCode.abs() % 8) + 1}.png', fit: BoxFit.cover, width: 44, height: 44)),
+              ),
+              title: Text(e.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black)),
+              subtitle: Text("${e.role} // ${e.department}", style: const TextStyle(fontSize: 10, color: Colors.black54)),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: const BoxDecoration(
+                    border: Border(top: BorderSide(color: Colors.black, width: 1.5)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (isVideo) ...[
+                        Text("PENDING PAYOUT: ₹${pendingPayout.toStringAsFixed(0)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black)),
+                        Text("UNPAID SESSIONS: $unpaidSessionsCount", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      ] else ...[
+                        Text("SALARY: ₹${e.monthlySalary.toStringAsFixed(0)} / mo", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black)),
+                        Text("Paid Months: ${e.paidMonths.join(", ")}", style: const TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.bold)),
+                      ],
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.black),
+                            onPressed: () => _showPayEmployeeDialog(context, state, e),
+                            child: Text(isVideo ? "PAY SESSIONS" : "PAY SALARY", style: const TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined, color: Colors.black),
+                                onPressed: () => _showEditEmployeeDialog(context, e),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: SageColors.error),
+                                onPressed: () async {
+                                  final ok = await showConfirmDialog(context, "TERMINATE EMPLOYEE", "Are you sure you want to terminate ${e.name}?");
+                                  if (ok && context.mounted) {
+                                    context.read<AppState>().terminateEmployee(e.id);
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  String _taskSubTab = 'CALENDAR'; // 'CALENDAR', 'TEAM'
+  
+  String _newTaskType = 'Daily Video';
+  List<String> _newTaskAssigneeIds = [];
+  List<String> _newTaskClients = [];
+  final TextEditingController _newTaskTitleCtrl = TextEditingController();
+  final TextEditingController _newTaskDescCtrl = TextEditingController();
+  TimeOfDay _newTaskTime = const TimeOfDay(hour: 17, minute: 0);
+  bool _isAddTaskExpanded = false;
+  // Session booking state
+  String? _sessionVideographerId;
+  List<String> _sessionClientIds = [];
+  
+  DateTime _calendarMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
+  DateTime? _selectedCalendarDate;
+
+  final Map<String, String> _holidays = {
+    '01-01': 'New Year\'s Day',
+    '26-01': 'Republic Day',
+    '14-02': 'Valentine\'s Day',
+    '08-03': 'Maha Shivaratri',
+    '25-03': 'Holi',
+    '29-03': 'Good Friday',
+    '09-04': 'Ugadi / Gudi Padwa',
+    '11-04': 'Eid al-Fitr',
+    '17-04': 'Rama Navami',
+    '01-05': 'Labour Day',
+    '17-06': 'Eid al-Adha',
+    '17-07': 'Muharram',
+    '15-08': 'Independence Day',
+    '26-08': 'Janmashtami',
+    '07-09': 'Ganesh Chaturthi',
+    '02-10': 'Gandhi Jayanti',
+    '11-10': 'Dussehra',
+    '31-10': 'Diwali',
+    '25-12': 'Christmas',
+  };
+
+  Map<String, String> _googleHolidays = {};
+  bool _isLoadingHolidays = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchGoogleHolidays();
+  }
+
+  Future<void> _fetchGoogleHolidays() async {
+    setState(() => _isLoadingHolidays = true);
+    try {
+      final url = 'https://calendar.google.com/calendar/ical/en.indian%23holiday%40group.v.calendar.google.com/public/basic.ics';
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final lines = const LineSplitter().convert(response.body);
+        Map<String, String> fetched = {};
+        String? currentSummary;
+        String? currentDate;
+        
+        for (var line in lines) {
+          if (line.startsWith('SUMMARY:')) {
+            currentSummary = line.substring(8);
+          } else if (line.startsWith('DTSTART;VALUE=DATE:')) {
+            final dt = line.substring(19);
+            if (dt.length == 8) {
+              final yearStr = dt.substring(0, 4);
+              final month = dt.substring(4, 6);
+              final day = dt.substring(6, 8);
+              final year = int.tryParse(yearStr) ?? 0;
+              final currentYear = DateTime.now().year;
+              if (year == currentYear || year == currentYear + 1) {
+                currentDate = "$day-$month";
+              }
+            }
+          } else if (line == 'END:VEVENT') {
+            if (currentDate != null && currentSummary != null) {
+              fetched[currentDate] = currentSummary;
+            }
+            currentDate = null;
+            currentSummary = null;
+          }
+        }
+        setState(() {
+          _googleHolidays = fetched;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching Google Holidays: $e');
+    } finally {
+      if (mounted) setState(() => _isLoadingHolidays = false);
+    }
+  }
+
+  Widget _buildTaskSubTabBtn(String title) {
+    final isSelected = _taskSubTab == title;
+    return GestureDetector(
+      onTap: () => setState(() => _taskSubTab = title),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.black : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.black, width: 1.5),
+        ),
+        child: Text(
+          title,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.white : Colors.black,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTasksTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildTaskSubTabBtn('CALENDAR'),
+              const SizedBox(width: 4),
+              _buildTaskSubTabBtn('MY TASKS'),
+              const SizedBox(width: 4),
+              _buildTaskSubTabBtn('PENDING'),
+              const SizedBox(width: 4),
+              _buildTaskSubTabBtn('REVIEW'),
+              const SizedBox(width: 4),
+              _buildTaskSubTabBtn('COMPLETED'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (_taskSubTab == 'CALENDAR') _buildTaskCalendarSubTab(),
+        if (_taskSubTab == 'MY TASKS') _buildTaskMyTasksSubTab('CEO'),
+        if (_taskSubTab == 'PENDING') _buildTaskPendingSubTab(),
+        if (_taskSubTab == 'REVIEW') _buildTaskReviewSubTab(),
+        if (_taskSubTab == 'COMPLETED') _buildTaskCompletedSubTab(),
+      ],
+    );
+  }
+
+  Widget _buildTaskCalendarSubTab() {
+    final state = context.watch<AppState>();
+    final now = DateTime.now();
+    final firstDay = DateTime(_calendarMonth.year, _calendarMonth.month, 1);
+    final daysInMonth = DateTime(_calendarMonth.year, _calendarMonth.month + 1, 0).day;
+    final startOffset = firstDay.weekday % 7;
+    
+    final allTasks = state.tasks;
+    final monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+    List<Task> selectedTasks = [];
+    if (_selectedCalendarDate != null) {
+      selectedTasks = allTasks.where((t) => t.deadline.day == _selectedCalendarDate!.day && t.deadline.month == _selectedCalendarDate!.month && t.deadline.year == _selectedCalendarDate!.year && !t.isCompleted).toList();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0F4FF),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.black, width: 1.5),
+            boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0)],
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: () => setState(() => _calendarMonth = DateTime(_calendarMonth.year, _calendarMonth.month - 1, 1)),
+                  ),
+                  Text("${monthNames[_calendarMonth.month - 1]} ${_calendarMonth.year}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: () => setState(() => _calendarMonth = DateTime(_calendarMonth.year, _calendarMonth.month + 1, 1)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'].map((d) => SizedBox(width: 30, child: Center(child: Text(d, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54))))).toList(),
+              ),
+              const SizedBox(height: 8),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  childAspectRatio: 0.8,
+                  crossAxisSpacing: 6,
+                  mainAxisSpacing: 6,
+                ),
+                  itemCount: daysInMonth + startOffset,
+                  itemBuilder: (context, index) {
+                    if (index < startOffset) return const SizedBox();
+                    final day = index - startOffset + 1;
+                    final dateStr = "${day.toString().padLeft(2, '0')}-${_calendarMonth.month.toString().padLeft(2, '0')}";
+                    final holiday = _googleHolidays[dateStr] ?? _holidays[dateStr];
+                    
+                    final dateForDay = DateTime(_calendarMonth.year, _calendarMonth.month, day);
+                    final isWeekend = dateForDay.weekday == DateTime.saturday || dateForDay.weekday == DateTime.sunday;
+                    final isToday = day == now.day && _calendarMonth.month == now.month && _calendarMonth.year == now.year;
+                    final isSelected = _selectedCalendarDate?.day == day && _selectedCalendarDate?.month == _calendarMonth.month && _selectedCalendarDate?.year == _calendarMonth.year;
+                    
+                    final dayTasks = allTasks.where((t) => t.deadline.day == day && t.deadline.month == _calendarMonth.month && t.deadline.year == _calendarMonth.year && !t.isCompleted).toList();
+                    
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedCalendarDate = dateForDay),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.black, width: isSelected ? 2.5 : 1.0),
+                          color: isSelected ? const Color(0xFFFFF9C4) : (isToday ? SageColors.primaryContainer : (holiday != null ? SageColors.secondaryContainer : (isWeekend ? const Color(0xFFEEEEEE) : Colors.white))),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: isSelected ? const [BoxShadow(color: Colors.black, offset: Offset(2, 2))] : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 4),
+                            Text("$day", style: TextStyle(fontWeight: FontWeight.bold, color: holiday != null ? SageColors.secondary : Colors.black, fontSize: 12)),
+                            if (holiday != null) Padding(padding: const EdgeInsets.symmetric(horizontal: 2.0), child: Text(holiday, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 8, color: SageColors.secondary, fontWeight: FontWeight.bold, height: 1.1))),
+                            const SizedBox(height: 2),
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              spacing: 2,
+                              runSpacing: 2,
+                              children: dayTasks.take(6).map((t) {
+                                Color dotColor = Colors.blue;
+                                final title = t.title.toLowerCase();
+                                if (title.contains('video')) dotColor = Colors.green;
+                                else if (title.contains('post') || title.contains('design')) dotColor = Colors.pink;
+                                else if (title.contains('lead') || title.contains('marketing')) dotColor = Colors.purple;
+                                
+                                return Container(width: 6, height: 6, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle));
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+        if (_selectedCalendarDate != null) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF5E1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.black, width: 1.5),
+              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3))],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("TASKS FOR ${_selectedCalendarDate!.day}/${_selectedCalendarDate!.month}/${_selectedCalendarDate!.year}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    ElevatedButton.icon(
+                      onPressed: () => setState(() => _isAddTaskExpanded = !_isAddTaskExpanded),
+                      icon: Icon(_isAddTaskExpanded ? Icons.close : Icons.add, size: 16),
+                      label: Text(_isAddTaskExpanded ? "CLOSE" : "ADD TASK"),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                    ),
+                  ],
+                ),
+                if (_isAddTaskExpanded) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.black12)),
+                    child: Column(
+                      children: [
+                        DropdownButtonFormField<String>(
+                          value: _newTaskType,
+                          decoration: const InputDecoration(labelText: "Type of Task"),
+                          dropdownColor: Colors.white,
+                          items: ['Daily Video', 'Daily Post', 'Miscellaneous', 'Session'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                          onChanged: (v) => setState(() {
+                            _newTaskType = v!;
+                            _newTaskAssigneeIds = [];
+                            _newTaskClients = [];
+                            _sessionVideographerId = null;
+                            _sessionClientIds = [];
+                          }),
+                        ),
+                        const SizedBox(height: 12),
+
+                        if (_newTaskType == 'Session') ...[
+                          // Ã¢â€â‚¬Ã¢â€â‚¬ Session Booking UI Ã¢â€â‚¬Ã¢â€â‚¬
+                          DropdownButtonFormField<String>(
+                            value: _sessionVideographerId,
+                            decoration: const InputDecoration(labelText: "Select Videographer"),
+                            dropdownColor: Colors.white,
+                            items: [
+                              const DropdownMenuItem(value: 'COF-PRI-001', child: Text("CFO Priyajit")),
+                              ...state.employees.where((e) => e.role.toLowerCase().contains('videographer')).map(
+                                (e) => DropdownMenuItem(value: e.id, child: Text(e.name))
+                              ),
+                            ],
+                            onChanged: (v) => setState(() { _sessionVideographerId = v; _sessionClientIds = []; }),
+                          ),
+                          const SizedBox(height: 10),
+                          if (_sessionVideographerId != null) ...[
+                            Builder(builder: (ctx) {
+                              final videographerClients = state.clients.where((c) => c.assignedVideographerId == _sessionVideographerId && c.status.toLowerCase() != 'lead').toList();
+                              final dateKey = _selectedCalendarDate?.toString().substring(0,10) ?? '';
+                              final existingSessionsOnDate = state.tasks.where((t) => t.taskType == 'Session' && t.assignedTo == _sessionVideographerId && t.deadline.toString().substring(0,10) == dateKey && !t.isCompleted).length;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (existingSessionsOnDate >= 3)
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red)),
+                                      child: const Text("Ã¢Å¡Â  Max 3 clients already booked on this date.", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    )
+                                  else ...[
+                                    Text("Select Clients (max ${3 - existingSessionsOnDate} more allowed)", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                    const SizedBox(height: 6),
+                                    if (videographerClients.isEmpty)
+                                      const Text("No clients assigned to this videographer.", style: TextStyle(fontSize: 12, color: Colors.black54))
+                                    else
+                                      ...videographerClients.map((c) {
+                                        final isSelected = _sessionClientIds.contains(c.id);
+                                        return CheckboxListTile(
+                                          dense: true,
+                                          contentPadding: EdgeInsets.zero,
+                                          title: Text("${c.name} Ã¢â‚¬â€œ ₹${c.sessionRate.toStringAsFixed(0)}/session", style: const TextStyle(fontSize: 12)),
+                                          value: isSelected,
+                                          onChanged: (val) {
+                                            setState(() {
+                                              if (val == true && _sessionClientIds.length < (3 - existingSessionsOnDate)) {
+                                                _sessionClientIds.add(c.id);
+                                              } else if (val == false) {
+                                                _sessionClientIds.remove(c.id);
+                                              }
+                                            });
+                                          },
+                                        );
+                                      }),
+                                    const SizedBox(height: 10),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white),
+                                        onPressed: _sessionClientIds.isEmpty ? null : () async {
+                                          final deadline = DateTime(_selectedCalendarDate!.year, _selectedCalendarDate!.month, _selectedCalendarDate!.day, 9, 0);
+                                          for (final clientId in _sessionClientIds) {
+                                            final clientName = state.clients.firstWhere((c) => c.id == clientId).name;
+                                            await context.read<AppState>().assignTask(
+                                              title: 'Session Ã¢â‚¬â€œ $clientName',
+                                              description: 'Videography session for $clientName on ${_selectedCalendarDate!.toString().substring(0,10)}',
+                                              assignedTo: _sessionVideographerId!,
+                                              deadline: deadline,
+                                              clientId: clientId,
+                                              taskType: 'Session',
+                                              sessionClientIds: [clientId],
+                                              isApprovedByVideographer: false,
+                                            );
+                                          }
+                                          setState(() {
+                                            _isAddTaskExpanded = false;
+                                            _sessionVideographerId = null;
+                                            _sessionClientIds = [];
+                                          });
+                                        },
+                                        child: const Text("BOOK SESSION (PENDING APPROVAL)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              );
+                            }),
+                          ],
+                        ] else if (_newTaskType == 'Miscellaneous') ...[
+                          SageMultiSelectDropdown<Map<String, String>>(
+                            selectedItems: (() {
+                               final options = _getAssigneesForRole('General', state);
+                               return options.where((e) => _newTaskAssigneeIds.contains(e['id'])).toList();
+                            })(),
+                            items: _getAssigneesForRole('General', state),
+                            labelBuilder: (item) => item['name']!,
+                            labelText: "Assign To",
+                            onChanged: (v) => setState(() => _newTaskAssigneeIds = v.map((e) => e['id']!).toList()),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: SageTextField(controller: _newTaskTitleCtrl, label: "Title"),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () async {
+                                    final time = await showTimePicker(context: context, initialTime: _newTaskTime);
+                                    if (time != null) setState(() => _newTaskTime = time);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                                    decoration: BoxDecoration(border: Border.all(color: Colors.black), borderRadius: BorderRadius.circular(12)),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text("Deadline Time"),
+                                        Text(_newTaskTime.format(context), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          SageTextField(controller: _newTaskDescCtrl, label: "Description (Optional)", maxLines: 2),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                if (_newTaskAssigneeIds.isEmpty || _newTaskTitleCtrl.text.isEmpty) return;
+                                final finalDeadline = DateTime(_selectedCalendarDate!.year, _selectedCalendarDate!.month, _selectedCalendarDate!.day, _newTaskTime.hour, _newTaskTime.minute);
+                                for (final assigneeId in _newTaskAssigneeIds) {
+                                  context.read<AppState>().assignTask(
+                                    title: _newTaskTitleCtrl.text,
+                                    description: _newTaskDescCtrl.text,
+                                    assignedTo: assigneeId,
+                                    deadline: finalDeadline,
+                                  );
+                                }
+                                setState(() {
+                                  _isAddTaskExpanded = false;
+                                  _newTaskTitleCtrl.clear();
+                                  _newTaskDescCtrl.clear();
+                                  _newTaskAssigneeIds = [];
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary, foregroundColor: Colors.black),
+                              child: const Text("CREATE TASK", style: TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ] else ...[
+                          SageMultiSelectDropdown<Client>(
+                            selectedItems: state.clients.where((c) => _newTaskClients.contains(c.name)).toList(),
+                            items: state.clients.where((c) => c.status.toLowerCase() == 'active').toList(),
+                            labelBuilder: (c) => c.name,
+                            labelText: "Select Clients",
+                            emptyText: "Select active clients",
+                            onChanged: (v) => setState(() => _newTaskClients = v.map((c) => c.name).toList()),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () async {
+                                    final time = await showTimePicker(context: context, initialTime: _newTaskTime);
+                                    if (time != null) setState(() => _newTaskTime = time);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                                    decoration: BoxDecoration(border: Border.all(color: Colors.black), borderRadius: BorderRadius.circular(12)),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text("Deadline Time"),
+                                        Text(_newTaskTime.format(context), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          if (_newTaskType == 'Daily Video')
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.yellowAccent, foregroundColor: Colors.black),
+                                    onPressed: () {
+                                      if (_newTaskClients.isEmpty) return;
+                                      final finalDeadline = DateTime(_selectedCalendarDate!.year, _selectedCalendarDate!.month, _selectedCalendarDate!.day, _newTaskTime.hour, _newTaskTime.minute);
+                                      for (final client in _newTaskClients) {
+                                        context.read<AppState>().assignTask(
+                                          title: 'Daily Video - $client',
+                                          description: 'Automatically assigned daily video task for $client.',
+                                          assignedTo: 'COF-PRI-001', // Priyajit (CFO)
+                                          deadline: finalDeadline,
+                                        );
+                                      }
+                                      setState(() { _isAddTaskExpanded = false; _newTaskClients = []; });
+                                    },
+                                    child: const Text("ASSIGN TO PRIYAJIT (CFO)", textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.primaryContainer, foregroundColor: Colors.black),
+                                    onPressed: () {
+                                      if (_newTaskClients.isEmpty) return;
+                                      final debjit = state.employees.where((e) => e.name.toLowerCase().contains('debjit')).firstOrNull;
+                                      if (debjit == null) return;
+                                      final finalDeadline = DateTime(_selectedCalendarDate!.year, _selectedCalendarDate!.month, _selectedCalendarDate!.day, _newTaskTime.hour, _newTaskTime.minute);
+                                      for (final client in _newTaskClients) {
+                                        context.read<AppState>().assignTask(
+                                          title: 'Daily Video - $client',
+                                          description: 'Automatically assigned daily video task for $client.',
+                                          assignedTo: debjit.id,
+                                          deadline: finalDeadline,
+                                        );
+                                      }
+                                      setState(() { _isAddTaskExpanded = false; _newTaskClients = []; });
+                                    },
+                                    child: const Text("ASSIGN TO DEBJIT", textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            )
+                          else if (_newTaskType == 'Daily Post')
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.secondaryContainer, foregroundColor: Colors.black),
+                                    onPressed: () {
+                                      if (_newTaskClients.isEmpty) return;
+                                      final ritam = AppState.personas.where((p) => p.id == 'COF-RIT-001').firstOrNull;
+                                      if (ritam == null) return;
+                                      final finalDeadline = DateTime(_selectedCalendarDate!.year, _selectedCalendarDate!.month, _selectedCalendarDate!.day, _newTaskTime.hour, _newTaskTime.minute);
+                                      for (final client in _newTaskClients) {
+                                        context.read<AppState>().assignTask(
+                                          title: 'Daily Post - $client',
+                                          description: 'Automatically assigned daily post task for $client.',
+                                          assignedTo: ritam.id,
+                                          deadline: finalDeadline,
+                                        );
+                                      }
+                                      setState(() { _isAddTaskExpanded = false; _newTaskClients = []; });
+                                    },
+                                    child: const Text("ASSIGN TO RITAM (CFO)", textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.tertiaryContainer, foregroundColor: Colors.black),
+                                    onPressed: () {
+                                      if (_newTaskClients.isEmpty) return;
+                                      // Assign to Graphic Designer (Assume Subhajit or any graphic designer)
+                                      final designer = state.employees.where((e) => e.role.toLowerCase().contains('graphic') || e.name.toLowerCase().contains('subhajit')).firstOrNull;
+                                      if (designer == null) {
+                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No Graphic Designer found in employees!')));
+                                        return;
+                                      }
+                                      final finalDeadline = DateTime(_selectedCalendarDate!.year, _selectedCalendarDate!.month, _selectedCalendarDate!.day, _newTaskTime.hour, _newTaskTime.minute);
+                                      for (final client in _newTaskClients) {
+                                        context.read<AppState>().assignTask(
+                                          title: 'Daily Post - $client',
+                                          description: 'Automatically assigned daily post task for $client.',
+                                          assignedTo: designer.id,
+                                          deadline: finalDeadline,
+                                        );
+                                      }
+                                      setState(() { _isAddTaskExpanded = false; _newTaskClients = []; });
+                                    },
+                                    child: const Text("ASSIGN TO GRAPHIC DESIGNER", textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                if (selectedTasks.isEmpty)
+                  const Text("No tasks scheduled.", style: TextStyle(color: Colors.black54, fontStyle: FontStyle.italic))
+                else
+                  ...selectedTasks.map((t) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.black12),
+                      ),
+                      child: ExpansionTile(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        tilePadding: const EdgeInsets.only(right: 12),
+                        title: Row(
+                          children: [
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(t.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, decoration: t.isCompleted ? TextDecoration.lineThrough : null)),
+                            ),
+                          ],
+                        ),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (t.description.isNotEmpty) ...[
+                                  Text(t.description, style: const TextStyle(fontSize: 11, color: Colors.black87)),
+                                  const SizedBox(height: 12),
+                                ],
+                                Row(
+                                  children: [
+                                    const Icon(Icons.person, size: 14, color: Colors.black54),
+                                    const SizedBox(width: 4),
+                                    Text("Assigned To: ${_getAssigneeName(t.assignedTo, state)}", style: const TextStyle(fontSize: 11)),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.assignment_ind, size: 14, color: Colors.black54),
+                                    const SizedBox(width: 4),
+                                    Text("Assigned By: ${_getAssigneeName(t.assignedBy, state)}", style: const TextStyle(fontSize: 11)),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.calendar_today, size: 14, color: Colors.black54),
+                                    const SizedBox(width: 4),
+                                    Text("Deadline: ${t.deadline.day.toString().padLeft(2, '0')}/${t.deadline.month.toString().padLeft(2, '0')}/${t.deadline.year} at ${t.deadline.hour.toString().padLeft(2, '0')}:${t.deadline.minute.toString().padLeft(2, '0')}", style: const TextStyle(fontSize: 11)),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.category, size: 14, color: Colors.black54),
+                                    const SizedBox(width: 4),
+                                    Text("Type: ${t.taskType ?? 'General Task'}", style: const TextStyle(fontSize: 11)),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                    onPressed: () => context.read<AppState>().approveAndDeleteTask(t.id),
+                                    tooltip: 'Delete Task',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  List<Map<String, String>> _getAssigneesForRole(String? role, AppState state) {
+    if (role == null) return [];
+    List<Map<String, String>> list = [];
+    if (role == 'Video Editor') {
+      list.add({'id': 'COF-PRI-001', 'name': 'Priyajit (CFO)'});
+      final debjit = state.employees.where((e) => e.name.toLowerCase().contains('debjit')).firstOrNull;
+      if (debjit != null) list.add({'id': debjit.id, 'name': debjit.name});
+    } else if (role == 'Videographer') {
+      list.add({'id': 'COF-PRI-001', 'name': 'Priyajit (CFO)'});
+      final poulom = state.employees.where((e) => e.name.toLowerCase().contains('poulom')).firstOrNull;
+      if (poulom != null) list.add({'id': poulom.id, 'name': poulom.name});
+    } else if (role == 'Marketing Executive') {
+      list.add({'id': 'CEO-SOH-001', 'name': 'Sohini (CEO)'});
+      list.add({'id': 'COF-PRI-001', 'name': 'Priyajit (CFO)'});
+      list.add({'id': 'COF-RIT-001', 'name': 'Ritam (CFO)'});
+    } else {
+      list.addAll(AppState.personas.map((p) => {'id': p.id, 'name': '${p.name} (${p.roleLabel})'}));
+      list.addAll(state.employees.map((e) => {'id': e.id, 'name': e.name}));
+    }
+    return list;
+  }
+
+  String _getAssigneeName(String id, AppState state) {
+    final p = AppState.personas.where((p) => p.id == id).firstOrNull;
+    if (p != null) return p.name;
+    final e = state.employees.where((e) => e.id == id).firstOrNull;
+    if (e != null) return e.name;
+    return id;
+  }
+
+
+  Widget _buildTaskMyTasksSubTab(String personaPrefix) {
+    final state = context.watch<AppState>();
+    final myTasks = state.tasks.where((t) => t.assignedTo == state.activePersona.id && !t.isCompleted).toList();
+    
+    if (myTasks.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.black, width: 1.5),
+        ),
+        child: const Center(
+          child: Text(
+            'NO PENDING TASKS FOR YOU',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: SageColors.onSurfaceVariant),
+          ),
+        ),
+      );
+    }
+    
+    return Column(
+      children: myTasks.map((t) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.black, width: 1.5)),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Checkbox(
+                value: t.isSubmitted,
+                activeColor: SageColors.primary,
+                onChanged: (val) {
+                  if (val == true) {
+                    context.read<AppState>().submitTask(t.id);
+                  } else {
+                    context.read<AppState>().unsubmitTask(t.id);
+                  }
+                },
+              ),
+              const SizedBox(width: 8),
+              Expanded(child: Text(t.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), overflow: TextOverflow.ellipsis)),
+              Text("${t.deadline.day}/${t.deadline.month}", style: const TextStyle(color: SageColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTaskPendingSubTab() {
+    final state = context.watch<AppState>();
+    final pendingTasks = state.tasks.where((t) => !t.isCompleted).toList();
+    
+    if (pendingTasks.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.black, width: 1.5),
+        ),
+        child: const Center(
+          child: Text(
+            'NO PENDING WORKS',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: SageColors.onSurfaceVariant),
+          ),
+        ),
+      );
+    }
+    
+    return Column(
+      children: pendingTasks.map((t) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.red.shade200)),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(child: Text(t.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), overflow: TextOverflow.ellipsis)),
+              Text("${_getAssigneeName(t.assignedTo, state)} Ã¢â‚¬Â¢ ${t.deadline.day}/${t.deadline.month}", style: TextStyle(color: Colors.red.shade700, fontSize: 12, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTaskReviewSubTab() {
+    final state = context.watch<AppState>();
+    final pendingTasks = state.tasks.where((t) => (t.isSubmitted && !t.isCompleted) || t.isPostponeRequested).toList();
+    
+    if (pendingTasks.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.black, width: 1.5),
+        ),
+        child: const Center(
+          child: Text(
+            'NO TASKS PENDING REVIEW',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: SageColors.onSurfaceVariant),
+          ),
+        ),
+      );
+    }
+    
+    return Column(
+      children: pendingTasks.map((t) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.blue.shade200)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: Text(t.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), overflow: TextOverflow.ellipsis)),
+                  Text("${_getAssigneeName(t.assignedTo, state)}", style: TextStyle(color: Colors.blue.shade700, fontSize: 12, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              if (t.description.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(t.description, style: const TextStyle(fontSize: 11, color: Colors.black87)),
+              ],
+              if (t.isPostponeRequested) ...[
+                const SizedBox(height: 6),
+                Text('REQUESTED POSTPONE: ${t.deadline.day}/${t.deadline.month} -> ${t.postponeRequestedDate?.day}/${t.postponeRequestedDate?.month}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.deepOrange),
+                ),
+              ] else ...[
+                const SizedBox(height: 6),
+                const Text('REQUESTED COMPLETION',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: SageColors.primary),
+                ),
+              ],
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      if (t.isPostponeRequested) {
+                        context.read<AppState>().rejectPostponeTask(t.id);
+                      } else {
+                        context.read<AppState>().rejectTask(t.id);
+                      }
+                    },
+                    child: const Text('REJECT', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (t.isPostponeRequested) {
+                        context.read<AppState>().approvePostponeTask(t.id);
+                      } else {
+                        context.read<AppState>().approveTask(t.id);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0)),
+                    child: const Text('APPROVE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTaskCompletedSubTab() {
+    final state = context.watch<AppState>();
+    final completedTasks = state.tasks.where((t) => t.isCompleted).toList();
+    // Sort completed tasks to show newest first, though we don't have completedAt, we can sort by deadline for now.
+    completedTasks.sort((a, b) => b.deadline.compareTo(a.deadline));
+    
+    if (completedTasks.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.black, width: 1.5),
+        ),
+        child: const Center(
+          child: Text(
+            'NO COMPLETED TASKS',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: SageColors.onSurfaceVariant),
+          ),
+        ),
+      );
+    }
+    
+    return Column(
+      children: completedTasks.take(50).map((t) { // Limit to 50 for performance
+        return Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.green.shade200)),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(child: Text(t.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, decoration: TextDecoration.lineThrough), overflow: TextOverflow.ellipsis)),
+              Text("${_getAssigneeName(t.assignedTo, state)}", style: TextStyle(color: Colors.green.shade700, fontSize: 12, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ TAB 4: FINANCE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  bool _showCFFinanceForm = false;
+  String _cfFinanceChartTab = 'WEEKLY';
+  final _cfFinLabelCtrl = TextEditingController();
+  final _cfFinAmountCtrl = TextEditingController();
+  bool _cfFinIsIncome = true;
+  String _cfFinCategory = 'Consulting';
+
+  Widget _buildDetailedShareRow(String title, double value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 11, color: Colors.black87, fontWeight: FontWeight.w500)),
+          Text("₹${value.toStringAsFixed(0)}", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: value >= 0 ? Colors.green.shade800 : Colors.red.shade800)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFinanceTab() {
+    final state = context.watch<AppState>();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Main balance box with purple visual
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.black, width: 1.5),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black,
+                offset: Offset(3, 3),
+                blurRadius: 0,
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "₹${state.netBalance.toStringAsFixed(0)}",
+                        style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black),
+                      ),
+                      const Text(
+                        "TOTAL NET RUNNING BALANCE",
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: SageColors.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                  ElevatedButton(
+                    onPressed: () => setState(() => _showCFFinanceForm = !_showCFFinanceForm),
+                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.tertiary),
+                    child: Text(_showCFFinanceForm ? "CANCEL" : "+ LEDGER"),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              // Segmented Purple progress bar
+              Container(
+                height: 14,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: SageColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.black, width: 1.5),
+                ),
+                alignment: Alignment.centerLeft,
+                child: FractionallySizedBox(
+                  widthFactor: (state.totalIncome > 0
+                      ? (state.netBalance / state.totalIncome).clamp(0.0, 1.0)
+                      : 0.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: SageColors.tertiary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Income / Expenses Stat Grid
+        Row(
+          children: [
+            Expanded(
+              child: StatChip(
+                label: "INFLOW",
+                value: "₹${state.totalIncome.toStringAsFixed(0)}",
+                valueColor: SageColors.primary,
+                icon: Icons.trending_up,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: StatChip(
+                label: "OUTFLOW",
+                value: "₹${state.totalExpenses.toStringAsFixed(0)}",
+                valueColor: SageColors.secondary,
+                icon: Icons.trending_down,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // Finance weekly chart
+        NeoBrutalistBarChart(
+          values: const [2.0, 3.5, 1.8, 4.2, 2.8, 3.8, 1.5],
+          labels: const ['F', 'S', 'S', 'M', 'T', 'W', 'T'],
+          activeTab: _cfFinanceChartTab,
+          onTabChanged: (tab) => setState(() => _cfFinanceChartTab = tab),
+          barColor: SageColors.tertiaryContainer,
+          maxValue: 10.0,
+          suffix: 'k',
+        ),
+        const SizedBox(height: 14),
+
+        if (_showCFFinanceForm) ...[
+          TerminalPanel(
+            title: "RECORD TRANSACTION",
+            child: Column(
+              children: [
+                SageTextField(controller: _cfFinLabelCtrl, label: "Transaction Details (Label)"),
+                const SizedBox(height: 10),
+                SageTextField(controller: _cfFinAmountCtrl, label: "Amount (₹)", keyboardType: TextInputType.number),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    FilterChip(
+                      label: const Text("INCOME / INFLOW"),
+                      selected: _cfFinIsIncome,
+                      onSelected: (val) => setState(() => _cfFinIsIncome = true),
+                    ),
+                    FilterChip(
+                      label: const Text("EXPENSE / OUTFLOW"),
+                      selected: !_cfFinIsIncome,
+                      onSelected: (val) => setState(() => _cfFinIsIncome = false),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: _cfFinCategory,
+                  decoration: const InputDecoration(labelText: "Category"),
+                  dropdownColor: Colors.white,
+                  items: ['Consulting', 'Salary', 'Software', 'Others'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                  onChanged: (v) => setState(() => _cfFinCategory = v ?? 'Consulting'),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (_cfFinLabelCtrl.text.trim().isEmpty) return;
+                      final amt = double.tryParse(_cfFinAmountCtrl.text) ?? 0.0;
+                      final entry = FinanceEntry(
+                        id: 'FIN-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
+                        label: _cfFinLabelCtrl.text,
+                        amount: amt,
+                        isIncome: _cfFinIsIncome,
+                        date: DateTime.now(),
+                        category: _cfFinCategory,
+                      );
+                      context.read<AppState>().addFinance(entry);
+                      setState(() {
+                        _showCFFinanceForm = false;
+                      });
+                      _cfFinLabelCtrl.clear();
+                      _cfFinAmountCtrl.clear();
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.yellowAccent),
+                    child: const Text("LOG TRANSACTION"),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        const Text("LEDGER TRANSACTION JOURNAL", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: SageColors.onSurfaceVariant)),
+        const SizedBox(height: 10),
+        
+        if (state.finances.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.black, width: 1.5),
+            ),
+            child: const Center(
+              child: Text("NO TRANSACTIONS RECORDED", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+            ),
+          )
+        else
+          ...state.finances.reversed.map((f) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black,
+                    offset: Offset(2, 2),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    f.isIncome ? Icons.trending_up : Icons.trending_down,
+                    color: f.isIncome ? SageColors.primary : SageColors.secondary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(f.label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text("${f.category} // ${f.date.toString().substring(0, 10)}", style: const TextStyle(fontSize: 9, color: Colors.black54)),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        "${f.isIncome ? '+' : '-'}₹${f.amount.toStringAsFixed(0)}",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: f.isIncome ? SageColors.primary : SageColors.secondary,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 18, color: SageColors.outline),
+                        onPressed: () async {
+                          final ok = await showConfirmDialog(context, "DELETE ENTRY", "Are you sure you want to remove this ledger entry?");
+                          if (ok && context.mounted) {
+                            context.read<AppState>().removeFinance(f.id);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }),
+      ],
+    );
+  }
+
+    void _showEditEmployeeDialog(BuildContext context, Employee e) {
+    final nameCtrl = TextEditingController(text: e.name);
+    final deptCtrl = TextEditingController(text: e.department);
+    final salaryCtrl = TextEditingController(text: e.monthlySalary.toString());
+    final rateCtrl = TextEditingController(text: e.perSessionRate.toString());
+    String videoEditorPaymentStructure = e.monthlySalary > 0 ? 'Salary' : 'Per Video Rate';
+    String role = e.role;
+    final validRoles = ['Video Editor', 'Graphics Editor', 'Videographer/Cinematographer', 'Marketing Executive', 'Page Management Executive'];
+    if (!validRoles.contains(role)) role = validRoles[0];
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            return AlertDialog(
+              backgroundColor: SageColors.background,
+              title: const Text("EDIT EMPLOYEE", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SageTextField(controller: nameCtrl, label: "Name"),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: role,
+                      decoration: const InputDecoration(labelText: "Role"),
+                      dropdownColor: Colors.white,
+                      items: validRoles.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
+                      onChanged: (v) => setState(() => role = v ?? validRoles[0]),
+                    ),
+                    const SizedBox(height: 10),
+                    if (role == 'Video Editor') ...[
+                      DropdownButtonFormField<String>(
+                        value: videoEditorPaymentStructure,
+                        decoration: const InputDecoration(labelText: "Payment Structure"),
+                        dropdownColor: Colors.white,
+                        items: ['Salary', 'Per Video Rate'].map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
+                        onChanged: (v) => setState(() => videoEditorPaymentStructure = v ?? 'Salary'),
+                      ),
+                      const SizedBox(height: 10),
+                      if (videoEditorPaymentStructure == 'Salary')
+                        SageTextField(controller: salaryCtrl, label: "Monthly Salary (Rs)", keyboardType: TextInputType.number)
+                      else
+                        SageTextField(controller: rateCtrl, label: "Per Video Rate (Max 300 Rs)", keyboardType: TextInputType.number),
+                    ] else if (role == 'Graphics Editor') ...[
+                      SageTextField(controller: rateCtrl, label: "Per Design Rate (Rs)", keyboardType: TextInputType.number),
+                    ] else if (role == 'Videographer/Cinematographer') ...[
+                      SageTextField(controller: rateCtrl, label: "Base Session Charge (Rs)", keyboardType: TextInputType.number),
+                    ] else if (role == 'Marketing Executive') ...[
+                      SageTextField(controller: rateCtrl, label: "Commission % / Rate (Rs)", keyboardType: TextInputType.number),
+                    ] else if (role == 'Page Management Executive') ...[
+                      SageTextField(controller: rateCtrl, label: "Per Page Rate (Rs)", keyboardType: TextInputType.number),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+                  onPressed: () {
+                    double newMonthlySalary = 0.0;
+                    double newPerSessionRate = 0.0;
+                    if (role == 'Video Editor') {
+                      if (videoEditorPaymentStructure == 'Salary') {
+                        newMonthlySalary = double.tryParse(salaryCtrl.text) ?? 0.0;
+                      } else {
+                        newPerSessionRate = double.tryParse(rateCtrl.text) ?? 0.0;
+                        if (newPerSessionRate > 300) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Per Video Rate cannot exceed 300 Rs.", style: TextStyle(color: Colors.white)), backgroundColor: SageColors.error));
+                          return;
+                        }
+                      }
+                    } else {
+                      newPerSessionRate = double.tryParse(rateCtrl.text) ?? 0.0;
+                    }
+
+                    context.read<AppState>().updateEmployee(
+                      e.id,
+                      name: nameCtrl.text,
+                      role: role,
+                      department: "",
+                      monthlySalary: newMonthlySalary,
+                      perSessionRate: newPerSessionRate,
+                    );
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text("SAVE"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+

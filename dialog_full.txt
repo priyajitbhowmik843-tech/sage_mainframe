@@ -1,0 +1,214 @@
+void _showEditClientDialog(BuildContext context, Client c) {
+    final nameCtrl = TextEditingController(text: c.name);
+    final contactNameCtrl = TextEditingController(text: c.contact.name);
+    final contactEmailCtrl = TextEditingController(text: c.contact.email);
+                    final contactPhoneCtrl = TextEditingController(text: c.contact.phone);
+    final contactAddressCtrl = TextEditingController(text: c.contact.address);
+    final contactWebsiteCtrl = TextEditingController(text: c.contact.website);
+    final payableCtrl = TextEditingController(text: c.monthlyPayable.toString());
+    final dueDateCtrl = TextEditingController(text: c.nextDueDate);
+    final pendingMonthsCtrl = TextEditingController(text: c.paymentsDue.toString());
+    final reelsCtrl = TextEditingController(text: c.weeklyReels.toString());
+    final postsCtrl = TextEditingController(text: c.weeklyPosts.toString());
+    final carouselsCtrl = TextEditingController(text: c.weeklyCarousels.toString());
+    final storiesCtrl = TextEditingController(text: c.weeklyStories.toString());
+    final campaignsCtrl = TextEditingController(text: c.campaigns.toString());
+    final campaignReachCtrl = TextEditingController(text: c.campaignReach);
+    final guidelinesCtrl = TextEditingController(text: c.postRequirements);
+    String packageType = c.packageType;
+    String contractPeriod = c.contractPeriod;
+    String conversionProbability = c.conversionProbability;
+    String retentionHealth = c.retentionHealth;
+    String serviceType = c.serviceType;
+    bool hasMarketingCommission = c.hasMarketingCommission;
+    String? marketingExecutiveId = c.marketingExecutiveId;
+    String? assignedVideographerId = c.assignedVideographerId;
+    final sessionRateCtrl = TextEditingController(text: c.sessionRate.toString());
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            return AlertDialog(
+              backgroundColor: SageColors.background,
+              title: const Text("EDIT CLIENT", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SageTextField(controller: nameCtrl, label: "Company Name"),
+                    const SizedBox(height: 10),
+                    SageTextField(controller: contactNameCtrl, label: "Contact Name"),
+                    const SizedBox(height: 10),
+                    SageTextField(controller: contactEmailCtrl, label: "Contact Email"),
+                    const SizedBox(height: 10),
+                    SageTextField(controller: contactPhoneCtrl, label: "Contact Phone"),
+                    const SizedBox(height: 10),
+                    SageTextField(controller: contactAddressCtrl, label: "Address"),
+                    const SizedBox(height: 10),
+                    SageTextField(controller: contactWebsiteCtrl, label: "Website"),
+                    const SizedBox(height: 10),
+                    SageTextField(controller: payableCtrl, label: "Monthly Payable (₹)", keyboardType: TextInputType.number),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: serviceType,
+                      decoration: const InputDecoration(labelText: "Service Type"),
+                      dropdownColor: Colors.white,
+                      items: ['Marketing', 'E-Commerce', 'Video Production'].map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
+                      onChanged: (v) => setState(() => serviceType = v ?? 'Marketing'),
+                    ),
+                    const SizedBox(height: 10),
+                    SwitchListTile(
+                      title: const Text("Marketing Commission (20%)", style: TextStyle(fontSize: 12)),
+                      value: hasMarketingCommission,
+                      onChanged: (v) => setState(() => hasMarketingCommission = v),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: marketingExecutiveId,
+                      decoration: const InputDecoration(labelText: "Assigned Marketing Exec"),
+                      dropdownColor: Colors.white,
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text("None", style: TextStyle(fontSize: 12))),
+                        ...context.read<AppState>().employees.where((e) => e.role.toLowerCase().contains('marketing')).map(
+                          (e) => DropdownMenuItem(value: e.id, child: Text(e.name, style: const TextStyle(fontSize: 12)))
+                        ),
+                      ],
+                      onChanged: (v) => setState(() => marketingExecutiveId = v),
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: packageType,
+                      decoration: const InputDecoration(labelText: "Package Type"),
+                      dropdownColor: Colors.white,
+                      items: ['Growth', 'Performance'].map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
+                      onChanged: (v) => setState(() => packageType = v ?? 'Growth'),
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: contractPeriod,
+                      decoration: const InputDecoration(labelText: "Contract Period"),
+                      dropdownColor: Colors.white,
+                      items: ['3 Months', '6 Months', '1 Year'].map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
+                      onChanged: (v) => setState(() => contractPeriod = v ?? '3 Months'),
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: assignedVideographerId,
+                      decoration: const InputDecoration(labelText: "Assigned Videographer"),
+                      dropdownColor: Colors.white,
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text("None", style: TextStyle(fontSize: 12))),
+                        const DropdownMenuItem(value: 'COF-PRI-001', child: Text("CFO Priyajit", style: TextStyle(fontSize: 12))),
+                        ...context.read<AppState>().employees.where((e) => e.role.toLowerCase().contains('videographer')).map(
+                          (e) => DropdownMenuItem(value: e.id, child: Text(e.name, style: const TextStyle(fontSize: 12)))
+                        ),
+                      ],
+                      onChanged: (v) => setState(() => assignedVideographerId = v),
+                    ),
+                    const SizedBox(height: 10),
+                    SageTextField(controller: sessionRateCtrl, label: "Session Rate (₹)", keyboardType: TextInputType.number),
+                    const SizedBox(height: 10),
+                    if (c.status == 'Lead') ...[
+                      DropdownButtonFormField<String>(
+                        value: conversionProbability,
+                        decoration: const InputDecoration(labelText: "Conversion Probability"),
+                        dropdownColor: Colors.white,
+                        items: ['High', 'Medium', 'Low'].map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
+                        onChanged: (v) => setState(() => conversionProbability = v ?? 'Medium'),
+                      ),
+                      const SizedBox(height: 10),
+                    ] else ...[
+                      DropdownButtonFormField<String>(
+                        value: retentionHealth,
+                        decoration: const InputDecoration(labelText: "Retention Health"),
+                        dropdownColor: Colors.white,
+                        items: ['Great', 'Good', 'Bad'].map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
+                        onChanged: (v) => setState(() => retentionHealth = v ?? 'Good'),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    SageTextField(controller: dueDateCtrl, label: "Due Date (e.g. 5th of Month)"),
+                    const SizedBox(height: 10),
+                    SageTextField(controller: pendingMonthsCtrl, label: "Pending Months of Payment", keyboardType: TextInputType.number),
+                    const SizedBox(height: 10),
+                    const Text("DELIVERABLES", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(child: SageTextField(controller: reelsCtrl, label: "Reels/wk", keyboardType: TextInputType.number)),
+                        const SizedBox(width: 4),
+                        Expanded(child: SageTextField(controller: postsCtrl, label: "Posts/wk", keyboardType: TextInputType.number)),
+                        const SizedBox(width: 4),
+                        Expanded(child: SageTextField(controller: carouselsCtrl, label: "Carousels", keyboardType: TextInputType.number)),
+                        const SizedBox(width: 4),
+                        Expanded(child: SageTextField(controller: storiesCtrl, label: "Stories", keyboardType: TextInputType.number)),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    if (packageType == 'Performance') ...[
+                      Row(
+                        children: [
+                          Expanded(child: SageTextField(controller: campaignsCtrl, label: "Campaigns", keyboardType: TextInputType.number)),
+                          const SizedBox(width: 4),
+                          Expanded(child: SageTextField(controller: campaignReachCtrl, label: "Reach")),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    SageTextField(controller: guidelinesCtrl, label: "Description / Requirements", maxLines: 3),
+                  ],
+                ),
+              ),
+                            actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+                  onPressed: () {
+                    context.read<AppState>().updateClient(
+                      c.id,
+                      name: nameCtrl.text,
+                      contactName: contactNameCtrl.text,
+                      contactEmail: contactEmailCtrl.text,
+                      contactPhone: contactPhoneCtrl.text,
+                      contactAddress: contactAddressCtrl.text,
+                      contactWebsite: contactWebsiteCtrl.text,
+                      monthlyPayable: double.tryParse(payableCtrl.text),
+                      serviceType: serviceType,
+                      hasMarketingCommission: hasMarketingCommission,
+                      marketingExecutiveId: marketingExecutiveId,
+                      packageType: packageType,
+                      contractPeriod: contractPeriod,
+                      conversionProbability: conversionProbability,
+                      retentionHealth: retentionHealth,
+                      nextDueDate: dueDateCtrl.text,
+                      paymentsDue: int.tryParse(pendingMonthsCtrl.text),
+                      weeklyReels: int.tryParse(reelsCtrl.text),
+                      weeklyPosts: int.tryParse(postsCtrl.text),
+                      weeklyCarousels: int.tryParse(carouselsCtrl.text),
+                      weeklyStories: int.tryParse(storiesCtrl.text),
+                      campaigns: int.tryParse(campaignsCtrl.text),
+                      campaignReach: campaignReachCtrl.text,
+                      assignedVideographerId: assignedVideographerId,
+                      sessionRate: double.tryParse(sessionRateCtrl.text),
+                      postRequirements: guidelinesCtrl.text,
+                    );
+                    context.read<AppState>().updateClientVideographer(c.id, assignedVideographerId);
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text("SAVE"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+
+
+

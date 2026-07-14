@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "340500256654",
+    "project_id": "sageosf-cf0dc",
+    "storage_bucket": "sageosf-cf0dc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:340500256654:android:143d4123291275483ff6df",
+        "android_client_info": {
+          "package_name": "com.sageos.sage_mainframe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDilQu9CPXaP3MOkiutHH1N-sX8S8C9Mb0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

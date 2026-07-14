@@ -1,0 +1,120 @@
+Widget _buildCalendar(AppState state, Persona persona) {
+    final now = DateTime.now();
+    final daysInMonth = DateUtils.getDaysInMonth(_calendarMonth.year, _calendarMonth.month);
+    final startOffset = DateTime(_calendarMonth.year, _calendarMonth.month, 1).weekday % 7;
+    final mySessionTasks = state.tasks.where((t) => t.assignedTo == persona.id && t.taskType == 'Session').toList();
+    final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.black, width: 1.5),
+        boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0)],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: () => setState(() => _calendarMonth = DateTime(_calendarMonth.year, _calendarMonth.month - 1, 1)),
+                child: Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(color: SageColors.yellowAccent, shape: BoxShape.circle, border: Border.all(color: Colors.black, width: 1.5)),
+                  child: const Icon(Icons.chevron_left, size: 18),
+                ),
+              ),
+              Text('${months[_calendarMonth.month-1]} ${_calendarMonth.year}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 1)),
+              GestureDetector(
+                onTap: () => setState(() => _calendarMonth = DateTime(_calendarMonth.year, _calendarMonth.month + 1, 1)),
+                child: Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(color: SageColors.yellowAccent, shape: BoxShape.circle, border: Border.all(color: Colors.black, width: 1.5)),
+                  child: const Icon(Icons.chevron_right, size: 18),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: ['S','M','T','W','T','F','S'].map((d) => Expanded(
+              child: Center(child: Text(d, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black54))),
+            )).toList(),
+          ),
+          const SizedBox(height: 6),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, childAspectRatio: 1),
+            itemCount: daysInMonth + startOffset,
+            itemBuilder: (ctx, i) {
+              if (i < startOffset) return const SizedBox();
+              final day = i - startOffset + 1;
+              final date = DateTime(_calendarMonth.year, _calendarMonth.month, day);
+              final sessions = mySessionTasks.where((t) {
+                final dd = t.deadline;
+                return dd.year == date.year && dd.month == date.month && dd.day == date.day;
+              }).toList();
+              final hasBooked = sessions.any((t) => t.isApprovedByVideographer && !t.isCompleted);
+              final hasPending = sessions.any((t) => !t.isApprovedByVideographer && !t.isCompleted);
+              final hasCompleted = sessions.any((t) => t.isCompleted);
+              final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
+              final isSel = _selectedDate?.year == date.year && _selectedDate?.month == date.month && _selectedDate?.day == date.day;
+
+              Color bgColor = Colors.transparent;
+              if (hasCompleted) bgColor = SageColors.primary;
+              else if (hasBooked) bgColor = SageColors.tertiary;
+              else if (hasPending) bgColor = SageColors.error;
+              else if (isToday) bgColor = SageColors.yellowAccent;
+
+              if (isSel && (bgColor == Colors.transparent || bgColor == SageColors.yellowAccent)) {
+                bgColor = Colors.black;
+              }
+
+              Color textColor = (bgColor == SageColors.primary || bgColor == SageColors.tertiary || bgColor == SageColors.error || bgColor == Colors.black) ? Colors.white : Colors.black87;
+
+              return GestureDetector(
+                onTap: () => setState(() => _selectedDate = date),
+                child: Container(
+                  margin: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.black, width: isSel ? 2.5 : 1.0),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('$day', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold,
+                          color: textColor)),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _legend(SageColors.primary, 'Completed'),
+              const SizedBox(width: 14),
+              _legend(SageColors.tertiary, 'Booked'),
+              const SizedBox(width: 14),
+              _legend(SageColors.error, 'Pending'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _legend(Color c, String label) => Row(children: [
+    Container(width: 8, height: 8, decoration: BoxDecoration(color: c, shape: BoxShape.circle, border: Border.all(color: Colors.black, width: 0.5))),
+    const SizedBox(width: 4),
+    Text(label, style: const TextStyle(fontSize: 10, color: Colors.black54, fontWeight: FontWeight.bold)),
+  ]);
+
+  

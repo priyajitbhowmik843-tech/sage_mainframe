@@ -1,0 +1,71 @@
+import 'dart:io';
+
+void main() {
+  var file = File('pubspec.yaml');
+  file.writeAsStringSync('''
+name: sage_mainframe
+description: "SAGE Mainframe Terminal OS - Internal Management App"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.2
+  google_fonts: ^6.2.1
+  firebase_core: ^4.11.0
+  cloud_firestore: ^6.6.0
+  firebase_messaging: ^16.4.1
+  googleapis_auth: ^2.3.2
+  http: ^1.6.0
+  intl: ^0.20.3
+  image: ^4.9.1
+  audioplayers: ^6.8.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/logo/
+    - assets/avatars/
+    - assets/audio/
+
+  fonts:
+    - family: SpaceMono
+      fonts:
+        - asset: fonts/SpaceMono-Regular.ttf
+        - asset: fonts/SpaceMono-Bold.ttf
+          weight: 700
+        - asset: fonts/SpaceMono-Italic.ttf
+          style: italic
+        - asset: fonts/SpaceMono-BoldItalic.ttf
+          weight: 700
+          style: italic
+    - family: Born2bSporty
+      fonts:
+        - asset: fonts/born2bsporty-fs.otf
+    - family: Pixelta
+      fonts:
+        - asset: fonts/Pixelta.ttf
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  web:
+    generate: true
+    image_path: "assets/logo.png"
+  image_path: "assets/logo.png"
+''');
+  print('Restored pubspec.yaml');
+}
