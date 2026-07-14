@@ -162,6 +162,7 @@ class Employee {
   double perSessionRate;
   double perVideoRate;
   double perSkuRate;
+  double perDesignRate;
   int sessionsPerMonth;
   List<String> paidMonths;
   int sessionsPaid;
@@ -200,6 +201,7 @@ class Employee {
     this.perSessionRate = 0.0,
     this.perVideoRate = 0.0,
     this.perSkuRate = 0.0,
+    this.perDesignRate = 0.0,
     this.sessionsPerMonth = 0,
     this.paidMonths = const [],
     this.sessionsPaid = 0,
@@ -246,6 +248,7 @@ class Employee {
       perSessionRate: (data['perSessionRate'] ?? 0.0).toDouble(),
       perVideoRate: (data['perVideoRate'] ?? 0.0).toDouble(),
       perSkuRate: (data['perSkuRate'] ?? 0.0).toDouble(),
+      perDesignRate: (data['perDesignRate'] ?? 0.0).toDouble(),
       sessionsPerMonth: data['sessionsPerMonth'] ?? 0,
       paidMonths: List<String>.from(data['paidMonths'] ?? []),
       sessionsPaid: data['sessionsPaid'] ?? 0,
@@ -286,6 +289,7 @@ class Employee {
       'perSessionRate': perSessionRate,
       'perVideoRate': perVideoRate,
       'perSkuRate': perSkuRate,
+      'perDesignRate': perDesignRate,
       'sessionsPerMonth': sessionsPerMonth,
       'paidMonths': paidMonths,
       'sessionsPaid': sessionsPaid,

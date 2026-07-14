@@ -8219,6 +8219,7 @@ class _CeoDashboardState extends State<CeoDashboard> {
     final rateCtrl1 = TextEditingController(text: e.perVideoRate.toString());
     final rateCtrl2 = TextEditingController(text: e.perSessionRate.toString());
     final rateCtrl3 = TextEditingController(text: e.perSkuRate.toString());
+    final rateCtrl4 = TextEditingController(text: e.perDesignRate.toString());
 
     showDialog(
       context: context,
@@ -8341,6 +8342,12 @@ class _CeoDashboardState extends State<CeoDashboard> {
                     label: "Per SKU Rate (₹)",
                     keyboardType: TextInputType.number,
                   ),
+                  const SizedBox(height: 10),
+                  SageTextField(
+                    controller: rateCtrl4,
+                    label: "Per Design Rate (₹)",
+                    keyboardType: TextInputType.number,
+                  ),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -8376,6 +8383,7 @@ class _CeoDashboardState extends State<CeoDashboard> {
                                 monthlySalary: double.tryParse(salaryCtrl.text),
                                 perSessionRate: double.tryParse(rateCtrl2.text),
                                 perSkuRate: double.tryParse(rateCtrl3.text),
+                                perDesignRate: double.tryParse(rateCtrl4.text),
                                 perVideoRate: double.tryParse(rateCtrl1.text),
                               );
                               Navigator.pop(ctx);
@@ -9215,6 +9223,7 @@ class _CeoDashboardState extends State<CeoDashboard> {
     final rateCtrl1 = TextEditingController(text: "0");
     final rateCtrl2 = TextEditingController(text: "0");
     final rateCtrl3 = TextEditingController(text: "0");
+    final rateCtrl4 = TextEditingController(text: "0");
     List<String> selectedRoles = ['Video Editor'];
 
     showDialog(
@@ -9338,6 +9347,12 @@ class _CeoDashboardState extends State<CeoDashboard> {
                     label: "Per SKU Rate (₹)",
                     keyboardType: TextInputType.number,
                   ),
+                  const SizedBox(height: 10),
+                  SageTextField(
+                    controller: rateCtrl4,
+                    label: "Per Design Rate (₹)",
+                    keyboardType: TextInputType.number,
+                  ),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -9363,6 +9378,7 @@ class _CeoDashboardState extends State<CeoDashboard> {
                             perSessionRate:
                                 double.tryParse(rateCtrl2.text) ?? 0.0,
                             perSkuRate: double.tryParse(rateCtrl3.text) ?? 0.0,
+                            perDesignRate: double.tryParse(rateCtrl4.text) ?? 0.0,
                             perVideoRate:
                                 double.tryParse(rateCtrl1.text) ?? 0.0,
                           );

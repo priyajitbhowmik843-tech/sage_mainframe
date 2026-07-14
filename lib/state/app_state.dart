@@ -470,6 +470,7 @@ class AppState extends ChangeNotifier {
     double perSessionRate = 0.0,
     double perVideoRate = 0.0,
     double perSkuRate = 0.0,
+    double perDesignRate = 0.0,
     int sessionsPerMonth = 0,
   }) {
     if (name.trim().isEmpty) {
@@ -511,6 +512,7 @@ class AppState extends ChangeNotifier {
       perSessionRate: perSessionRate,
       perVideoRate: perVideoRate,
       perSkuRate: perSkuRate,
+      perDesignRate: perDesignRate,
       sessionsPerMonth: sessionsPerMonth,
       paidMonths: const [],
       sessionsPaid: 0,
@@ -596,6 +598,7 @@ class AppState extends ChangeNotifier {
     double? perSessionRate,
     double? perVideoRate,
     double? perSkuRate,
+    double? perDesignRate,
     int? sessionsPerMonth,
     int? paymentsDue,
     DateTime? lastPaidDate,
@@ -625,6 +628,7 @@ class AppState extends ChangeNotifier {
     if (perSessionRate != null) emp.perSessionRate = perSessionRate;
     if (perVideoRate != null) emp.perVideoRate = perVideoRate;
     if (perSkuRate != null) emp.perSkuRate = perSkuRate;
+    if (perDesignRate != null) emp.perDesignRate = perDesignRate;
     if (sessionsPerMonth != null) emp.sessionsPerMonth = sessionsPerMonth;
     if (paymentsDue != null) emp.paymentsDue = paymentsDue;
     if (lastPaidDate != null) emp.lastPaidDate = lastPaidDate;
@@ -667,6 +671,7 @@ class AppState extends ChangeNotifier {
     double? monthlySalary,
     double? perSessionRate,
     double? perVideoRate,
+    double? perDesignRate,
     int? sessionsPerMonth,
   }) {
     final idx = _employees.indexWhere((e) => e.id == id);
@@ -675,6 +680,7 @@ class AppState extends ChangeNotifier {
       if (perSessionRate != null)
         _employees[idx].perSessionRate = perSessionRate;
       if (perVideoRate != null) _employees[idx].perVideoRate = perVideoRate;
+      if (perDesignRate != null) _employees[idx].perDesignRate = perDesignRate;
       if (sessionsPerMonth != null)
         _employees[idx].sessionsPerMonth = sessionsPerMonth;
       _db
