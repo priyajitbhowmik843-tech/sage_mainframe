@@ -334,11 +334,14 @@ class Task {
   final DateTime? rejectedAt;
   final DateTime? submittedAt;
   bool isApprovedByVideographer;
+  bool isApprovedByGraphicsEditor;
   final List<String> sessionClientIds; // For sessions: list of client IDs
   bool isPostponeRequested;
   final DateTime? postponeRequestedDate;
   bool isPaidToVideographer = false;
   bool isPaymentAcknowledgedByVideographer = false;
+  bool isPaidToGraphicsEditor = false;
+  bool isPaymentAcknowledgedByGraphicsEditor = false;
   String? uploadTaskId;
 
   Task({
@@ -358,8 +361,11 @@ class Task {
     this.rejectedAt,
     this.submittedAt,
     this.isApprovedByVideographer = false,
+    this.isApprovedByGraphicsEditor = false,
     this.isPaidToVideographer = false,
     this.isPaymentAcknowledgedByVideographer = false,
+    this.isPaidToGraphicsEditor = false,
+    this.isPaymentAcknowledgedByGraphicsEditor = false,
     this.sessionClientIds = const [],
     this.isPostponeRequested = false,
     this.postponeRequestedDate,
@@ -384,8 +390,11 @@ class Task {
       rejectedAt: _parseDateNullable(data['rejectedAt']),
       submittedAt: _parseDateNullable(data['submittedAt']),
       isApprovedByVideographer: data['isApprovedByVideographer'] ?? false,
+      isApprovedByGraphicsEditor: data['isApprovedByGraphicsEditor'] ?? false,
       isPaidToVideographer: data['isPaidToVideographer'] ?? false,
       isPaymentAcknowledgedByVideographer: data['isPaymentAcknowledgedByVideographer'] ?? false,
+      isPaidToGraphicsEditor: data['isPaidToGraphicsEditor'] ?? false,
+      isPaymentAcknowledgedByGraphicsEditor: data['isPaymentAcknowledgedByGraphicsEditor'] ?? false,
       sessionClientIds: List<String>.from(data['sessionClientIds'] ?? []),
       isPostponeRequested: data['isPostponeRequested'] ?? false,
       postponeRequestedDate: _parseDateNullable(data['postponeRequestedDate']),
@@ -410,8 +419,11 @@ class Task {
       if (rejectedAt != null) 'rejectedAt': Timestamp.fromDate(rejectedAt!),
       if (submittedAt != null) 'submittedAt': Timestamp.fromDate(submittedAt!),
       'isApprovedByVideographer': isApprovedByVideographer,
+      'isApprovedByGraphicsEditor': isApprovedByGraphicsEditor,
       'isPaidToVideographer': isPaidToVideographer,
       'isPaymentAcknowledgedByVideographer': isPaymentAcknowledgedByVideographer,
+      'isPaidToGraphicsEditor': isPaidToGraphicsEditor,
+      'isPaymentAcknowledgedByGraphicsEditor': isPaymentAcknowledgedByGraphicsEditor,
       if (sessionClientIds.isNotEmpty) 'sessionClientIds': sessionClientIds,
       'isPostponeRequested': isPostponeRequested,
       if (postponeRequestedDate != null) 'postponeRequestedDate': Timestamp.fromDate(postponeRequestedDate!),
@@ -568,6 +580,9 @@ class Client {
   String? assignedVideographerId;
   double sessionRate;
 
+  // ---- Graphics Editor Link ----
+  String? assignedGraphicsEditorId;
+
   // ---- Marketing Executive Link & Splits ----
   String serviceType;             // 'Marketing', 'E-commerce', 'Video Production'
   bool hasMarketingCommission;    // true if ME gets 20%
@@ -707,7 +722,8 @@ class Client {
     this.isPaidForMonth = false,
     this.paidMonths = const [],
     this.assignedVideographerId,
-    this.sessionRate = 0,
+    this.assignedGraphicsEditorId,
+    this.sessionRate = 0.0,
     this.serviceType = 'Marketing',
     this.hasMarketingCommission = false,
     this.marketingExecutiveId,
@@ -766,7 +782,8 @@ class Client {
       isPaidForMonth: data['isPaidForMonth'] ?? false,
       paidMonths: (data['paidMonths'] as List<dynamic>?)?.map((e) => int.tryParse(e.toString()) ?? 0).toList() ?? [],
       assignedVideographerId: data['assignedVideographerId'],
-      sessionRate: (data['sessionRate'] ?? 0).toDouble(),
+      assignedGraphicsEditorId: data['assignedGraphicsEditorId'],
+      sessionRate: (data['sessionRate'] ?? 0.0).toDouble(),
       serviceType: (data['serviceType'] ?? 'Marketing').toString().toLowerCase() == 'e-commerce' ? 'E-Commerce' : (data['serviceType'] ?? 'Marketing'),
       hasMarketingCommission: data['hasMarketingCommission'] ?? false,
       marketingExecutiveId: data['marketingExecutiveId'],
@@ -823,6 +840,7 @@ class Client {
     'isPaidForMonth': isPaidForMonth,
     'paidMonths': paidMonths,
     if (assignedVideographerId != null) 'assignedVideographerId': assignedVideographerId,
+    if (assignedGraphicsEditorId != null) 'assignedGraphicsEditorId': assignedGraphicsEditorId,
     'sessionRate': sessionRate,
     'serviceType': serviceType,
     'hasMarketingCommission': hasMarketingCommission,

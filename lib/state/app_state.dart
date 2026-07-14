@@ -558,6 +558,34 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  void acknowledgeGraphicsEditorPayment(String taskId) {
+    final idx = _tasks.indexWhere((t) => t.id == taskId);
+    if (idx != -1) {
+      _tasks[idx].isPaymentAcknowledgedByGraphicsEditor = true;
+      _db.collection('tasks').doc(taskId).update({
+        'isPaymentAcknowledgedByGraphicsEditor': true,
+      });
+      _addLog(
+        'PAYMENT ACKNOWLEDGED: "${_tasks[idx].title}" by Graphics Editor ${_activePersona.name}',
+      );
+      notifyListeners();
+    }
+  }
+
+  void approveGraphicsEditorSession(String taskId) {
+    final idx = _tasks.indexWhere((t) => t.id == taskId);
+    if (idx != -1) {
+      _tasks[idx].isApprovedByGraphicsEditor = true;
+      _db.collection('tasks').doc(taskId).update({
+        'isApprovedByGraphicsEditor': true,
+      });
+      _addLog(
+        'SESSION APPROVED: "${_tasks[idx].title}" by Graphics Editor ${_activePersona.name}',
+      );
+      notifyListeners();
+    }
+  }
+
   void updateEmployee(
     String id, {
     String? name,

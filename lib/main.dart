@@ -12,6 +12,7 @@ import 'screens/cofounder_dashboard.dart';
 import 'screens/employee_dashboard.dart';
 import 'screens/videographer_dashboard.dart';
 import 'screens/dual_role_dashboard.dart';
+import 'screens/graphics_editor_dashboard.dart';
 import 'screens/marketing_executive_dashboard.dart';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -260,6 +261,8 @@ class MainShell extends StatelessWidget {
             return const VideographerDashboard();
           } else if (empInState.hasRole('marketing executive') || empInState.hasRole('marketing')) {
             return const MarketingExecutiveDashboard();
+          } else if (empInState.hasRole('graphics editor') || empInState.hasRole('graphics')) {
+            return const GraphicsEditorDashboard();
           }
         }
         return const EmployeeDashboard();
