@@ -837,6 +837,42 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void payGraphicsEditorDesigns(
+    String employeeId,
+    int count,
+    double totalPayout,
+  ) {
+    final emp = _employees.where((e) => e.id == employeeId).firstOrNull;
+    if (emp == null) return;
+
+    final unpaidDesigns = _tasks
+        .where((t) => t.assignedTo == employeeId && t.isCompleted && !t.isPaidToGraphicsEditor)
+        .toList();
+    
+    unpaidDesigns.sort((a, b) => a.deadline.compareTo(b.deadline));
+
+    int toPay = count > unpaidDesigns.length ? unpaidDesigns.length : count;
+    for (int i = 0; i < toPay; i++) {
+      final t = unpaidDesigns[i];
+      t.isPaidToGraphicsEditor = true;
+      _db.collection('tasks').doc(t.id).update({'isPaidToGraphicsEditor': true});
+    }
+
+    if (totalPayout > 0) {
+      emp.paymentCleared = true;
+      emp.paymentApprovedByEmployee = false;
+      emp.pendingPayAmount = totalPayout;
+      emp.pendingPayMonth = '$toPay Designs';
+
+      _db.collection('employees').doc(employeeId).update({
+        'paymentCleared': true,
+        'paymentApprovedByEmployee': false,
+        'pendingPayAmount': totalPayout,
+        'pendingPayMonth': emp.pendingPayMonth,
+      });
+    }
+  }
+
   void payEcomExecutiveSkus(
     String employeeId,
     int skuCount,

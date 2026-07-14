@@ -3545,6 +3545,65 @@ class _CeoDashboardState extends State<CeoDashboard> {
     );
   }
 
+  void _showPayDesignsDialog(BuildContext context, AppState state, Employee e, int unpaidDesignsCount) {
+    final designsCtrl = TextEditingController(text: unpaidDesignsCount.toString());
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: SageColors.background,
+          title: Text(
+            "PAY ${e.name.toUpperCase()}",
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Unpaid Completed Designs: $unpaidDesignsCount",
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              SageTextField(
+                controller: designsCtrl,
+                label: "Number of Designs to Pay",
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("CANCEL"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: SageColors.primary,
+              ),
+              onPressed: () {
+                final count = int.tryParse(designsCtrl.text) ?? 0;
+                if (count > 0 && count <= unpaidDesignsCount) {
+                  final totalPayout = count * e.perDesignRate;
+                  context.read<AppState>().payGraphicsEditorDesigns(
+                    e.id,
+                    count,
+                    totalPayout,
+                  );
+                  Navigator.pop(ctx);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Invalid design count!")),
+                  );
+                }
+              },
+              child: const Text("PAY DESIGNS"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Color _getRoleColor(String role) {
     final r = role.toLowerCase();
     if (r.contains('ceo')) return const Color(0xFFFFB3BA);
@@ -3851,6 +3910,7 @@ class _CeoDashboardState extends State<CeoDashboard> {
                   employee.monthlySalary == 0);
           final isEcomExec = employee.hasRole('ecom executive');
           final isVideoEditor = employee.hasRole('video editor');
+          final isGraphicsEditor = employee.hasRole('graphics editor') && employee.monthlySalary == 0;
           final isME =
               employee.hasRole('marketing executive') ||
               employee.hasRole('marketing') ||
@@ -3860,6 +3920,16 @@ class _CeoDashboardState extends State<CeoDashboard> {
           int unpaidVideosCount = 0;
           double pendingSessionPayout = 0;
           int unpaidSessionsCount = 0;
+          double pendingDesignPayout = 0;
+          int unpaidDesignsCount = 0;
+
+          if (isGraphicsEditor) {
+            final unpaidDesigns = state.tasks
+                .where((t) => t.assignedTo == employee.id && t.isCompleted && !t.isPaidToGraphicsEditor)
+                .toList();
+            unpaidDesignsCount = unpaidDesigns.length;
+            pendingDesignPayout = unpaidDesignsCount * employee.perDesignRate;
+          }
 
           if (isVideo) {
             final unpaidSessions = state.tasks
@@ -4287,9 +4357,37 @@ class _CeoDashboardState extends State<CeoDashboard> {
                         ),
                         const SizedBox(height: 8),
                       ],
+                      if (isGraphicsEditor) ...[
+                        Text(
+                          "PER DESIGN RATE: \u20B9${employee.perDesignRate.toStringAsFixed(0)}",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        Text(
+                          "UNPAID DESIGNS: $unpaidDesignsCount",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        Text(
+                          "PENDING PAYOUT: \u20B9${pendingDesignPayout.toStringAsFixed(0)}",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       if (!isVideo &&
                           !isVideoEditorPerVideo &&
-                          !isEcomExec) ...[
+                          !isEcomExec &&
+                          !isGraphicsEditor) ...[
                         if (isME) ...[
                           const Text(
                             "COMMISSION BASED",
@@ -4405,9 +4503,27 @@ class _CeoDashboardState extends State<CeoDashboard> {
                                     ),
                                   ),
                                 ),
+                              if (isGraphicsEditor)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: Colors.black,
+                                    ),
+                                    onPressed: () {
+                                      _showPayDesignsDialog(context, state, employee, unpaidDesignsCount);
+                                    },
+                                    child: const Text(
+                                      "PAY DESIGNS",
+                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ),
                               if (!isVideo &&
                                   !isVideoEditorPerVideo &&
-                                  !isEcomExec)
+                                  !isEcomExec &&
+                                  !isGraphicsEditor)
                                 ElevatedButton(
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.white,
