@@ -1349,52 +1349,11 @@ class _CeoDashboardState extends State<CeoDashboard> {
               c.dynamicPaymentsDue > 0,
         )
         .toList();
-    final pendingEmployees = state.employees.where((e) {
-      if (!e.isActive) return false;
-      if (!e.paymentCleared) return true;
-      final isVideo =
-          (e.hasRole('videographer') ||
-              e.hasRole('videographer/cinematographer')) &&
-          (e.videoEditorPayType != 'Salary' && e.monthlySalary == 0);
-      final isVideoEditorPerVideo =
-          e.hasRole('video editor') &&
-          (e.videoEditorPayType == 'Per Video Rate' && e.monthlySalary == 0);
-      if (isVideo) {
-        final unpaidSessionsCount = state.tasks
-            .where(
-              (t) =>
-                  t.assignedTo == e.id &&
-                  t.taskType == 'Session' &&
-                  t.isCompleted &&
-                  !t.isPaidToVideographer,
-            )
-            .length;
-        if (unpaidSessionsCount > 0) return true;
-      }
-      if (isVideoEditorPerVideo) {
-        final unpaidVideosCount = state.tasks
-            .where(
-              (t) =>
-                  t.assignedTo == e.id &&
-                  t.taskType != 'Session' &&
-                  t.isCompleted &&
-                  !t.isPaidToVideographer,
-            )
-            .length;
-        if (unpaidVideosCount > 0) return true;
-      }
-      return false;
-    }).toList();
 
-    if (pendingClients.isEmpty && pendingEmployees.isEmpty) {
-      return Container(
-        height: 200,
-        decoration: BoxDecoration(
-          color: SageColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.black, width: 1.5),
-        ),
-        child: const Center(
+    if (pendingClients.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Center(
           child: Text(
             "NO PENDING PAYMENTS",
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
@@ -1408,105 +1367,52 @@ class _CeoDashboardState extends State<CeoDashboard> {
       (sum, c) => sum + c.totalAmountDue,
     );
 
-    return Container(
-      height: 200,
-      decoration: BoxDecoration(
-        color: SageColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black, width: 1.5),
-      ),
-      child: ListView(
-        padding: const EdgeInsets.all(12),
-        children: [
-          if (pendingClients.isNotEmpty) ...[
-            Text(
-              "CLIENTS DUE (₹${totalClientsDue.toStringAsFixed(0)})",
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 10,
-                color: SageColors.primary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            ...pendingClients.map(
-              (c) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        c.name,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          "CLIENTS DUE (₹${totalClientsDue.toStringAsFixed(0)})",
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 10,
+            color: SageColors.primary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...pendingClients.map(
+          (c) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    c.name,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      "₹${c.totalAmountDue.toStringAsFixed(0)} (${c.dynamicPaymentsDue} mo)",
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: SageColors.error,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-            ),
-            const Divider(color: Colors.black26),
-          ],
-          if (pendingEmployees.isNotEmpty) ...[
-            const Text(
-              "EMPLOYEES DUE",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 10,
-                color: SageColors.secondary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            ...pendingEmployees.map((e) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        e.name,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      e.paymentApprovedByEmployee ? "APPROVED" : "WAITING",
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: e.paymentApprovedByEmployee
-                            ? SageColors.primary
-                            : Colors.orange,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+                const SizedBox(width: 4),
+                Text(
+                  "₹${c.totalAmountDue.toStringAsFixed(0)} (${c.dynamicPaymentsDue} mo)",
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: SageColors.error,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              );
-            }),
-          ],
-        ],
-      ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  // --- --- --- --- TAB 1: CLIENTS --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+    // --- --- --- --- TAB 1: CLIENTS --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
   // Accordion controllers --- ensures only one card is open at a time
   final Map<String, ExpansionTileController> _clientExpControllers = {};
   final Map<String, ExpansionTileController> _empExpControllers = {};

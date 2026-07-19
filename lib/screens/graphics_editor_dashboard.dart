@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sage_mainframe/widgets/team_members_view.dart';
 import 'package:provider/provider.dart';
 import 'package:sage_mainframe/state/app_state.dart';
 import 'package:sage_mainframe/theme/app_theme.dart';
@@ -13,6 +14,43 @@ class GraphicsEditorDashboard extends StatefulWidget {
 }
 
 class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
+  double _calculateDynamicDeduction(List<Task> myTasks) {
+    final now = DateTime.now();
+    DateTime startOfMonth = DateTime(now.year, now.month, 1);
+    if (now.year == 2026 && now.month == 7) {
+      startOfMonth = DateTime(2026, 7, 20);
+    }
+    final today = DateTime(now.year, now.month, now.day);
+    double dynamicDeduction = 0;
+    
+    for (DateTime d = startOfMonth; d.isBefore(today.add(const Duration(days: 1))); d = d.add(const Duration(days: 1))) {
+      final tasksForDay = myTasks.where((t) => 
+        (t.taskType?.toLowerCase() == 'design') &&
+        t.deadline.year == d.year &&
+        t.deadline.month == d.month &&
+        t.deadline.day == d.day
+      ).toList();
+      
+      int rejectedOrManuallyMissed = tasksForDay.where((t) {
+          if (t.isMissed == true || t.rejectedAt != null) return true;
+          final deadlinePlus24 = t.deadline.add(const Duration(hours: 24));
+          if (t.submittedAt != null) {
+            return t.submittedAt!.isAfter(deadlinePlus24);
+          } else {
+            if (t.isCompleted) return false;
+            return DateTime.now().isAfter(deadlinePlus24);
+          }
+        }).length;
+        
+        int totalMissedForDay = rejectedOrManuallyMissed;
+      
+      if (totalMissedForDay > 0) {
+        dynamicDeduction += (totalMissedForDay * 20.0);
+      }
+    }
+    return dynamicDeduction;
+  }
+
   int _tab = 0; // 0: Home, 1: Finance, 2: Profile
   DateTime _calendarMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
   DateTime? _selectedDate;
@@ -140,6 +178,7 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
                   _navIcon(0, Icons.calendar_month_outlined, Icons.calendar_month),
                   _navIcon(1, Icons.bar_chart_outlined, Icons.bar_chart),
                   _navIcon(2, Icons.person_outline, Icons.person),
+                  _navIcon(3, Icons.group_outlined, Icons.group),
                 ],
               ),
             ),
@@ -177,6 +216,7 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
       case 0: return _buildHomeTab(context, state, persona);
       case 1: return _buildFinanceTab(context, state, persona);
       case 2: return _buildProfileTab(context, state, persona);
+      case 3: return TeamMembersView();
       default: return const SizedBox();
     }
   }
@@ -196,29 +236,7 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 10),
-        TerminalPanel(
-          title: 'UNPAID PAYMENT TRACKER',
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Column(
-                children: [
-                  const Text('UNPAID DESIGNS', style: TextStyle(fontSize: 10, color: Colors.black54, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text('$numUnpaid', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-                ],
-              ),
-              Column(
-                children: [
-                  const Text('PENDING PAYOUT', style: TextStyle(fontSize: 10, color: Colors.black54, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text('\u20B9${unpaidAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: SageColors.error)),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
+        
         _buildCalendar(state, persona, myTasks),
         const SizedBox(height: 14),
         if (_selectedDate != null) ...[
@@ -475,14 +493,17 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
     final myTasks = state.tasks.where((t) => t.assignedTo == persona.id).toList();
     final completedDesigns = myTasks.where((t) => t.isCompleted).toList();
     
-    final int completedCount = completedDesigns.length;
-    final double perDesignRate = emp.perDesignRate;
+    
+      final int completedCount = completedDesigns.length;
+      
+      final double deductionAmount = _calculateDynamicDeduction(myTasks);
+
     
     final numPaid = completedDesigns.where((t) => t.isPaymentAcknowledgedByGraphicsEditor).length;
     final numPending = completedDesigns.length - numPaid;
     
-    final double amountPaid = numPaid * perDesignRate;
-    final double amountPending = numPending * perDesignRate;
+    final double amountPaid = emp.paidMonths.length * emp.monthlySalary;
+    final double amountPending = emp.paymentCleared ? emp.pendingPayAmount : (emp.monthlySalary - deductionAmount);
     
     final designsPendingApproval = completedDesigns.where((t) => t.isPaidToGraphicsEditor && !t.isPaymentAcknowledgedByGraphicsEditor).toList();
 
@@ -498,7 +519,7 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
                 children: [
                   Expanded(child: StatChip(label: 'COMPLETED DESIGNS', value: '$completedCount', valueColor: SageColors.primary, icon: Icons.check_circle)),
                   const SizedBox(width: 12),
-                  Expanded(child: StatChip(label: 'PER DESIGN RATE', value: '\u20B9${perDesignRate.toStringAsFixed(0)}', valueColor: Colors.black87, icon: Icons.price_change)),
+                  Expanded(child: StatChip(label: 'DEDUCTIONS', value: '\u20B9${deductionAmount.toStringAsFixed(0)}', valueColor: SageColors.error, icon: Icons.money_off)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -568,6 +589,7 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
     
     final double amountPaid = numPaid * emp.perDesignRate;
     final double amountUnpaid = numUnpaid * emp.perDesignRate;
+      final double deductionAmount = _calculateDynamicDeduction(myTasks);
 
     final displayPayout = emp.paymentCleared ? emp.pendingPayAmount : amountUnpaid;
     final displaySessions = emp.paymentCleared ? (emp.pendingPayMonth ?? "$numUnpaid") : "$numUnpaid";
@@ -582,7 +604,7 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
             children: [
               Center(
                   child: ClipOval(
-                    child: Image.asset(availableAvatars[emp.avatar % availableAvatars.length], fit: BoxFit.cover, width: 140, height: 140),
+                    child: Transform.scale(scale: 1.7, child: Image.asset(availableAvatars[emp.avatar % availableAvatars.length], fit: BoxFit.cover, width: 140, height: 140)),
                   ),
                 ),
               const SizedBox(height: 16),
@@ -603,10 +625,9 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
           title: "FINANCE DATA",
           child: Column(
             children: [
-              _profileRow("AMOUNT PAID", "\u20B9${amountPaid.toStringAsFixed(0)}"),
-              _profileRow("UNPAID AMOUNT", "\u20B9$displayPayout"),
-              _profileRow("PAID DESIGNS", "$numPaid"),
-              _profileRow("UNPAID DESIGNS", displaySessions),
+                            _profileRow("SALARY AMOUNT", "\u20B9${emp.monthlySalary.toStringAsFixed(0)} / mo"),
+              _profileRow("PAID TILL MONTH", emp.paidMonths.isNotEmpty ? emp.paidMonths.last : 'None'),
+              _profileRow("DEDUCTIONS", "\u20B9${deductionAmount.toStringAsFixed(0)}"),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
@@ -752,7 +773,7 @@ class _GraphicsEditorDashboardState extends State<GraphicsEditorDashboard> {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.black, width: 1.5),
                             ),
-                            child: ClipOval(child: Image.asset(availableAvatars[index], fit: BoxFit.cover, width: 48, height: 48)),
+                            child: ClipOval(child: Transform.scale(scale: 1.7, child: Image.asset(availableAvatars[index], fit: BoxFit.cover, width: 48, height: 48))),
                           ),
                         );
                       }),

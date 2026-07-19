@@ -10,6 +10,15 @@ import 'package:audioplayers/audioplayers.dart';
 import '../main.dart';
 import '../theme/app_theme.dart';
 
+class PoolData {
+  final double income;
+  final double expenses;
+  final double netBalance;
+  final Map<String, double> shares;
+
+  PoolData({required this.income, required this.expenses, required this.shares}) : netBalance = income - expenses;
+}
+
 class AppState extends ChangeNotifier {
   final String? initialPersonaId;
   bool _isLoggedIn = false;
@@ -471,6 +480,7 @@ class AppState extends ChangeNotifier {
     double perVideoRate = 0.0,
     double perSkuRate = 0.0,
     double perDesignRate = 0.0,
+    double pendingPayDeduction = 0.0,
     int sessionsPerMonth = 0,
   }) {
     if (name.trim().isEmpty) {
@@ -513,6 +523,7 @@ class AppState extends ChangeNotifier {
       perVideoRate: perVideoRate,
       perSkuRate: perSkuRate,
       perDesignRate: perDesignRate,
+      pendingPayDeduction: pendingPayDeduction,
       sessionsPerMonth: sessionsPerMonth,
       paidMonths: const [],
       sessionsPaid: 0,
@@ -599,6 +610,7 @@ class AppState extends ChangeNotifier {
     double? perVideoRate,
     double? perSkuRate,
     double? perDesignRate,
+    double? pendingPayDeduction,
     int? sessionsPerMonth,
     int? paymentsDue,
     DateTime? lastPaidDate,
@@ -629,6 +641,7 @@ class AppState extends ChangeNotifier {
     if (perVideoRate != null) emp.perVideoRate = perVideoRate;
     if (perSkuRate != null) emp.perSkuRate = perSkuRate;
     if (perDesignRate != null) emp.perDesignRate = perDesignRate;
+      if (pendingPayDeduction != null) emp.pendingPayDeduction = pendingPayDeduction;
     if (sessionsPerMonth != null) emp.sessionsPerMonth = sessionsPerMonth;
     if (paymentsDue != null) emp.paymentsDue = paymentsDue;
     if (lastPaidDate != null) emp.lastPaidDate = lastPaidDate;
@@ -785,7 +798,7 @@ class AppState extends ChangeNotifier {
               (isForSessions
                   ? t.taskType == 'Session'
                   : t.taskType != 'Session') &&
-              t.isCompleted &&
+              (t.isCompleted || (isForSessions && t.isApprovedByVideographer)) &&
               !t.isPaidToVideographer,
         )
         .toList();
@@ -846,7 +859,7 @@ class AppState extends ChangeNotifier {
     if (emp == null) return;
 
     final unpaidDesigns = _tasks
-        .where((t) => t.assignedTo == employeeId && t.isCompleted && !t.isPaidToGraphicsEditor)
+        .where((t) => t.assignedTo == employeeId && (t.isCompleted || t.isApprovedByGraphicsEditor) && !t.isPaidToGraphicsEditor)
         .toList();
     
     unpaidDesigns.sort((a, b) => a.deadline.compareTo(b.deadline));
@@ -956,9 +969,10 @@ class AppState extends ChangeNotifier {
             amount: amt,
             isIncome: false,
             date: DateTime.now(),
-            category: 'Employee Salary',
-            expenseType: 'Salary',
+            category: monthStr.contains('Misc:') ? 'MISC SESSIONS PAYMENT' : (monthStr.contains('Sessions') || monthStr.contains('Videos')) ? 'SESSIONS PAYMENT' : 'Employee Salary',
+            expenseType: (monthStr.contains('Misc:') || monthStr.contains('Sessions') || monthStr.contains('Videos')) ? 'Session Payment' : 'Salary',
             employeeId: e.id,
+            serviceType: (e.role == 'Videographer' && monthStr.contains('Misc:')) ? 'Video Production' : null,
           ),
         );
       } else {
@@ -968,6 +982,48 @@ class AppState extends ChangeNotifier {
         });
       }
       notifyListeners();
+    }
+  }
+
+  void payMiscVideographerSession(String taskId) {
+    final idx = _tasks.indexWhere((t) => t.id == taskId);
+    if (idx != -1) {
+      final t = _tasks[idx];
+      t.isPaidToVideographer = true;
+      _db.collection('tasks').doc(taskId).update({
+        'isPaidToVideographer': true,
+      });
+
+      final empIdx = _employees.indexWhere((e) => e.id == t.assignedTo);
+      if (empIdx != -1) {
+        final emp = _employees[empIdx];
+        final amount = t.manualPaymentAmount ?? 0;
+        emp.pendingPayAmount = (emp.pendingPayAmount ?? 0) + amount;
+        
+        final newStr = 'Misc: ${t.title}';
+        if (emp.pendingPayMonth == null || emp.pendingPayMonth!.isEmpty) {
+          emp.pendingPayMonth = newStr;
+        } else {
+          emp.pendingPayMonth = '${emp.pendingPayMonth}, $newStr';
+        }
+        
+        emp.paymentCleared = true;
+        emp.paymentApprovedByEmployee = false;
+
+        _db.collection('employees').doc(emp.id).update({
+          'paymentCleared': true,
+          'paymentApprovedByEmployee': false,
+          'pendingPayAmount': emp.pendingPayAmount,
+          'pendingPayMonth': emp.pendingPayMonth,
+        });
+
+        _addLog('MISC SESSION PAID: ${emp.name} for ${t.title}');
+        _addNotification(
+          'Payment cleared for ${emp.name}: ${t.title}',
+          'payment',
+        );
+        notifyListeners();
+      }
     }
   }
 
@@ -1040,6 +1096,7 @@ class AppState extends ChangeNotifier {
     String? instructions,
     List<String> sessionClientIds = const [],
     bool isApprovedByVideographer = false,
+    double? manualPaymentAmount,
   }) async {
     if (title.trim().isEmpty) return 'ERROR: Task title is required.';
 
@@ -1055,6 +1112,7 @@ class AppState extends ChangeNotifier {
       instructions: instructions,
       sessionClientIds: sessionClientIds,
       isApprovedByVideographer: isApprovedByVideographer,
+      manualPaymentAmount: manualPaymentAmount,
     );
     try {
       await _db.collection('tasks').add(newTask.toFirestore());
@@ -1142,91 +1200,120 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  final Set<String> _submittingTasks = {};
+
   Future<void> submitTask(String taskId) async {
-    final idx = _tasks.indexWhere((t) => t.id == taskId);
-    if (idx != -1) {
-      final task = _tasks[idx];
-      final typeStr = (task.taskType ?? '').toLowerCase();
+    if (_submittingTasks.contains(taskId)) return;
+    _submittingTasks.add(taskId);
+    try {
+      final idx = _tasks.indexWhere((t) => t.id == taskId);
+      if (idx != -1) {
+        final task = _tasks[idx];
+        final typeStr = (task.taskType ?? '').toLowerCase();
 
-      if ((typeStr == 'daily video' || typeStr == 'daily post') &&
-          task.uploadTaskId == null) {
-        String clientName = 'Unknown';
-        if (task.clientId != null) {
-          final cIdx = _clients.indexWhere((c) => c.id == task.clientId);
-          if (cIdx != -1) clientName = _clients[cIdx].name;
-        }
+        if ((typeStr == 'daily video' || typeStr == 'daily post') &&
+            task.uploadTaskId == null) {
+          String clientName = 'Unknown';
+          if (task.clientId != null) {
+            final cIdx = _clients.indexWhere((c) => c.id == task.clientId);
+            if (cIdx != -1) clientName = _clients[cIdx].name;
+          }
 
-        if (clientName == 'Unknown' && task.title.contains(' - ')) {
-          clientName = task.title.split(' - ').last.trim();
-        }
+          if (clientName == 'Unknown' && task.title.contains(' - ')) {
+            clientName = task.title.split(' - ').last.trim();
+          }
 
-        final typeDisplay = typeStr == 'daily video'
-            ? 'Daily Video'
-            : 'Daily Post';
-        final newUploadTask = Task(
-          id: '',
-          title: 'Upload $typeDisplay By 7:30 MAX - $clientName',
-          description:
-              'Upload required before $typeDisplay can be approved. Original task: ${task.title}',
-          assignedTo: 'CEO-SOH-001',
-          assignedBy: _activePersona.id,
-          deadline: DateTime.now(),
-          clientId: task.clientId,
-          taskType: 'Upload $typeDisplay',
-        );
+          final typeDisplay = typeStr == 'daily video'
+              ? 'Daily Video'
+              : 'Daily Post';
+          final newUploadTask = Task(
+            id: '',
+            title: 'Upload $typeDisplay By 7:30 MAX - $clientName',
+            description:
+                'Upload required before $typeDisplay can be approved. Original task: ${task.title}',
+            assignedTo: 'CEO-SOH-001',
+            assignedBy: _activePersona.id,
+            deadline: DateTime.now(),
+            clientId: task.clientId,
+            taskType: 'Upload $typeDisplay',
+          );
 
-        try {
-          final docRef = await _db
-              .collection('tasks')
-              .add(newUploadTask.toFirestore());
+          try {
+            final docRef = await _db
+                .collection('tasks')
+                .add(newUploadTask.toFirestore());
+            _db.collection('tasks').doc(taskId).update({
+              'isSubmitted': true,
+              'submittedAt': Timestamp.now(),
+              'uploadTaskId': docRef.id,
+            });
+            _addNotification(
+              'Task Submitted for Review: "${task.title}" (Upload Task Created)',
+              'task',
+            );
+          } catch (e) {
+            print('Error creating upload task: $e');
+          }
+        } else {
           _db.collection('tasks').doc(taskId).update({
             'isSubmitted': true,
             'submittedAt': Timestamp.now(),
-            'uploadTaskId': docRef.id,
           });
-          _addNotification(
-            'Task Submitted for Review: "${task.title}" (Upload Task Created)',
-            'task',
-          );
-        } catch (e) {
-          print('Error creating upload task: $e');
+          _addNotification('Task Submitted for Review: "${task.title}"', 'task');
         }
-      } else {
-        _db.collection('tasks').doc(taskId).update({
-          'isSubmitted': true,
-          'submittedAt': Timestamp.now(),
-        });
-        _addNotification('Task Submitted for Review: "${task.title}"', 'task');
       }
+    } finally {
+      _submittingTasks.remove(taskId);
     }
   }
 
   void unsubmitTask(String taskId) {
     final idx = _tasks.indexWhere((t) => t.id == taskId);
     if (idx != -1) {
-      _db.collection('tasks').doc(taskId).update({'isSubmitted': false});
+      final task = _tasks[idx];
+      final updates = <String, dynamic>{'isSubmitted': false};
+      
+      if (task.uploadTaskId != null) {
+        _db.collection('tasks').doc(task.uploadTaskId).delete();
+        _tasks.removeWhere((t) => t.id == task.uploadTaskId);
+        updates['uploadTaskId'] = FieldValue.delete();
+      }
+      
+      _db.collection('tasks').doc(taskId).update(updates);
     }
   }
 
   void approveTask(String taskId) {
     final idx = _tasks.indexWhere((t) => t.id == taskId);
     if (idx != -1) {
+      final task = _tasks[idx];
       _db.collection('tasks').doc(taskId).update({
         'isCompleted': true,
         'completedAt': FieldValue.serverTimestamp(),
       });
-      _addNotification('Task Approved: "${_tasks[idx].title}"', 'task');
+      _addNotification('Task Approved: "${task.title}"', 'task');
+      _addLog('TASK APPROVED BY CEO: "${task.title}"');
     }
   }
 
   void rejectTask(String taskId) {
     final idx = _tasks.indexWhere((t) => t.id == taskId);
     if (idx != -1) {
-      _db.collection('tasks').doc(taskId).update({
+      final task = _tasks[idx];
+      
+      final updates = <String, dynamic>{
         'isSubmitted': false,
         'rejectedAt': FieldValue.serverTimestamp(),
-      });
-      _addNotification('Task Rejected: "${_tasks[idx].title}"', 'task');
+      };
+
+      if (task.uploadTaskId != null) {
+        _db.collection('tasks').doc(task.uploadTaskId).delete();
+        _tasks.removeWhere((t) => t.id == task.uploadTaskId);
+        updates['uploadTaskId'] = FieldValue.delete();
+      }
+
+      _db.collection('tasks').doc(taskId).update(updates);
+      _addNotification('Task Rejected: "${task.title}"', 'task');
     }
   }
 
@@ -1751,7 +1838,85 @@ class AppState extends ChangeNotifier {
       _finances.where((f) => !f.isIncome).fold(0, (s, f) => s + f.amount);
   double get netBalance => totalIncome - totalExpenses;
 
+  PoolData get mainPool {
+    double inc = 0, exp = 0;
+    double ritam = 0.0, priyajit = 0.0, marketingEx = 0.0;
+    for (var f in _finances) {
+      String serviceType = f.serviceType ?? 'Miscellaneous';
+      String? meId = f.marketingExecutiveId;
+      if (f.clientId != null) {
+        final c = _clients.firstWhere((cl) => cl.id == f.clientId, orElse: () => Client(id: '', name: '', contact: ClientContact(name: '', email: '', phone: ''), contractDate: DateTime.now()));
+        if (c.id.isNotEmpty) { serviceType = f.serviceType ?? c.serviceType; meId = c.marketingExecutiveId; }
+      } else {
+        Client? matchedClient;
+        for (var cl in _clients) {
+          if (f.label.contains(cl.name)) { matchedClient = cl; break; }
+        }
+        if (matchedClient != null) {
+          serviceType = f.serviceType ?? matchedClient.serviceType;
+          meId = matchedClient.marketingExecutiveId;
+        }
+      }
+      
+      if (serviceType == 'Video Production') continue;
+
+      if (f.isIncome) {
+        inc += f.amount;
+        double amt = f.amount;
+        double pAmt = amt;
+        if (serviceType == 'Marketing' && meId != null && meId.isNotEmpty) {
+          double comm = amt * 0.20; marketingEx += comm; pAmt -= comm;
+        }
+        if (serviceType.toLowerCase().contains('commerce')) { ritam += pAmt * 0.80; priyajit += pAmt * 0.20; }
+        else { ritam += pAmt * 0.50; priyajit += pAmt * 0.50; }
+      } else {
+        if (f.category == 'Commission') continue;
+        exp += f.amount;
+        if (serviceType.toLowerCase().contains('commerce')) {
+          ritam -= f.amount * 0.80; priyajit -= f.amount * 0.20;
+        } else {
+          ritam -= f.amount * 0.50; priyajit -= f.amount * 0.50;
+        }
+      }
+    }
+    return PoolData(income: inc, expenses: exp, shares: {'ritam': ritam, 'priyajit': priyajit, 'marketingEx': marketingEx});
+  }
+
+  PoolData get videoPool {
+    double inc = 0, exp = 0;
+    double ritam = 0.0, priyajit = 0.0;
+    for (var f in _finances) {
+      String serviceType = f.serviceType ?? 'Miscellaneous';
+      if (f.clientId != null) {
+        final c = _clients.firstWhere((cl) => cl.id == f.clientId, orElse: () => Client(id: '', name: '', contact: ClientContact(name: '', email: '', phone: ''), contractDate: DateTime.now()));
+        if (c.id.isNotEmpty) { serviceType = f.serviceType ?? c.serviceType; }
+      } else {
+        Client? matchedClient;
+        for (var cl in _clients) {
+          if (f.label.contains(cl.name)) { matchedClient = cl; break; }
+        }
+        if (matchedClient != null) {
+          serviceType = f.serviceType ?? matchedClient.serviceType;
+        }
+      }
+      
+      if (serviceType != 'Video Production') continue;
+
+      if (f.isIncome) {
+        inc += f.amount;
+        double amt = f.amount;
+        ritam += amt * 0.20; priyajit += amt * 0.80;
+      } else {
+        if (f.category == 'Commission') continue;
+        exp += f.amount;
+        ritam -= f.amount * 0.20; priyajit -= f.amount * 0.80;
+      }
+    }
+    return PoolData(income: inc, expenses: exp, shares: {'ritam': ritam, 'priyajit': priyajit});
+  }
+
   Map<String, double> get profitShares {
+
     double ritam = 0.0;
     double priyajit = 0.0;
     double marketingEx = 0.0;
@@ -2298,10 +2463,22 @@ class AppState extends ChangeNotifier {
         paymentCleared: old.paymentCleared,
         paidMonths: old.paidMonths,
       );
-      _db
-          .collection('employees')
-          .doc(id)
-          .set(_employees[idx].toFirestore(), SetOptions(merge: true));
+      // Use .update() with only personal fields to avoid overwriting financial data
+      _db.collection('employees').doc(id).update({
+        if (name != null) 'name': _employees[idx].name,
+        if (address != null) 'address': _employees[idx].address,
+        if (phone != null) 'phone': _employees[idx].phone,
+        if (email != null) 'email': _employees[idx].email,
+        if (preferredName != null) 'preferredName': _employees[idx].preferredName,
+        if (emergencyContact != null) 'emergencyContact': _employees[idx].emergencyContact,
+        if (professionalBio != null) 'professionalBio': _employees[idx].professionalBio,
+        if (workLocation != null) 'workLocation': _employees[idx].workLocation,
+        if (workStylePreference != null) 'workStylePreference': _employees[idx].workStylePreference,
+        if (interests != null) 'interests': _employees[idx].interests,
+        if (keySkills != null) 'keySkills': _employees[idx].keySkills,
+        if (strengths != null) 'strengths': _employees[idx].strengths,
+        if (avatar != null) 'avatar': _employees[idx].avatar,
+      });
       notifyListeners();
     }
   }

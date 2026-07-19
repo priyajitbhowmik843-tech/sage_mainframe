@@ -107,11 +107,15 @@
           int unpaidSessionsCount = 0;
 
           if (isVideo) {
-            final unpaidSessions = state.tasks.where((t) => t.assignedTo == employee.id && t.taskType == 'Session' && t.isCompleted && !t.isPaidToVideographer).toList();
+            final unpaidSessions = state.tasks.where((t) => t.assignedTo == employee.id && (t.taskType == 'Session' || t.taskType == 'Miscellaneous Session') && t.isCompleted && !t.isPaidToVideographer).toList();
             unpaidSessionsCount = unpaidSessions.length;
             for (final t in unpaidSessions) {
-              final c = state.clients.where((c) => c.id == t.clientId).firstOrNull;
-              if (c != null) pendingSessionPayout += c.sessionRate;
+              if (t.manualPaymentAmount != null && t.manualPaymentAmount! > 0) {
+                pendingSessionPayout += t.manualPaymentAmount!;
+              } else {
+                final c = state.clients.where((c) => c.id == t.clientId).firstOrNull;
+                if (c != null) pendingSessionPayout += c.sessionRate;
+              }
             }
           }
           if (isVideoEditorPerVideo) {
@@ -199,12 +203,12 @@
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (isVideo) ...[
-                        Text("PENDING SESSION PAYOUT: ₹${pendingSessionPayout.toStringAsFixed(0)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black)),
+                        Text("PENDING SESSION PAYOUT: \u20B9${pendingSessionPayout.toStringAsFixed(0)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black)),
                         Text("UNPAID SESSIONS: $unpaidSessionsCount", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
                         const SizedBox(height: 8),
                       ],
                       if (isVideoEditorPerVideo) ...[
-                        Text("PENDING VIDEO PAYOUT: ₹${pendingVideoPayout.toStringAsFixed(0)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black)),
+                        Text("PENDING VIDEO PAYOUT: \u20B9${pendingVideoPayout.toStringAsFixed(0)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black)),
                         Text("UNPAID VIDEOS: $unpaidVideosCount", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
                         const SizedBox(height: 8),
                       ],
@@ -213,7 +217,7 @@
                           const Text("COMMISSION BASED", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black)),
                           Text("Paid Till: ${employee.paidMonths.isEmpty ? 'None' : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].lastWhere((m) => employee.paidMonths.contains(m), orElse: () => employee.paidMonths.last)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
                         ] else ...[
-                          Text("SALARY: ₹${employee.monthlySalary.toStringAsFixed(0)} / mo", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black)),
+                          Text("SALARY: \u20B9${employee.monthlySalary.toStringAsFixed(0)} / mo", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black)),
                           Text("Paid Till: ${employee.paidMonths.isEmpty ? 'None' : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].lastWhere((m) => employee.paidMonths.contains(m), orElse: () => employee.paidMonths.last)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
                         ],
                       ],

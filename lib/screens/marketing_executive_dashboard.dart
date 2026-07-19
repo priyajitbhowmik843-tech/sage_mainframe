@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sage_mainframe/widgets/team_members_view.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
@@ -120,6 +121,7 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                   _buildBottomIcon(0, Icons.home_outlined, Icons.home),
                   _buildBottomIcon(1, Icons.payments_outlined, Icons.payments),
                   _buildBottomIcon(2, Icons.person_outline, Icons.person),
+                    _buildBottomIcon(3, Icons.group_outlined, Icons.group),
                 ],
               ),
             ),
@@ -143,6 +145,7 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
     String title = "MARKETING HOME";
     if (_tab == 1) title = "COMMISSIONS";
     if (_tab == 2) title = "PROFILE";
+    if (_tab == 3) title = "TEAM";
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -238,6 +241,7 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
       case 0: return _buildHomeTab(context, state, emp);
       case 1: return _buildFinanceTab(context, state, emp);
       case 2: return _buildProfileTab(context, state, emp);
+      case 3: return TeamMembersView();
       default: return const SizedBox();
     }
   }

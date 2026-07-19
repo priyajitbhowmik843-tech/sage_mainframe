@@ -29,7 +29,7 @@ class ClientResourcesScreen extends StatelessWidget {
 
     return ListView.separated(
       shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       padding: const EdgeInsets.all(14),
       itemCount: clients.length,
       separatorBuilder: (_, __) => const SizedBox(height: 14),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sage_mainframe/widgets/team_members_view.dart';
 import 'package:provider/provider.dart';
 import 'package:sage_mainframe/state/app_state.dart';
 import 'package:sage_mainframe/theme/app_theme.dart';
@@ -16,6 +17,9 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
   int _tab = 0; // 0: Home, 1: Finance, 2: Profile
   DateTime _calendarMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
   DateTime? _selectedDate;
+
+  bool _showPendingSessions = false;
+  bool _showPendingMisc = false;
 
   late PageController _pageController;
 
@@ -140,6 +144,7 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
                   _navIcon(0, Icons.calendar_month_outlined, Icons.calendar_month),
                   _navIcon(1, Icons.bar_chart_outlined, Icons.bar_chart),
                   _navIcon(2, Icons.person_outline, Icons.person),
+                  _navIcon(3, Icons.group_outlined, Icons.group),
                 ],
               ),
             ),
@@ -177,6 +182,7 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
       case 0: return _buildHomeTab(context, state, persona);
       case 1: return _buildFinanceTab(context, state, persona);
       case 2: return _buildProfileTab(context, state, persona);
+      case 3: return TeamMembersView();
       default: return const SizedBox();
     }
   }
@@ -184,8 +190,8 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
   // â”€â”€â”€ HOME TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildHomeTab(BuildContext context, AppState state, Persona persona) {
     final myTasks = state.tasks.where((t) => t.assignedTo == persona.id).toList();
-    final pendingApprovals = myTasks.where((t) => t.taskType == 'Session' && !t.isApprovedByVideographer && !t.isCompleted).toList();
-    final miscTasks = myTasks.where((t) => (t.taskType ?? '').toLowerCase() != 'session' && !t.isCompleted).toList();
+    final pendingApprovals = myTasks.where((t) => (t.taskType == 'Session' || t.taskType == 'Miscellaneous Session') && !t.isApprovedByVideographer && !t.isCompleted).toList();
+    final miscTasks = myTasks.where((t) => (t.taskType ?? '').toLowerCase() != 'session' && (t.taskType ?? '').toLowerCase() != 'miscellaneous session' && !t.isCompleted).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -233,7 +239,7 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
     final now = DateTime.now();
     final daysInMonth = DateUtils.getDaysInMonth(_calendarMonth.year, _calendarMonth.month);
     final startOffset = DateTime(_calendarMonth.year, _calendarMonth.month, 1).weekday % 7;
-    final mySessionTasks = state.tasks.where((t) => t.assignedTo == persona.id && t.taskType == 'Session').toList();
+    final mySessionTasks = state.tasks.where((t) => t.assignedTo == persona.id && (t.taskType == 'Session' || t.taskType == 'Miscellaneous Session')).toList();
     final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
     return Container(
@@ -288,9 +294,17 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
                 final dd = t.deadline;
                 return dd.year == date.year && dd.month == date.month && dd.day == date.day;
               }).toList();
-              final hasBooked = sessions.any((t) => t.isApprovedByVideographer && !t.isCompleted);
-              final hasPending = sessions.any((t) => !t.isApprovedByVideographer && !t.isCompleted);
-              final hasCompleted = sessions.any((t) => t.isCompleted);
+              final regularSessions = sessions.where((t) => t.taskType == 'Session').toList();
+              final miscSessions = sessions.where((t) => t.taskType == 'Miscellaneous Session').toList();
+              
+              final hasCompleted = regularSessions.any((t) => t.isCompleted);
+              final hasBooked = regularSessions.any((t) => t.isApprovedByVideographer && !t.isCompleted);
+              final hasPending = regularSessions.any((t) => !t.isApprovedByVideographer && !t.isCompleted);
+
+              final hasMiscCompleted = miscSessions.any((t) => t.isCompleted);
+              final hasMiscBooked = miscSessions.any((t) => t.isApprovedByVideographer && !t.isCompleted);
+              final hasMiscPending = miscSessions.any((t) => !t.isApprovedByVideographer && !t.isCompleted);
+
               final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
               final isSel = _selectedDate?.year == date.year && _selectedDate?.month == date.month && _selectedDate?.day == date.day;
 
@@ -298,13 +312,16 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
               if (hasCompleted) bgColor = SageColors.primary;
               else if (hasBooked) bgColor = SageColors.tertiary;
               else if (hasPending) bgColor = SageColors.error;
+              else if (hasMiscCompleted) bgColor = Colors.blue;
+              else if (hasMiscBooked) bgColor = Colors.cyan;
+              else if (hasMiscPending) bgColor = Colors.yellow;
               else if (isToday) bgColor = SageColors.yellowAccent;
 
               if (isSel && (bgColor == Colors.transparent || bgColor == SageColors.yellowAccent)) {
                 bgColor = Colors.black;
               }
 
-              Color textColor = (bgColor == SageColors.primary || bgColor == SageColors.tertiary || bgColor == SageColors.error || bgColor == Colors.black) ? Colors.white : Colors.black87;
+              Color textColor = (bgColor == SageColors.primary || bgColor == SageColors.tertiary || bgColor == SageColors.error || bgColor == Colors.black || bgColor == Colors.blue) ? Colors.white : Colors.black87;
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () {
@@ -328,6 +345,16 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
                     children: [
                       Text('$day', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold,
                           color: textColor)),
+                      if (sessions.isNotEmpty)
+                        Text(
+                          '${sessions.length}x',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            color: textColor,
+                            letterSpacing: 0,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -345,6 +372,17 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
               _legend(SageColors.error, 'Pending'),
             ],
           ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _legend(Colors.blue, 'Misc Completed'),
+              const SizedBox(width: 14),
+              _legend(Colors.cyan, 'Misc Booked'),
+              const SizedBox(width: 14),
+              _legend(Colors.yellow, 'Misc Pending'),
+            ],
+          ),
         ],
       ),
     );
@@ -359,7 +397,7 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
   Widget _buildSelectedDateInfo(AppState state, Persona persona) {
     final d = _selectedDate!;
     final sessions = state.tasks.where((t) {
-      if (t.assignedTo != persona.id || t.taskType != 'Session') return false;
+      if (t.assignedTo != persona.id || (t.taskType != 'Session' && t.taskType != 'Miscellaneous Session')) return false;
       final dd = t.deadline;
       return dd.year == d.year && dd.month == d.month && dd.day == d.day;
     }).toList();
@@ -379,7 +417,10 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
       child: Column(
         children: sessions.map((t) {
           final client = state.clients.where((c) => c.id == t.clientId).firstOrNull;
-          final statusColor = t.isCompleted ? SageColors.primary : t.isApprovedByVideographer ? SageColors.tertiary : SageColors.error;
+          final isMisc = t.taskType == 'Miscellaneous Session';
+          final statusColor = isMisc
+              ? (t.isCompleted ? Colors.blue : t.isApprovedByVideographer ? Colors.cyan : Colors.yellow)
+              : (t.isCompleted ? SageColors.primary : t.isApprovedByVideographer ? SageColors.tertiary : SageColors.error);
           
           String statusText = t.isCompleted ? 'COMPLETED' : t.isApprovedByVideographer ? 'CONFIRMED' : 'PENDING APPROVAL';
           if (t.isSubmitted && !t.isCompleted) statusText = 'COMPLETION REQUESTED';
@@ -403,9 +444,9 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(client?.name ?? 'Unknown Client', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          if (t.isCompleted && client != null)
-                            Text('Rate: \u20B9${client?.sessionRate.toStringAsFixed(0) ?? 0}', style: TextStyle(fontSize: 11, color: SageColors.primary, fontWeight: FontWeight.bold)),
+                          Text(isMisc ? '${client?.name ?? t.title} (Misc)' : (client?.name ?? 'Unknown Client'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          if (t.isCompleted)
+                            Text('Rate: \u20B9${(isMisc ? (t.manualPaymentAmount ?? 0) : (client?.sessionRate ?? 0)).toStringAsFixed(0)}', style: TextStyle(fontSize: 11, color: statusColor, fontWeight: FontWeight.bold)),
                           Text(statusText, style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                         ],
                       ),
@@ -464,6 +505,8 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
 
   Widget _buildSessionApprovalCard(BuildContext context, AppState state, Task t) {
     final client = state.clients.where((c) => c.id == t.clientId).firstOrNull;
+    final isMisc = t.taskType == 'Miscellaneous Session';
+    final amount = isMisc ? (t.manualPaymentAmount ?? 0) : (client?.sessionRate ?? 0);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -472,8 +515,8 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(client?.name ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                Text('${t.deadline.day}/${t.deadline.month} | \u20B9${client?.sessionRate.toStringAsFixed(0) ?? 0}',
+                Text(isMisc ? '${client?.name ?? t.title} (Misc)' : (client?.name ?? 'Unknown Client'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                Text('${t.deadline.day}/${t.deadline.month} | \u20B9${amount.toStringAsFixed(0)}',
                     style: const TextStyle(fontSize: 11, color: Colors.black54)),
               ],
             ),
@@ -496,7 +539,7 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
   // â”€â”€â”€ FINANCE TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     Widget _buildFinanceTab(BuildContext context, AppState state, Persona persona) {
     final now = DateTime.now();
-    final myTasks = state.tasks.where((t) => t.assignedTo == persona.id && t.taskType == 'Session').toList();
+    final myTasks = state.tasks.where((t) => t.assignedTo == persona.id && (t.taskType == 'Session' || t.taskType == 'Miscellaneous Session')).toList();
     final monthSessions = myTasks.where((t) => t.deadline.year == now.year && t.deadline.month == now.month).toList();
     final completedThisMonth = monthSessions.where((t) => t.isCompleted).length;
     
@@ -504,14 +547,22 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
 
     double collectedAmount = 0;
     for (final t in completedSessions.where((x) => x.isPaymentAcknowledgedByVideographer)) {
-      final c = state.clients.where((c) => c.id == t.clientId).firstOrNull;
-      if (c != null) collectedAmount += c.sessionRate;
+      if (t.taskType == 'Miscellaneous Session') {
+        collectedAmount += t.manualPaymentAmount ?? 0;
+      } else {
+        final c = state.clients.where((c) => c.id == t.clientId).firstOrNull;
+        if (c != null) collectedAmount += c.sessionRate;
+      }
     }
     
     double pendingAmount = 0;
     for (final t in completedSessions.where((x) => !x.isPaymentAcknowledgedByVideographer)) {
-      final c = state.clients.where((c) => c.id == t.clientId).firstOrNull;
-      if (c != null) pendingAmount += c.sessionRate;
+      if (t.taskType == 'Miscellaneous Session') {
+        pendingAmount += t.manualPaymentAmount ?? 0;
+      } else {
+        final c = state.clients.where((c) => c.id == t.clientId).firstOrNull;
+        if (c != null) pendingAmount += c.sessionRate;
+      }
     }
     
     final sessionsPendingApproval = completedSessions.where((t) => t.isPaidToVideographer && !t.isPaymentAcknowledgedByVideographer).toList();
@@ -551,8 +602,8 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(client?.name ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                            Text('${t.title} | \u20B9${client?.sessionRate.toStringAsFixed(0) ?? 0}',
+                            Text((t.taskType == 'Miscellaneous Session') ? '${client?.name ?? t.title} (Misc)' : (client?.name ?? 'Unknown Client'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            Text('${t.title} | \u20B9${(t.taskType == 'Miscellaneous Session' ? (t.manualPaymentAmount ?? 0) : (client?.sessionRate ?? 0)).toStringAsFixed(0)}',
                                 style: const TextStyle(fontSize: 11, color: Colors.black54)),
                           ],
                         ),
@@ -615,23 +666,43 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
   Widget _buildProfileTab(BuildContext context, AppState state, Persona persona) {
     final emp = state.employees.firstWhere((e) => e.id == persona.id);
     final isVideoEditor = emp.role.toLowerCase().contains('video editor');
-    final unpaidSessionsList = state.tasks.where((t) => t.assignedTo == emp.id && (isVideoEditor ? true : t.taskType == 'Session') && t.isCompleted && !t.isPaidToVideographer).toList();
-    final int unpaidSessionsCount = unpaidSessionsList.length;
     
-    double pendingPayout = 0;
-    for (var t in unpaidSessionsList) {
+    // Dynamic fetching of tasks based on whether CEO has cleared the payment or not
+    final relevantTasks = state.tasks.where((t) {
+      if (t.assignedTo != emp.id) return false;
+      if (!t.isCompleted) return false;
+      if (!isVideoEditor && t.taskType != 'Session' && t.taskType != 'Miscellaneous Session') return false;
+      
+      return (!t.isPaidToVideographer) || (t.isPaidToVideographer && !t.isPaymentAcknowledgedByVideographer);
+    }).toList();
+
+    final regularSessions = relevantTasks.where((t) => t.taskType == 'Session' || (isVideoEditor && t.taskType != 'Miscellaneous Session')).toList();
+    final miscSessions = relevantTasks.where((t) => t.taskType == 'Miscellaneous Session').toList();
+
+    double pendingRegularPayout = 0;
+    for (var t in regularSessions) {
       if (isVideoEditor) {
-        pendingPayout += emp.perSessionRate;
+        pendingRegularPayout += emp.perSessionRate;
       } else {
         final c = state.clients.where((client) => client.id == t.clientId).firstOrNull;
-        if (c != null) {
-          pendingPayout += c.sessionRate;
-        }
+        if (c != null) pendingRegularPayout += c.sessionRate;
       }
     }
 
-    final displayPayout = emp.paymentCleared ? emp.pendingPayAmount : pendingPayout;
-    final displaySessions = emp.paymentCleared ? (emp.pendingPayMonth ?? "$unpaidSessionsCount") : "$unpaidSessionsCount";
+    double pendingMiscPayout = 0;
+    for (var t in miscSessions) {
+      if (t.manualPaymentAmount != null && t.manualPaymentAmount! > 0) {
+        pendingMiscPayout += t.manualPaymentAmount!;
+      }
+    }
+
+    double totalPendingPayout = pendingRegularPayout + pendingMiscPayout;
+    if (emp.paymentCleared && emp.pendingPayAmount > totalPendingPayout) {
+      totalPendingPayout = emp.pendingPayAmount;
+    }
+
+    final legacyMiscStrings = (emp.pendingPayMonth ?? '').split(',').map((s) => s.trim()).where((s) => s.startsWith('Misc')).toList();
+    final legacyRegularStrings = (emp.pendingPayMonth ?? '').split(',').map((s) => s.trim()).where((s) => s.startsWith('Sessions')).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -643,7 +714,7 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
             children: [
               Center(
                   child: ClipOval(
-                    child: Image.asset(availableAvatars[emp.avatar % availableAvatars.length], fit: BoxFit.cover, width: 140, height: 140),
+                    child: Transform.scale(scale: 1.7, child: Image.asset(availableAvatars[emp.avatar % availableAvatars.length], fit: BoxFit.cover, width: 140, height: 140)),
                   ),
                 ),
               const SizedBox(height: 16),
@@ -664,14 +735,135 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
           title: "FINANCE DATA",
           child: Column(
             children: [
-              _profileRow("PENDING PAYOUT", "\u20B9$displayPayout"),
-              _profileRow("UNPAID SESSIONS", displaySessions),
+              _profileRow("PENDING PAYOUT", "\u20B9${totalPendingPayout.toStringAsFixed(0)}"),
+              
+              if (regularSessions.isNotEmpty || (emp.paymentCleared && legacyRegularStrings.isNotEmpty))
+                Column(
+                  children: [
+                    InkWell(
+                      onTap: () => setState(() => _showPendingSessions = !_showPendingSessions),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("REGULAR SESSIONS", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54)),
+                            Row(
+                              children: [
+                                Text("${regularSessions.isNotEmpty ? regularSessions.length : legacyRegularStrings.length} ( \u20B9${regularSessions.isNotEmpty ? pendingRegularPayout.toStringAsFixed(0) : '--'} )", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+                                Icon(_showPendingSessions ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, size: 20),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (_showPendingSessions)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(color: Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(8)),
+                        child: Column(
+                          children: regularSessions.isNotEmpty
+                            ? regularSessions.map((t) {
+                            final c = state.clients.where((client) => client.id == t.clientId).firstOrNull;
+                            final rate = isVideoEditor ? emp.perSessionRate : (c?.sessionRate ?? 0);
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(child: Text(c?.name ?? t.title, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)),
+                                  Text("\u20B9${rate.toStringAsFixed(0)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            );
+                          }).toList() : legacyRegularStrings.map((s) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(child: Text(s, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)),
+                                      const Text("\u20B9--", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                        ),
+                      ),
+                  ],
+                ),
+                
+              if (miscSessions.isNotEmpty || (emp.paymentCleared && legacyMiscStrings.isNotEmpty))
+                Column(
+                  children: [
+                    InkWell(
+                      onTap: () => setState(() => _showPendingMisc = !_showPendingMisc),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("MISC SESSIONS", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54)),
+                            Row(
+                              children: [
+                                Text("${miscSessions.isNotEmpty ? miscSessions.length : legacyMiscStrings.length} ( \u20B9${miscSessions.isNotEmpty ? pendingMiscPayout.toStringAsFixed(0) : '--'} )", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+                                Icon(_showPendingMisc ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, size: 20),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (_showPendingMisc)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(color: Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(8)),
+                        child: Column(
+                          children: miscSessions.isNotEmpty
+                            ? miscSessions.map((t) {
+                            final rate = t.manualPaymentAmount ?? 0;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(child: Text(t.title, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)),
+                                  Text("\u20B9${rate.toStringAsFixed(0)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            );
+                          }).toList() : legacyMiscStrings.map((s) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(child: Text(s, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)),
+                                      const Text("\u20B9--", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                        ),
+                      ),
+                  ],
+                ),
+                
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: emp.paymentCleared
                       ? () {
+                          // Acknowledge all pending tasks dynamically along with clearing the status
+                          for (var t in relevantTasks) {
+                            if (t.isPaidToVideographer && !t.isPaymentAcknowledgedByVideographer) {
+                              context.read<AppState>().acknowledgeVideographerPayment(t.id);
+                            }
+                          }
                           context.read<AppState>().toggleEmployeePaymentApproved(emp.id, true);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Payment Receipt Confirmed!", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
@@ -811,7 +1003,7 @@ class _VideographerDashboardState extends State<VideographerDashboard> {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.black, width: 1.5),
                             ),
-                            child: ClipOval(child: Image.asset(availableAvatars[index], fit: BoxFit.cover, width: 48, height: 48)),
+                            child: ClipOval(child: Transform.scale(scale: 1.7, child: Image.asset(availableAvatars[index], fit: BoxFit.cover, width: 48, height: 48))),
                           ),
                         );
                       }),

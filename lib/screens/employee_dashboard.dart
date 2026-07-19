@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sage_mainframe/widgets/team_members_view.dart';
 import 'package:provider/provider.dart';
 import 'package:sage_mainframe/state/app_state.dart';
 import 'package:sage_mainframe/theme/app_theme.dart';
@@ -164,6 +165,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                       _navIcon(1, Icons.bar_chart_outlined, Icons.bar_chart),
                       _navIcon(2, Icons.grid_view_outlined, Icons.grid_view),
                       _navIcon(3, Icons.person_outline, Icons.person),
+                      _navIcon(4, Icons.group_outlined, Icons.group),
                     ],
                   ),
                 ),
@@ -204,6 +206,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
       case 1: return _buildActivityTab(context, state, persona);
       case 2: return const ClientResourcesScreen(readOnly: true);
       case 3: return _buildProfileTab(context, state, persona);
+      case 4: return TeamMembersView();
       default: return const SizedBox();
     }
   }
@@ -854,137 +857,101 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                           ),
                         const SizedBox(height: 2),
                         Builder(
-                          builder: (ctx) {
-                            int vCount = 0;
-                            int pCount = 0;
-                            int aCount = 0;
-                            int lCount = 0;
-                            int oCount = 0;
-                            for (var t in dayTasks) {
-                              final title = t.title.toLowerCase();
-                              if (title.contains('video'))
-                                vCount++;
-                              else if (title.contains('post') ||
-                                  title.contains('design'))
-                                pCount++;
-                              else if (title.contains('active client'))
-                                aCount++;
-                              else if (title.contains('lead') ||
-                                  title.contains('marketing'))
-                                lCount++;
-                              else
-                                oCount++;
-                            }
+                      builder: (ctx) {
+                        int videoCount = 0;
+                        int postCount = 0;
+                        int meetCount = 0;
+                        int prodCount = 0;
+                        int miscCount = 0;
+                        int otherCount = 0;
 
-                            return Wrap(
-                              alignment: WrapAlignment.center,
-                              spacing: 2,
-                              runSpacing: 2,
-                              children: [
-                                if (vCount > 0)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 3,
-                                      vertical: 1,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.deepOrange.withOpacity(0.2),
-                                      border: Border.all(color: Colors.deepOrange),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      vCount.toString(),
-                                      style: const TextStyle(
-                                        color: Colors.deepOrange,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                if (pCount > 0)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 3,
-                                      vertical: 1,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.teal.withOpacity(0.2),
-                                      border: Border.all(color: Colors.teal),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      pCount.toString(),
-                                      style: const TextStyle(
-                                        color: Colors.teal,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                if (aCount > 0)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 3,
-                                      vertical: 1,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.purple.withOpacity(0.2),
-                                      border: Border.all(color: Colors.purple),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      aCount.toString(),
-                                      style: const TextStyle(
-                                        color: Colors.purple,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                if (lCount > 0)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 3,
-                                      vertical: 1,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.indigo.withOpacity(0.2),
-                                      border: Border.all(color: Colors.indigo),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      lCount.toString(),
-                                      style: const TextStyle(
-                                        color: Colors.indigo,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                if (oCount > 0)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 3,
-                                      vertical: 1,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.withOpacity(0.2),
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      oCount.toString(),
-                                      style: const TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            );
-                          },
-                        ),
+                        for (var t in dayTasks) {
+                          final typeStr = (t.taskType ?? '').toLowerCase();
+                          
+                          if (typeStr.contains('video')) {
+                            videoCount++;
+                          } else if (typeStr.contains('post') || typeStr.contains('photo') || typeStr.contains('upload')) {
+                            postCount++;
+                          } else if (typeStr.contains('session') || typeStr.contains('meeting')) {
+                            meetCount++;
+                          } else if (typeStr.contains('product')) {
+                            prodCount++;
+                          } else if (typeStr.contains('misc')) {
+                            miscCount++;
+                          } else {
+                            otherCount++;
+                          }
+                        }
+
+                        return Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 2,
+                          runSpacing: 2,
+                          children: [
+                            if (videoCount > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.2),
+                                  border: Border.all(color: Colors.blue),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(videoCount.toString(), style: const TextStyle(color: Colors.blue, fontSize: 9, fontWeight: FontWeight.bold)),
+                              ),
+                            if (postCount > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withOpacity(0.2),
+                                  border: Border.all(color: Colors.orange),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(postCount.toString(), style: const TextStyle(color: Colors.orange, fontSize: 9, fontWeight: FontWeight.bold)),
+                              ),
+                            if (meetCount > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.withOpacity(0.2),
+                                  border: Border.all(color: Colors.purple),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(meetCount.toString(), style: const TextStyle(color: Colors.purple, fontSize: 9, fontWeight: FontWeight.bold)),
+                              ),
+                            if (prodCount > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.brown.withOpacity(0.2),
+                                  border: Border.all(color: Colors.brown),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(prodCount.toString(), style: const TextStyle(color: Colors.brown, fontSize: 9, fontWeight: FontWeight.bold)),
+                              ),
+                            if (miscCount > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.withOpacity(0.2),
+                                  border: Border.all(color: Colors.grey),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(miscCount.toString(), style: const TextStyle(color: Colors.grey, fontSize: 9, fontWeight: FontWeight.bold)),
+                              ),
+                            if (otherCount > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.blueGrey.withOpacity(0.2),
+                                  border: Border.all(color: Colors.blueGrey),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(otherCount.toString(), style: const TextStyle(color: Colors.blueGrey, fontSize: 9, fontWeight: FontWeight.bold)),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                       ],
                     ),
                   ),
@@ -1277,7 +1244,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
             children: [
               Center(
                 child: ClipOval(
-                  child: Image.asset(availableAvatars[emp.avatar % availableAvatars.length], fit: BoxFit.cover, width: 100, height: 100),
+                  child: Transform.scale(scale: 1.7, child: Image.asset(availableAvatars[emp.avatar % availableAvatars.length], fit: BoxFit.cover, width: 100, height: 100)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -1298,7 +1265,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
             title: 'SALARY DATA',
             child: Column(
               children: [
-                _profileRow('MONTHLY SALARY', '₹${emp.monthlySalary.toStringAsFixed(0)}'),
+                _profileRow('MONTHLY SALARY', '\u20B9${emp.monthlySalary.toStringAsFixed(0)}'),
                 _profileRow('PENDING MONTHS', '$pendingMonths'),
                 _profileRow('PAID TILL', paidTillStr),
                 if (salaryPaymentCleared) ...[
@@ -1327,7 +1294,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
             child: Column(
               children: [
                 _profileRow('UNPAID SESSIONS', '${unpaidSessionsList.length}'),
-                _profileRow('PENDING PAY', sessionPaymentCleared ? '₹${emp.pendingPayAmount.toStringAsFixed(0)}' : '₹${pendingSessionPayout.toStringAsFixed(0)}'),
+                _profileRow('PENDING PAY', sessionPaymentCleared ? '\u20B9${emp.pendingPayAmount.toStringAsFixed(0)}' : '\u20B9${pendingSessionPayout.toStringAsFixed(0)}'),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
@@ -1356,9 +1323,9 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
             title: 'VIDEO EDITOR FINANCE',
             child: Column(
               children: [
-                _profileRow('PER VIDEO RATE', '₹${emp.perVideoRate.toStringAsFixed(0)}'),
+                _profileRow('PER VIDEO RATE', '\u20B9${emp.perVideoRate.toStringAsFixed(0)}'),
                 _profileRow('UNPAID VIDEOS', '${unpaidVideosList.length}'),
-                _profileRow('PENDING PAY', videoPaymentCleared ? '₹${emp.pendingPayAmount.toStringAsFixed(0)}' : '₹${pendingVideoPayout.toStringAsFixed(0)}'),
+                _profileRow('PENDING PAY', videoPaymentCleared ? '\u20B9${emp.pendingPayAmount.toStringAsFixed(0)}' : '\u20B9${pendingVideoPayout.toStringAsFixed(0)}'),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,

@@ -178,6 +178,7 @@ class Employee {
   int avatar;
   String? pendingPayMonth;
   double pendingPayAmount = 0.0;
+  double pendingPayDeduction = 0.0;
   String preferredName;
   String workLocation;
   String emergencyContact;
@@ -215,6 +216,7 @@ class Employee {
     this.avatar = 0,
     this.pendingPayMonth,
     this.pendingPayAmount = 0.0,
+    this.pendingPayDeduction = 0.0,
     this.preferredName = '',
     this.workLocation = '',
     this.emergencyContact = '',
@@ -262,6 +264,7 @@ class Employee {
       avatar: (data['avatar'] is int) ? ((data['avatar'] as int).clamp(0, 6)) : 0,
       pendingPayMonth: data['pendingPayMonth'],
       pendingPayAmount: (data['pendingPayAmount'] ?? 0.0).toDouble(),
+      pendingPayDeduction: (data['pendingPayDeduction'] ?? 0.0).toDouble(),
       preferredName: data['preferredName'] ?? '',
       workLocation: data['workLocation'] ?? '',
       emergencyContact: data['emergencyContact'] ?? '',
@@ -304,6 +307,7 @@ class Employee {
       'avatar': avatar,
       if (pendingPayMonth != null) 'pendingPayMonth': pendingPayMonth,
       'pendingPayAmount': pendingPayAmount,
+      'pendingPayDeduction': pendingPayDeduction,
       'preferredName': preferredName,
       'workLocation': workLocation,
       'emergencyContact': emergencyContact,
@@ -329,6 +333,7 @@ class Task {
   final String assignedBy; // persona id
   final DateTime deadline;
   bool isCompleted;
+    bool isMissed;
   bool isSubmitted;
   final DateTime createdAt;
   final String? clientId;
@@ -342,11 +347,13 @@ class Task {
   final List<String> sessionClientIds; // For sessions: list of client IDs
   bool isPostponeRequested;
   final DateTime? postponeRequestedDate;
-  bool isPaidToVideographer = false;
+  bool isPaidToVideoEditor = false;
+    bool isPaidToVideographer = false;
   bool isPaymentAcknowledgedByVideographer = false;
   bool isPaidToGraphicsEditor = false;
   bool isPaymentAcknowledgedByGraphicsEditor = false;
   String? uploadTaskId;
+  final double? manualPaymentAmount;
 
   Task({
     required this.id,
@@ -356,6 +363,7 @@ class Task {
     required this.assignedBy,
     required this.deadline,
     this.isCompleted = false,
+      this.isMissed = false,
     this.isSubmitted = false,
     DateTime? createdAt,
     this.clientId,
@@ -366,7 +374,8 @@ class Task {
     this.submittedAt,
     this.isApprovedByVideographer = false,
     this.isApprovedByGraphicsEditor = false,
-    this.isPaidToVideographer = false,
+    this.isPaidToVideoEditor = false,
+      this.isPaidToVideographer = false,
     this.isPaymentAcknowledgedByVideographer = false,
     this.isPaidToGraphicsEditor = false,
     this.isPaymentAcknowledgedByGraphicsEditor = false,
@@ -374,6 +383,7 @@ class Task {
     this.isPostponeRequested = false,
     this.postponeRequestedDate,
     this.uploadTaskId,
+    this.manualPaymentAmount,
   }) : createdAt = createdAt ?? DateTime.now();
 
   factory Task.fromFirestore(Map<String, dynamic> data, String docId) {
@@ -385,6 +395,7 @@ class Task {
       assignedBy: data['assignedBy'] ?? '',
       deadline: _parseDate(data['deadline']),
       isCompleted: data['isCompleted'] ?? false,
+        isMissed: data['isMissed'] ?? false,
       isSubmitted: data['isSubmitted'] ?? false,
       createdAt: _parseDate(data['createdAt']),
       clientId: data['clientId'],
@@ -395,7 +406,8 @@ class Task {
       submittedAt: _parseDateNullable(data['submittedAt']),
       isApprovedByVideographer: data['isApprovedByVideographer'] ?? false,
       isApprovedByGraphicsEditor: data['isApprovedByGraphicsEditor'] ?? false,
-      isPaidToVideographer: data['isPaidToVideographer'] ?? false,
+      isPaidToVideoEditor: data['isPaidToVideoEditor'] ?? false,
+        isPaidToVideographer: data['isPaidToVideographer'] ?? false,
       isPaymentAcknowledgedByVideographer: data['isPaymentAcknowledgedByVideographer'] ?? false,
       isPaidToGraphicsEditor: data['isPaidToGraphicsEditor'] ?? false,
       isPaymentAcknowledgedByGraphicsEditor: data['isPaymentAcknowledgedByGraphicsEditor'] ?? false,
@@ -403,6 +415,7 @@ class Task {
       isPostponeRequested: data['isPostponeRequested'] ?? false,
       postponeRequestedDate: _parseDateNullable(data['postponeRequestedDate']),
       uploadTaskId: data['uploadTaskId'],
+      manualPaymentAmount: data['manualPaymentAmount']?.toDouble(),
     );
   }
 
@@ -414,6 +427,7 @@ class Task {
       'assignedBy': assignedBy,
       'deadline': Timestamp.fromDate(deadline),
       'isCompleted': isCompleted,
+        'isMissed': isMissed,
       'isSubmitted': isSubmitted,
       'createdAt': Timestamp.fromDate(createdAt),
       if (clientId != null) 'clientId': clientId,
@@ -424,7 +438,8 @@ class Task {
       if (submittedAt != null) 'submittedAt': Timestamp.fromDate(submittedAt!),
       'isApprovedByVideographer': isApprovedByVideographer,
       'isApprovedByGraphicsEditor': isApprovedByGraphicsEditor,
-      'isPaidToVideographer': isPaidToVideographer,
+      'isPaidToVideoEditor': isPaidToVideoEditor,
+        'isPaidToVideographer': isPaidToVideographer,
       'isPaymentAcknowledgedByVideographer': isPaymentAcknowledgedByVideographer,
       'isPaidToGraphicsEditor': isPaidToGraphicsEditor,
       'isPaymentAcknowledgedByGraphicsEditor': isPaymentAcknowledgedByGraphicsEditor,
@@ -432,6 +447,7 @@ class Task {
       'isPostponeRequested': isPostponeRequested,
       if (postponeRequestedDate != null) 'postponeRequestedDate': Timestamp.fromDate(postponeRequestedDate!),
       if (uploadTaskId != null) 'uploadTaskId': uploadTaskId,
+      if (manualPaymentAmount != null) 'manualPaymentAmount': manualPaymentAmount,
     };
   }
 }
@@ -681,6 +697,12 @@ class Client {
         total += getPayableForMonth(i, currentYear);
       }
     }
+    if (serviceType.toLowerCase().contains('commerce') && ecomPaymentType == 'Per SKU') {
+      int currentMonth = DateTime.now().month;
+      if (!isMonthDue(currentMonth) && !paidMonths.contains(currentMonth)) {
+        total += getPayableForMonth(currentMonth, currentYear);
+      }
+    }
     return total;
   }
 
@@ -689,6 +711,14 @@ class Client {
     for (int i = 1; i <= 12; i++) {
       if (isMonthDue(i)) {
         dueCount++;
+      }
+    }
+    if (serviceType.toLowerCase().contains('commerce') && ecomPaymentType == 'Per SKU') {
+      int currentMonth = DateTime.now().month;
+      if (!isMonthDue(currentMonth) && !paidMonths.contains(currentMonth)) {
+        if (getPayableForMonth(currentMonth, DateTime.now().year) > 0) {
+          dueCount++;
+        }
       }
     }
     return dueCount;
