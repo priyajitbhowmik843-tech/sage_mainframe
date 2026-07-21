@@ -455,6 +455,7 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
     List<String> selectedAddOnIds = [];
     Map<String, bool> partialPaymentToggles = {};
     Map<String, TextEditingController> partialPaymentControllers = {};
+    Map<String, TextEditingController> discountControllers = {};
     final monthDiscountCtrl = TextEditingController(text: "0");
 
     for (var a in unbilledAddOns) {
