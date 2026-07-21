@@ -36,12 +36,14 @@ void main() {
   content = content.replaceFirst(RegExp(r'\}\s*$'), '\n$funcToAdd\n}');
   file.writeAsStringSync(content);
   print('Added revert function to app_state.dart');
-  
-  
+
   final ceoFile = File('lib/screens/ceo_dashboard.dart');
   var ceoContent = ceoFile.readAsStringSync();
-  
-  final oldIconButton = r"IconButton(" + "\n" + r"                                  icon: const Icon(Icons.edit_outlined, color: Colors.black),";
+
+  final oldIconButton =
+      r"IconButton(" +
+      "\n" +
+      r"                                  icon: const Icon(Icons.edit_outlined, color: Colors.black),";
   final newIconButton = r"""IconButton(
                                   icon: const Icon(Icons.undo, color: Colors.blue),
                                   onPressed: () {
@@ -51,7 +53,7 @@ void main() {
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.edit_outlined, color: Colors.black),""";
-  
+
   ceoContent = ceoContent.replaceFirst(oldIconButton, newIconButton);
   ceoFile.writeAsStringSync(ceoContent);
   print('Added revert button to ceo_dashboard.dart');

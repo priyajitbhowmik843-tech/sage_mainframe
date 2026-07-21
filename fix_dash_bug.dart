@@ -3,9 +3,10 @@ import 'dart:io';
 void replaceInFile(String path) {
   final file = File(path);
   var content = file.readAsStringSync();
-  
+
   // Fix Main Pool Balance text and add LEDGER button
-  final badMainPoolText = 'Text("₹", style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black)),';
+  final badMainPoolText =
+      'Text("₹", style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black)),';
   final goodMainPoolRow = '''
                         Text("₹\${state.mainPool.netBalance.toStringAsFixed(0)}", style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black)),
                         Row(
@@ -29,12 +30,18 @@ void replaceInFile(String path) {
 ''';
 
   // We need to replace the old Main Pool text and its following Row, up to the end of the `children:` list inside the `Row(mainAxisAlignment: MainAxisAlignment.spaceBetween`
-  
+
   // It's safer to just do string replacements on the specific lines:
-  content = content.replaceFirst('Text("₹", style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black)),', 'Text("₹\${state.mainPool.netBalance.toStringAsFixed(0)}", style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black)),');
-  
+  content = content.replaceFirst(
+    'Text("₹", style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black)),',
+    'Text("₹\${state.mainPool.netBalance.toStringAsFixed(0)}", style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black)),',
+  );
+
   // There are two 'Text("₹"'s. The second one is for Video pool.
-  content = content.replaceFirst('Text("₹", style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black)),', 'Text("₹\${state.videoPool.netBalance.toStringAsFixed(0)}", style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black)),');
+  content = content.replaceFirst(
+    'Text("₹", style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black)),',
+    'Text("₹\${state.videoPool.netBalance.toStringAsFixed(0)}", style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black)),',
+  );
 
   // Now inject the buttons.
   final mainPoolFind = '''
@@ -66,9 +73,12 @@ void replaceInFile(String path) {
 ''';
 
   content = content.replaceFirst(mainPoolFind, mainPoolReplace);
-  
+
   // same for Video pool
-  content = content.replaceFirst(mainPoolFind, mainPoolReplace); // because the snippet is identical for the video pool
+  content = content.replaceFirst(
+    mainPoolFind,
+    mainPoolReplace,
+  ); // because the snippet is identical for the video pool
 
   file.writeAsStringSync(content);
   print('\$path fixed');

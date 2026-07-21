@@ -5,7 +5,7 @@ void main() {
   void fixFile(String path) {
     final file = File(path);
     if (!file.existsSync()) return;
-    
+
     // Read bytes and decode
     var bytes = file.readAsBytesSync();
     String content;
@@ -23,7 +23,7 @@ void main() {
     // So the corrupted string is `",1\${` (which powershell prints as `",1\${`)
     // If I just find ` "\xef\xbf\xbd,1\${` and replace it with ` (\${`
     // Let's use regex that matches a quote, any non-ascii, maybe a comma and a 1, and \${
-    
+
     final brokenRegex = RegExp(r'"[^\x00-\x7F]*,1\$\{');
     if (brokenRegex.hasMatch(content)) {
       content = content.replaceAll(brokenRegex, '(\${');
@@ -46,7 +46,7 @@ void main() {
       content = content.replaceAll('const Text("₹', 'Text("₹');
       changed = true;
     }
-    
+
     // And if `const Column` is there...
     // Let's just strip `const ` from `const Column(` if it contains `₹` inside it.
     if (content.contains('const Column(')) {

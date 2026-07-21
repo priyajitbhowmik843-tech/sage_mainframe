@@ -1,7 +1,10 @@
 import 'dart:io';
 
 void main() {
-  final files = ['lib/screens/ceo_dashboard.dart', 'lib/screens/cofounder_dashboard.dart'];
+  final files = [
+    'lib/screens/ceo_dashboard.dart',
+    'lib/screens/cofounder_dashboard.dart',
+  ];
 
   for (final path in files) {
     final file = File(path);
@@ -25,7 +28,7 @@ void main() {
               ),
               actions: [
 ''';
-    
+
     // Actually, it's safer to just find the `}).toList(), \n ),` and replace it with `}).toList(), \n ), \n ),` for both tables.
     // Wait, the first one ends with:
     // } ).toList(),
@@ -33,13 +36,13 @@ void main() {
     // ),
     // ),
     // actions: [
-    
+
     // Let's do a more robust replacement using RegExp or specific blocks.
-    
+
     // Let's first undo the previous broken replacement, then re-apply it correctly.
     // To undo, we change `SingleChildScrollView( \n scrollDirection: Axis.horizontal, \n child: DataTable(` back to `DataTable(`.
     // Wait, let's just find the `}).toList(),` block for both.
-    
+
     String oldBlock1 = r'''
                       ]);
                     }).toList(),

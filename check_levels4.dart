@@ -1,7 +1,9 @@
 import 'dart:io';
 
 void main() {
-  String content = File('lib/screens/cofounder_dashboard.dart').readAsStringSync();
+  String content = File(
+    'lib/screens/cofounder_dashboard.dart',
+  ).readAsStringSync();
   int braceCount = 0;
   List<String> lines = content.split('\n');
   for (int i = 0; i < lines.length; i++) {

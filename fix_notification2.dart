@@ -11,10 +11,15 @@ void main() {
     if (!file.existsSync()) continue;
     var content = file.readAsStringSync();
 
-    // Match anything between timeStr and by 
-    final corruptedPattern = RegExp(r'"\$dateStr \$timeStr\s+.*?\s+by \$\{n\.triggeredBy\}"');
+    // Match anything between timeStr and by
+    final corruptedPattern = RegExp(
+      r'"\$dateStr \$timeStr\s+.*?\s+by \$\{n\.triggeredBy\}"',
+    );
     if (corruptedPattern.hasMatch(content)) {
-      content = content.replaceAll(corruptedPattern, '"\$dateStr \$timeStr - by \${n.triggeredBy}"');
+      content = content.replaceAll(
+        corruptedPattern,
+        '"\$dateStr \$timeStr - by \${n.triggeredBy}"',
+      );
       file.writeAsStringSync(content);
       print('Updated \$path');
     } else {

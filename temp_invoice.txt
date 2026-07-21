@@ -1,0 +1,1013 @@
+﻿
+> temp_ceo.dart:7262:  void _showInvoiceMonthDialog(BuildContext context, Client c) {
+  temp_ceo.dart:7263:    final pendingMonths = c.pendingMonths;
+  temp_ceo.dart:7264:    if (pendingMonths.isEmpty) {
+  temp_ceo.dart:7265:      showDialog(
+  temp_ceo.dart:7266:        context: context,
+  temp_ceo.dart:7267:        builder: (context) => AlertDialog(
+  temp_ceo.dart:7268:          backgroundColor: SageColors.surface,
+  temp_ceo.dart:7269:          title: const Text(
+  temp_ceo.dart:7270:            "No Pending Invoices",
+  temp_ceo.dart:7271:            style: TextStyle(color: SageColors.onSurface),
+  temp_ceo.dart:7272:          ),
+  temp_ceo.dart:7273:          content: const Text(
+  temp_ceo.dart:7274:            "This client has no pending months to generate an invoice for. They have either paid 
+for all active months, or they just joined.",
+  temp_ceo.dart:7275:            style: TextStyle(color: SageColors.onSurfaceVariant),
+  temp_ceo.dart:7276:          ),
+  temp_ceo.dart:7277:          actions: [
+  temp_ceo.dart:7278:            TextButton(
+  temp_ceo.dart:7279:              onPressed: () => Navigator.pop(context),
+  temp_ceo.dart:7280:              child: const Text(
+  temp_ceo.dart:7281:                "OK",
+  temp_ceo.dart:7282:                style: TextStyle(color: SageColors.primary),
+  temp_ceo.dart:7283:              ),
+  temp_ceo.dart:7284:            ),
+  temp_ceo.dart:7285:          ],
+  temp_ceo.dart:7286:        ),
+  temp_ceo.dart:7287:      );
+  temp_ceo.dart:7288:      return;
+  temp_ceo.dart:7289:    }
+  temp_ceo.dart:7290:
+  temp_ceo.dart:7291:    int selectedMonth = pendingMonths.first;
+  temp_ceo.dart:7292:    List<ClientAddOn> unbilledAddOns = c.addOns
+  temp_ceo.dart:7293:        .where((a) => !a.isBilled && !a.isPaid)
+  temp_ceo.dart:7294:        .toList();
+  temp_ceo.dart:7295:    List<String> selectedAddOnIds = [];
+  temp_ceo.dart:7296:    Map<String, bool> partialPaymentToggles = {};
+  temp_ceo.dart:7297:    Map<String, TextEditingController> partialPaymentControllers = {};
+  temp_ceo.dart:7298:
+  temp_ceo.dart:7299:    for (var a in unbilledAddOns) {
+  temp_ceo.dart:7300:      partialPaymentToggles[a.id] = false;
+  temp_ceo.dart:7301:      partialPaymentControllers[a.id] = TextEditingController();
+  temp_ceo.dart:7302:    }
+  temp_ceo.dart:7303:
+  temp_ceo.dart:7304:    // Helper to get month string
+  temp_ceo.dart:7305:    String getMonthName(int m) {
+  temp_ceo.dart:7306:      return DateFormat('MMMM').format(DateTime(2000, m, 1));
+  temp_ceo.dart:7307:    }
+  temp_ceo.dart:7308:
+  temp_ceo.dart:7309:    showDialog(
+  temp_ceo.dart:7310:      context: context,
+  temp_ceo.dart:7311:      builder: (context) {
+  temp_ceo.dart:7312:        return StatefulBuilder(
+  temp_ceo.dart:7313:          builder: (context, setState) {
+  temp_ceo.dart:7314:            return AlertDialog(
+  temp_ceo.dart:7315:              backgroundColor: SageColors.surface,
+  temp_ceo.dart:7316:              title: const Text(
+  temp_ceo.dart:7317:                "Select Pending Month",
+  temp_ceo.dart:7318:                style: TextStyle(color: SageColors.onSurface),
+  temp_ceo.dart:7319:              ),
+  temp_ceo.dart:7320:              content: SingleChildScrollView(
+  temp_ceo.dart:7321:                child: Column(
+  temp_ceo.dart:7322:                  mainAxisSize: MainAxisSize.min,
+  temp_ceo.dart:7323:                  crossAxisAlignment: CrossAxisAlignment.start,
+  temp_ceo.dart:7324:                  children: [
+  temp_ceo.dart:7325:                    const Text(
+  temp_ceo.dart:7326:                      "Choose which pending month to generate the invoice for:",
+  temp_ceo.dart:7327:                      style: TextStyle(color: SageColors.onSurfaceVariant),
+  temp_ceo.dart:7328:                    ),
+  temp_ceo.dart:7329:                    const SizedBox(height: 16),
+  temp_ceo.dart:7330:                    DropdownButtonFormField<int>(
+  temp_ceo.dart:7331:                      value: selectedMonth,
+  temp_ceo.dart:7332:                      dropdownColor: SageColors.surface,
+  temp_ceo.dart:7333:                      style: const TextStyle(color: SageColors.onSurface),
+  temp_ceo.dart:7334:                      items: pendingMonths.map((m) {
+  temp_ceo.dart:7335:                        return DropdownMenuItem<int>(
+  temp_ceo.dart:7336:                          value: m,
+  temp_ceo.dart:7337:                          child: Text(getMonthName(m)),
+  temp_ceo.dart:7338:                        );
+  temp_ceo.dart:7339:                      }).toList(),
+  temp_ceo.dart:7340:                      onChanged: (val) {
+  temp_ceo.dart:7341:                        if (val != null) {
+  temp_ceo.dart:7342:                          setState(() => selectedMonth = val);
+  temp_ceo.dart:7343:                        }
+  temp_ceo.dart:7344:                      },
+  temp_ceo.dart:7345:                      decoration: const InputDecoration(
+  temp_ceo.dart:7346:                        filled: true,
+  temp_ceo.dart:7347:                        fillColor: SageColors.background,
+  temp_ceo.dart:7348:                        border: OutlineInputBorder(),
+  temp_ceo.dart:7349:                      ),
+  temp_ceo.dart:7350:                    ),
+  temp_ceo.dart:7351:                    if (unbilledAddOns.isNotEmpty) ...[
+  temp_ceo.dart:7352:                      const SizedBox(height: 16),
+  temp_ceo.dart:7353:                      const Text(
+  temp_ceo.dart:7354:                        "Include Add-Ons in this invoice:",
+  temp_ceo.dart:7355:                        style: TextStyle(
+  temp_ceo.dart:7356:                          color: SageColors.onSurfaceVariant,
+  temp_ceo.dart:7357:                          fontWeight: FontWeight.bold,
+  temp_ceo.dart:7358:                        ),
+  temp_ceo.dart:7359:                      ),
+  temp_ceo.dart:7360:                      const SizedBox(height: 8),
+  temp_ceo.dart:7361:                      ...unbilledAddOns.map((addOn) {
+  temp_ceo.dart:7362:                        bool isSelected = selectedAddOnIds.contains(addOn.id);
+  temp_ceo.dart:7363:                        bool isPartial = partialPaymentToggles[addOn.id] ?? false;
+  temp_ceo.dart:7364:
+  temp_ceo.dart:7365:                        return Column(
+  temp_ceo.dart:7366:                          crossAxisAlignment: CrossAxisAlignment.start,
+  temp_ceo.dart:7367:                          children: [
+  temp_ceo.dart:7368:                            CheckboxListTile(
+  temp_ceo.dart:7369:                              title: Text(
+  temp_ceo.dart:7370:                                "${addOn.type} - \u20B9${addOn.amount.toStringAsFixed(0)}",
+  temp_ceo.dart:7371:                                style: const TextStyle(fontSize: 12),
+  temp_ceo.dart:7372:                              ),
+  temp_ceo.dart:7373:                              subtitle:
+  temp_ceo.dart:7374:                                  addOn.description != null &&
+  temp_ceo.dart:7375:                                          addOn.description!.isNotEmpty
+  temp_ceo.dart:7376:                                      ? Text(
+  temp_ceo.dart:7377:                                          addOn.description!,
+  temp_ceo.dart:7378:                                          style: const TextStyle(fontSize: 10),
+  temp_ceo.dart:7379:                                        )
+  temp_ceo.dart:7380:                                      : null,
+  temp_ceo.dart:7381:                              value: isSelected,
+  temp_ceo.dart:7382:                              onChanged: (val) {
+  temp_ceo.dart:7383:                                setState(() {
+  temp_ceo.dart:7384:                                  if (val == true) {
+  temp_ceo.dart:7385:                                    selectedAddOnIds.add(addOn.id);
+  temp_ceo.dart:7386:                                  } else {
+  temp_ceo.dart:7387:                                    selectedAddOnIds.remove(addOn.id);
+  temp_ceo.dart:7388:                                  }
+  temp_ceo.dart:7389:                                });
+  temp_ceo.dart:7390:                              },
+  temp_ceo.dart:7391:                              controlAffinity: ListTileControlAffinity.leading,
+  temp_ceo.dart:7392:                              contentPadding: EdgeInsets.zero,
+  temp_ceo.dart:7393:                              activeColor: SageColors.primary,
+  temp_ceo.dart:7394:                            ),
+  temp_ceo.dart:7395:                            if (isSelected)
+  temp_ceo.dart:7396:                              Padding(
+  temp_ceo.dart:7397:                                padding: const EdgeInsets.only(left: 32.0, bottom: 8.0),
+  temp_ceo.dart:7398:                                child: Row(
+  temp_ceo.dart:7399:                                  children: [
+  temp_ceo.dart:7400:                                    Switch(
+  temp_ceo.dart:7401:                                      value: isPartial,
+  temp_ceo.dart:7402:                                      onChanged: (val) {
+  temp_ceo.dart:7403:                                        setState(() {
+  temp_ceo.dart:7404:                                          partialPaymentToggles[addOn.id] = val;
+  temp_ceo.dart:7405:                                        });
+  temp_ceo.dart:7406:                                      },
+  temp_ceo.dart:7407:                                      activeColor: SageColors.primary,
+  temp_ceo.dart:7408:                                    ),
+  temp_ceo.dart:7409:                                    const Text("Partial Payment", style: TextStyle(fontSize: 11, 
+color: SageColors.onSurfaceVariant)),
+  temp_ceo.dart:7410:                                    if (isPartial) ...[
+  temp_ceo.dart:7411:                                      const SizedBox(width: 16),
+  temp_ceo.dart:7412:                                      Expanded(
+  temp_ceo.dart:7413:                                        child: TextField(
+  temp_ceo.dart:7414:                                          controller: partialPaymentControllers[addOn.id],
+  temp_ceo.dart:7415:                                          keyboardType: TextInputType.number,
+  temp_ceo.dart:7416:                                          style: const TextStyle(color: SageColors.onSurface, 
+fontSize: 12),
+  temp_ceo.dart:7417:                                          decoration: const InputDecoration(
+  temp_ceo.dart:7418:                                            hintText: "Amount (\u20B9)",
+  temp_ceo.dart:7419:                                            isDense: true,
+  temp_ceo.dart:7420:                                            contentPadding: EdgeInsets.symmetric(horizontal: 8, 
+vertical: 8),
+  temp_ceo.dart:7421:                                          ),
+  temp_ceo.dart:7422:                                        ),
+  temp_ceo.dart:7423:                                      ),
+  temp_ceo.dart:7424:                                    ]
+  temp_ceo.dart:7425:                                  ],
+  temp_ceo.dart:7426:                                ),
+  temp_ceo.dart:7427:                              ),
+  temp_ceo.dart:7428:                          ],
+  temp_ceo.dart:7429:                        );
+  temp_ceo.dart:7430:                      }),
+  temp_ceo.dart:7431:                    ],
+  temp_ceo.dart:7432:                  ],
+  temp_ceo.dart:7433:                ),
+  temp_ceo.dart:7434:              ),
+  temp_ceo.dart:7435:              actions: [
+  temp_ceo.dart:7436:                TextButton(
+  temp_ceo.dart:7437:                  onPressed: () => Navigator.pop(context),
+  temp_ceo.dart:7438:                  child: const Text(
+  temp_ceo.dart:7439:                    "CANCEL",
+  temp_ceo.dart:7440:                    style: TextStyle(color: SageColors.onSurfaceVariant),
+  temp_ceo.dart:7441:                  ),
+  temp_ceo.dart:7442:                ),
+  temp_ceo.dart:7443:                TextButton(
+  temp_ceo.dart:7444:                  onPressed: () async {
+  temp_ceo.dart:7445:                    Navigator.pop(context);
+  temp_ceo.dart:7446:                    ScaffoldMessenger.of(context).showSnackBar(
+  temp_ceo.dart:7447:                      const SnackBar(content: Text("Generating Invoice...")),
+  temp_ceo.dart:7448:                    );
+  temp_ceo.dart:7449:                    try {
+  temp_ceo.dart:7450:                      DateTime invoiceDate = DateTime(
+  temp_ceo.dart:7451:                        DateTime.now().year,
+  temp_ceo.dart:7452:                        selectedMonth,
+  temp_ceo.dart:7453:                      );
+  temp_ceo.dart:7454:
+  temp_ceo.dart:7455:                      Map<String, double> partialPayments = {};
+  temp_ceo.dart:7456:                      List<ClientAddOn> selectedAddOnsForInvoice = [];
+  temp_ceo.dart:7457:                      List<String> fullyBilledAddOnIds = [];
+  temp_ceo.dart:7458:
+  temp_ceo.dart:7459:                      for (var addOn in c.addOns) {
+  temp_ceo.dart:7460:                        if (selectedAddOnIds.contains(addOn.id)) {
+  temp_ceo.dart:7461:                          bool isPartial = partialPaymentToggles[addOn.id] ?? false;
+  temp_ceo.dart:7462:                          double partialAmt = 
+double.tryParse(partialPaymentControllers[addOn.id]?.text ?? '') ?? 0.0;
+  temp_ceo.dart:7463:
+  temp_ceo.dart:7464:                          if (isPartial && partialAmt > 0 && partialAmt < addOn.amount) {
+  temp_ceo.dart:7465:                            partialPayments[addOn.id] = partialAmt;
+  temp_ceo.dart:7466:                            selectedAddOnsForInvoice.add(
+  temp_ceo.dart:7467:                              ClientAddOn(
+  temp_ceo.dart:7468:                                id: addOn.id,
+  temp_ceo.dart:7469:                                type: addOn.type,
+  temp_ceo.dart:7470:                                description: "${addOn.description ?? ''} (Partial 
+Payment)".trim(),
+  temp_ceo.dart:7471:                                amount: partialAmt,
+  temp_ceo.dart:7472:                                isBilled: false,
+  temp_ceo.dart:7473:                                isPaid: false,
+  temp_ceo.dart:7474:                                dateAdded: addOn.dateAdded,
+  temp_ceo.dart:7475:                              ),
+  temp_ceo.dart:7476:                            );
+  temp_ceo.dart:7477:                          } else {
+  temp_ceo.dart:7478:                            fullyBilledAddOnIds.add(addOn.id);
+  temp_ceo.dart:7479:                            selectedAddOnsForInvoice.add(addOn);
+  temp_ceo.dart:7480:                          }
+  temp_ceo.dart:7481:                        }
+  temp_ceo.dart:7482:                      }
+  temp_ceo.dart:7483:
+  temp_ceo.dart:7484:                      await InvoiceService.generateAndShareInvoice(
+  temp_ceo.dart:7485:                        c,
+  temp_ceo.dart:7486:                        invoiceDate,
+  temp_ceo.dart:7487:                        selectedAddOns: selectedAddOnsForInvoice,
+  temp_ceo.dart:7488:                      );
+  temp_ceo.dart:7489:                      
+  temp_ceo.dart:7490:                      if (fullyBilledAddOnIds.isNotEmpty || partialPayments.isNotEmpty) {
+  temp_ceo.dart:7491:                        context.read<AppState>().processAddOnPayments(
+  temp_ceo.dart:7492:                          c.id,
+  temp_ceo.dart:7493:                          fullyBilledAddOnIds,
+  temp_ceo.dart:7494:                          partialPayments,
+  temp_ceo.dart:7495:                        );
+  temp_ceo.dart:7496:                      }
+  temp_ceo.dart:7497:
+  temp_ceo.dart:7498:                      if (context.mounted)
+  temp_ceo.dart:7499:                        ScaffoldMessenger.of(context).showSnackBar(
+  temp_ceo.dart:7500:                          const SnackBar(content: Text("Invoice Generated")),
+  temp_ceo.dart:7501:                        );
+  temp_ceo.dart:7502:                    } catch (e) {
+  temp_ceo.dart:7503:                      if (context.mounted)
+  temp_ceo.dart:7504:                        ScaffoldMessenger.of(
+  temp_ceo.dart:7505:                          context,
+  temp_ceo.dart:7506:                        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+  temp_ceo.dart:7507:                    }
+  temp_ceo.dart:7508:                  },
+  temp_ceo.dart:7509:                  child: const Text(
+  temp_ceo.dart:7510:                    "GENERATE",
+  temp_ceo.dart:7511:                    style: TextStyle(
+  temp_ceo.dart:7512:                      color: SageColors.secondary,
+  temp_ceo.dart:7513:                      fontWeight: FontWeight.bold,
+  temp_ceo.dart:7514:                    ),
+  temp_ceo.dart:7515:                  ),
+  temp_ceo.dart:7516:                ),
+  temp_ceo.dart:7517:              ],
+  temp_ceo.dart:7518:            );
+  temp_ceo.dart:7519:          },
+  temp_ceo.dart:7520:        );
+  temp_ceo.dart:7521:      },
+  temp_ceo.dart:7522:    );
+  temp_ceo.dart:7523:  }
+  temp_ceo.dart:7524:
+  temp_ceo.dart:7525:  void _showEditClientDialog(BuildContext context, Client c) {
+  temp_ceo.dart:7526:    final nameCtrl = TextEditingController(text: c.name);
+  temp_ceo.dart:7527:    final contactNameCtrl = TextEditingController(text: c.contact.name);
+  temp_ceo.dart:7528:    final contactEmailCtrl = TextEditingController(text: c.contact.email);
+  temp_ceo.dart:7529:    final contactPhoneCtrl = TextEditingController(text: c.contact.phone);
+  temp_ceo.dart:7530:    final contactAddressCtrl = TextEditingController(text: c.contact.address);
+  temp_ceo.dart:7531:    final contactWebsiteCtrl = TextEditingController(text: c.contact.website);
+  temp_ceo.dart:7532:    final payableCtrl = TextEditingController(
+  temp_ceo.dart:7533:      text: c.monthlyPayable.toString(),
+  temp_ceo.dart:7534:    );
+  temp_ceo.dart:7535:    final dueDateDayCtrl = TextEditingController(text: c.dueDateDay.toString());
+  temp_ceo.dart:7536:    String paymentMode = c.paymentMode;
+  temp_ceo.dart:7537:    final pendingMonthsCtrl = TextEditingController(
+  temp_ceo.dart:7538:      text: c.dynamicPaymentsDue.toString(),
+  temp_ceo.dart:7539:    );
+  temp_ceo.dart:7540:    final reelsCtrl = TextEditingController(text: c.weeklyReels.toString());
+  temp_ceo.dart:7541:    final postsCtrl = TextEditingController(text: c.weeklyPosts.toString());
+  temp_ceo.dart:7542:    final carouselsCtrl = TextEditingController(
+  temp_ceo.dart:7543:      text: c.weeklyCarousels.toString(),
+  temp_ceo.dart:7544:    );
+  temp_ceo.dart:7545:    final storiesCtrl = TextEditingController(text: c.weeklyStories.toString());
+  temp_ceo.dart:7546:    final campaignsCtrl = TextEditingController(text: c.campaigns.toString());
+  temp_ceo.dart:7547:    final campaignReachCtrl = TextEditingController(text: c.campaignReach);
+  temp_ceo.dart:7548:    final guidelinesCtrl = TextEditingController(text: c.postRequirements);
+  temp_ceo.dart:7549:    String packageType = c.packageType;
+  temp_ceo.dart:7550:    String contractPeriod = c.contractPeriod;
+  temp_ceo.dart:7551:    String conversionProbability = c.conversionProbability;
+  temp_ceo.dart:7552:    String retentionHealth = c.retentionHealth;
+  temp_ceo.dart:7553:    String serviceType = c.serviceType.toLowerCase().contains('commerce')
+  temp_ceo.dart:7554:        ? 'E-Commerce'
+  temp_ceo.dart:7555:        : c.serviceType;
+  temp_ceo.dart:7556:    String ecomPaymentType = c.ecomPaymentType;
+  temp_ceo.dart:7557:    final clientSkuRateCtrl = TextEditingController(
+  temp_ceo.dart:7558:      text: c.clientSkuRate.toString(),
+  temp_ceo.dart:7559:    );
+  temp_ceo.dart:7560:    final clientDuplicateSkuRateCtrl = TextEditingController(
+  temp_ceo.dart:7561:      text: c.clientDuplicateSkuRate.toString(),
+  temp_ceo.dart:7562:    );
+  temp_ceo.dart:7563:    final clientCatalogueRateCtrl = TextEditingController(
+  temp_ceo.dart:7564:      text: c.clientCatalogueRate.toString(),
+  temp_ceo.dart:7565:    );
+  temp_ceo.dart:7566:    bool hasMarketingCommission = c.hasMarketingCommission;
+  temp_ceo.dart:7567:    bool isWebsiteHandlingActive = c.isWebsiteHandlingActive;
+  temp_ceo.dart:7568:    final websiteHandlingFeeCtrl = TextEditingController(
+  temp_ceo.dart:7569:      text: c.websiteHandlingFee.toString(),
+  temp_ceo.dart:7570:    );
+  temp_ceo.dart:7571:    String? marketingExecutiveId = c.marketingExecutiveId;
+  temp_ceo.dart:7572:    String? assignedVideographerId = c.assignedVideographerId;
+  temp_ceo.dart:7573:    final sessionRateCtrl = TextEditingController(
+  temp_ceo.dart:7574:      text: c.sessionRate.toString(),
+  temp_ceo.dart:7575:    );
+  temp_ceo.dart:7576:    DateTime selectedContractDate = c.contractDate;
+  temp_ceo.dart:7577:
+  temp_ceo.dart:7578:    showDialog(
+  temp_ceo.dart:7579:      context: context,
+  temp_ceo.dart:7580:      builder: (ctx) {
+  temp_ceo.dart:7581:        return StatefulBuilder(
+  temp_ceo.dart:7582:          builder: (ctx, setState) {
+  temp_ceo.dart:7583:            return AlertDialog(
+  temp_ceo.dart:7584:              backgroundColor: SageColors.background,
+  temp_ceo.dart:7585:              title: const Text(
+  temp_ceo.dart:7586:                "EDIT CLIENT",
+  temp_ceo.dart:7587:                style: TextStyle(
+  temp_ceo.dart:7588:                  color: Colors.black,
+  temp_ceo.dart:7589:                  fontWeight: FontWeight.bold,
+  temp_ceo.dart:7590:                  fontSize: 14,
+  temp_ceo.dart:7591:                ),
+  temp_ceo.dart:7592:              ),
+  temp_ceo.dart:7593:              content: SingleChildScrollView(
+  temp_ceo.dart:7594:                child: Column(
+  temp_ceo.dart:7595:                  mainAxisSize: MainAxisSize.min,
+  temp_ceo.dart:7596:                  children: [
+  temp_ceo.dart:7597:                    SageTextField(controller: nameCtrl, label: "Company Name"),
+  temp_ceo.dart:7598:                    const SizedBox(height: 10),
+  temp_ceo.dart:7599:                    SageTextField(
+  temp_ceo.dart:7600:                      controller: contactEmailCtrl,
+  temp_ceo.dart:7601:                      label: "Contact Email",
+  temp_ceo.dart:7602:                    ),
+  temp_ceo.dart:7603:                    const SizedBox(height: 10),
+  temp_ceo.dart:7604:                    SageTextField(
+  temp_ceo.dart:7605:                      controller: contactPhoneCtrl,
+  temp_ceo.dart:7606:                      label: "Contact Phone",
+  temp_ceo.dart:7607:                    ),
+  temp_ceo.dart:7608:                    const SizedBox(height: 10),
+  temp_ceo.dart:7609:                    if (c.status == 'Lead') ...[
+  temp_ceo.dart:7610:                      DropdownButtonFormField<String>(
+  temp_ceo.dart:7611:                        value: conversionProbability,
+  temp_ceo.dart:7612:                        decoration: const InputDecoration(
+  temp_ceo.dart:7613:                          labelText: "Conversion Probability",
+  temp_ceo.dart:7614:                        ),
+  temp_ceo.dart:7615:                        dropdownColor: Colors.white,
+  temp_ceo.dart:7616:                        items: ['High', 'Medium', 'Low']
+  temp_ceo.dart:7617:                            .map(
+  temp_ceo.dart:7618:                              (s) => DropdownMenuItem(
+  temp_ceo.dart:7619:                                value: s,
+  temp_ceo.dart:7620:                                child: Text(
+  temp_ceo.dart:7621:                                  s,
+  temp_ceo.dart:7622:                                  style: const TextStyle(fontSize: 12),
+  temp_ceo.dart:7623:                                ),
+  temp_ceo.dart:7624:                              ),
+  temp_ceo.dart:7625:                            )
+  temp_ceo.dart:7626:                            .toList(),
+  temp_ceo.dart:7627:                        onChanged: (v) => setState(
+  temp_ceo.dart:7628:                          () => conversionProbability = v ?? 'Medium',
+  temp_ceo.dart:7629:                        ),
+  temp_ceo.dart:7630:                      ),
+  temp_ceo.dart:7631:                      const SizedBox(height: 10),
+  temp_ceo.dart:7632:                    ] else ...[
+  temp_ceo.dart:7633:                      SageTextField(
+  temp_ceo.dart:7634:                        controller: contactNameCtrl,
+  temp_ceo.dart:7635:                        label: "Contact Name",
+  temp_ceo.dart:7636:                      ),
+  temp_ceo.dart:7637:                      const SizedBox(height: 10),
+  temp_ceo.dart:7638:                      SageTextField(
+  temp_ceo.dart:7639:                        controller: contactAddressCtrl,
+  temp_ceo.dart:7640:                        label: "Address",
+  temp_ceo.dart:7641:                      ),
+  temp_ceo.dart:7642:                      const SizedBox(height: 10),
+  temp_ceo.dart:7643:                      SageTextField(
+  temp_ceo.dart:7644:                        controller: contactWebsiteCtrl,
+  temp_ceo.dart:7645:                        label: "Website",
+  temp_ceo.dart:7646:                      ),
+  temp_ceo.dart:7647:                      const SizedBox(height: 10),
+  temp_ceo.dart:7648:                      SageTextField(
+  temp_ceo.dart:7649:                        controller: payableCtrl,
+  temp_ceo.dart:7650:                        label: "Monthly Payable (Γé╣)",
+  temp_ceo.dart:7651:                        keyboardType: TextInputType.number,
+  temp_ceo.dart:7652:                      ),
+  temp_ceo.dart:7653:                      const SizedBox(height: 10),
+  temp_ceo.dart:7654:                      DropdownButtonFormField<String>(
+  temp_ceo.dart:7655:                        value: paymentMode,
+  temp_ceo.dart:7656:                        decoration: const InputDecoration(
+  temp_ceo.dart:7657:                          labelText: "Payment Mode",
+  temp_ceo.dart:7658:                        ),
+  temp_ceo.dart:7659:                        dropdownColor: Colors.white,
+  temp_ceo.dart:7660:                        items: ['Advance', 'Running', 'Late']
+  temp_ceo.dart:7661:                            .map(
+  temp_ceo.dart:7662:                              (s) => DropdownMenuItem(
+  temp_ceo.dart:7663:                                value: s,
+  temp_ceo.dart:7664:                                child: Text(
+  temp_ceo.dart:7665:                                  s,
+  temp_ceo.dart:7666:                                  style: const TextStyle(fontSize: 12),
+  temp_ceo.dart:7667:                                ),
+  temp_ceo.dart:7668:                              ),
+  temp_ceo.dart:7669:                            )
+  temp_ceo.dart:7670:                            .toList(),
+  temp_ceo.dart:7671:                        onChanged: (v) =>
+  temp_ceo.dart:7672:                            setState(() => paymentMode = v ?? 'Running'),
+  temp_ceo.dart:7673:                      ),
+  temp_ceo.dart:7674:                      const SizedBox(height: 10),
+  temp_ceo.dart:7675:                      SageTextField(
+  temp_ceo.dart:7676:                        controller: dueDateDayCtrl,
+  temp_ceo.dart:7677:                        label: "Due Date (1-31)",
+  temp_ceo.dart:7678:                        keyboardType: TextInputType.number,
+  temp_ceo.dart:7679:                      ),
+  temp_ceo.dart:7680:                      const SizedBox(height: 10),
+  temp_ceo.dart:7681:                      DropdownButtonFormField<String>(
+  temp_ceo.dart:7682:                        value: serviceType,
+  temp_ceo.dart:7683:                        decoration: const InputDecoration(
+  temp_ceo.dart:7684:                          labelText: "Service Type",
+  temp_ceo.dart:7685:                        ),
+  temp_ceo.dart:7686:                        dropdownColor: Colors.white,
+  temp_ceo.dart:7687:                        items: ['Marketing', 'E-Commerce', 'Video Production']
+  temp_ceo.dart:7688:                            .map(
+  temp_ceo.dart:7689:                              (s) => DropdownMenuItem(
+  temp_ceo.dart:7690:                                value: s,
+  temp_ceo.dart:7691:                                child: Text(
+  temp_ceo.dart:7692:                                  s,
+  temp_ceo.dart:7693:                                  style: const TextStyle(fontSize: 12),
+  temp_ceo.dart:7694:                                ),
+  temp_ceo.dart:7695:                              ),
+  temp_ceo.dart:7696:                            )
+  temp_ceo.dart:7697:                            .toList(),
+  temp_ceo.dart:7698:                        onChanged: (v) =>
+  temp_ceo.dart:7699:                            setState(() => serviceType = v ?? 'Marketing'),
+  temp_ceo.dart:7700:                      ),
+  temp_ceo.dart:7701:                      const SizedBox(height: 10),
+  temp_ceo.dart:7702:                      SwitchListTile(
+  temp_ceo.dart:7703:                        title: Text(
+  temp_ceo.dart:7704:                          "Marketing Commission (20%)",
+  temp_ceo.dart:7705:                          style: TextStyle(
+  temp_ceo.dart:7706:                            fontSize: 12,
+  temp_ceo.dart:7707:                            fontWeight: FontWeight.bold,
+  temp_ceo.dart:7708:                            color: marketingExecutiveId == null
+  temp_ceo.dart:7709:                                ? Colors.grey
+  temp_ceo.dart:7710:                                : Colors.black,
+  temp_ceo.dart:7711:                          ),
+  temp_ceo.dart:7712:                        ),
+  temp_ceo.dart:7713:                        value:
+  temp_ceo.dart:7714:                            hasMarketingCommission &&
+  temp_ceo.dart:7715:                            marketingExecutiveId != null,
+  temp_ceo.dart:7716:                        onChanged: marketingExecutiveId == null
+  temp_ceo.dart:7717:                            ? null
+  temp_ceo.dart:7718:                            : (v) => setState(() => hasMarketingCommission = v),
+  temp_ceo.dart:7719:                        activeColor: SageColors.primary,
+  temp_ceo.dart:7720:                        contentPadding: EdgeInsets.zero,
+  temp_ceo.dart:7721:                      ),
+  temp_ceo.dart:7722:                      const SizedBox(height: 10),
+  temp_ceo.dart:7723:                      DropdownButtonFormField<String>(
+  temp_ceo.dart:7724:                        value:
+  temp_ceo.dart:7725:                            context.read<AppState>().employees.any(
+  temp_ceo.dart:7726:                              (e) =>
+  temp_ceo.dart:7727:                                  e.id == marketingExecutiveId &&
+  temp_ceo.dart:7728:                                  e.hasRole('marketing'),
+  temp_ceo.dart:7729:                            )
+  temp_ceo.dart:7730:                            ? marketingExecutiveId
+  temp_ceo.dart:7731:                            : null,
+  temp_ceo.dart:7732:                        decoration: const InputDecoration(
+  temp_ceo.dart:7733:                          labelText: "Assigned Marketing Exec",
+  temp_ceo.dart:7734:                        ),
+  temp_ceo.dart:7735:                        dropdownColor: Colors.white,
+  temp_ceo.dart:7736:                        items: [
+  temp_ceo.dart:7737:                          const DropdownMenuItem(
+  temp_ceo.dart:7738:                            value: null,
+  temp_ceo.dart:7739:                            child: Text("None", style: TextStyle(fontSize: 12)),
+  temp_ceo.dart:7740:                          ),
+  temp_ceo.dart:7741:                          ...context
+  temp_ceo.dart:7742:                              .read<AppState>()
+  temp_ceo.dart:7743:                              .employees
+  temp_ceo.dart:7744:                              .where((e) => e.hasRole('marketing'))
+  temp_ceo.dart:7745:                              .map(
+  temp_ceo.dart:7746:                                (e) => DropdownMenuItem(
+  temp_ceo.dart:7747:                                  value: e.id,
+  temp_ceo.dart:7748:                                  child: Text(
+  temp_ceo.dart:7749:                                    e.name,
+  temp_ceo.dart:7750:                                    style: const TextStyle(fontSize: 12),
+  temp_ceo.dart:7751:                                  ),
+  temp_ceo.dart:7752:                                ),
+  temp_ceo.dart:7753:                              ),
+  temp_ceo.dart:7754:                        ],
+  temp_ceo.dart:7755:                        onChanged: (v) => setState(() {
+  temp_ceo.dart:7756:                          marketingExecutiveId = v;
+  temp_ceo.dart:7757:                          if (v == null) hasMarketingCommission = false;
+  temp_ceo.dart:7758:                        }),
+  temp_ceo.dart:7759:                      ),
+  temp_ceo.dart:7760:                      const SizedBox(height: 10),
+  temp_ceo.dart:7761:                      Row(
+  temp_ceo.dart:7762:                        children: [
+  temp_ceo.dart:7763:                          const Text(
+  temp_ceo.dart:7764:                            "Starting Date:",
+  temp_ceo.dart:7765:                            style: TextStyle(
+  temp_ceo.dart:7766:                              fontSize: 12,
+  temp_ceo.dart:7767:                              fontWeight: FontWeight.bold,
+  temp_ceo.dart:7768:                              color: Colors.black54,
+  temp_ceo.dart:7769:                            ),
+  temp_ceo.dart:7770:                          ),
+  temp_ceo.dart:7771:                          const SizedBox(width: 8),
+  temp_ceo.dart:7772:                          TextButton.icon(
+  temp_ceo.dart:7773:                            onPressed: () async {
+  temp_ceo.dart:7774:                              final picked = await showDatePicker(
+  temp_ceo.dart:7775:                                context: context,
+  temp_ceo.dart:7776:                                initialDate: selectedContractDate,
+  temp_ceo.dart:7777:                                firstDate: DateTime(2020),
+  temp_ceo.dart:7778:                                lastDate: DateTime(2030),
+  temp_ceo.dart:7779:                              );
+  temp_ceo.dart:7780:                              if (picked != null) {
+  temp_ceo.dart:7781:                                setState(() => selectedContractDate = picked);
+  temp_ceo.dart:7782:                              }
+  temp_ceo.dart:7783:                            },
+  temp_ceo.dart:7784:                            icon: const Icon(Icons.calendar_today, size: 14),
+  temp_ceo.dart:7785:                            label: Text(
+  temp_ceo.dart:7786:                              selectedContractDate.toString().substring(0, 10),
+  temp_ceo.dart:7787:                            ),
+  temp_ceo.dart:7788:                          ),
+  temp_ceo.dart:7789:                        ],
+  temp_ceo.dart:7790:                      ),
+  temp_ceo.dart:7791:                      const SizedBox(height: 10),
+  temp_ceo.dart:7792:                      DropdownButtonFormField<String>(
+  temp_ceo.dart:7793:                        value: packageType,
+  temp_ceo.dart:7794:                        decoration: const InputDecoration(
+  temp_ceo.dart:7795:                          labelText: "Package Type",
+  temp_ceo.dart:7796:                        ),
+  temp_ceo.dart:7797:                        dropdownColor: Colors.white,
+  temp_ceo.dart:7798:                        items: ['Growth', 'Performance']
+  temp_ceo.dart:7799:                            .map(
+  temp_ceo.dart:7800:                              (s) => DropdownMenuItem(
+  temp_ceo.dart:7801:                                value: s,
+  temp_ceo.dart:7802:                                child: Text(
+  temp_ceo.dart:7803:                                  s,
+  temp_ceo.dart:7804:                                  style: const TextStyle(fontSize: 12),
+  temp_ceo.dart:7805:                                ),
+  temp_ceo.dart:7806:                              ),
+  temp_ceo.dart:7807:                            )
+  temp_ceo.dart:7808:                            .toList(),
+  temp_ceo.dart:7809:                        onChanged: (v) =>
+  temp_ceo.dart:7810:                            setState(() => packageType = v ?? 'Growth'),
+  temp_ceo.dart:7811:                      ),
+  temp_ceo.dart:7812:                      const SizedBox(height: 10),
+  temp_ceo.dart:7813:                      DropdownButtonFormField<String>(
+  temp_ceo.dart:7814:                        value: contractPeriod,
+  temp_ceo.dart:7815:                        decoration: const InputDecoration(
+  temp_ceo.dart:7816:                          labelText: "Contract Period",
+  temp_ceo.dart:7817:                        ),
+  temp_ceo.dart:7818:                        dropdownColor: Colors.white,
+  temp_ceo.dart:7819:                        items: ['3 Months', '6 Months', '1 Year']
+  temp_ceo.dart:7820:                            .map(
+  temp_ceo.dart:7821:                              (s) => DropdownMenuItem(
+  temp_ceo.dart:7822:                                value: s,
+  temp_ceo.dart:7823:                                child: Text(
+  temp_ceo.dart:7824:                                  s,
+  temp_ceo.dart:7825:                                  style: const TextStyle(fontSize: 12),
+  temp_ceo.dart:7826:                                ),
+  temp_ceo.dart:7827:                              ),
+  temp_ceo.dart:7828:                            )
+  temp_ceo.dart:7829:                            .toList(),
+  temp_ceo.dart:7830:                        onChanged: (v) =>
+  temp_ceo.dart:7831:                            setState(() => contractPeriod = v ?? '3 Months'),
+  temp_ceo.dart:7832:                      ),
+  temp_ceo.dart:7833:                      const SizedBox(height: 10),
+  temp_ceo.dart:7834:                      DropdownButtonFormField<String>(
+  temp_ceo.dart:7835:                        value:
+  temp_ceo.dart:7836:                            context.read<AppState>().employees.any(
+  temp_ceo.dart:7837:                              (e) =>
+  temp_ceo.dart:7838:                                  e.id == assignedVideographerId &&
+  temp_ceo.dart:7839:                                  e.hasRole('videographer'),
+  temp_ceo.dart:7840:                            )
+  temp_ceo.dart:7841:                            ? assignedVideographerId
+  temp_ceo.dart:7842:                            : null,
+  temp_ceo.dart:7843:                        decoration: const InputDecoration(
+  temp_ceo.dart:7844:                          labelText: "Assigned Videographer",
+  temp_ceo.dart:7845:                        ),
+  temp_ceo.dart:7846:                        dropdownColor: Colors.white,
+  temp_ceo.dart:7847:                        items: [
+  temp_ceo.dart:7848:                          const DropdownMenuItem(
+  temp_ceo.dart:7849:                            value: null,
+  temp_ceo.dart:7850:                            child: Text("None", style: TextStyle(fontSize: 12)),
+  temp_ceo.dart:7851:                          ),
+  temp_ceo.dart:7852:                          const DropdownMenuItem(
+  temp_ceo.dart:7853:                            value: 'COF-PRI-001',
+  temp_ceo.dart:7854:                            child: Text(
+  temp_ceo.dart:7855:                              "CFO Priyajit",
+  temp_ceo.dart:7856:                              style: TextStyle(fontSize: 12),
+  temp_ceo.dart:7857:                            ),
+  temp_ceo.dart:7858:                          ),
+  temp_ceo.dart:7859:                          ...context
+  temp_ceo.dart:7860:                              .read<AppState>()
+  temp_ceo.dart:7861:                              .employees
+  temp_ceo.dart:7862:                              .where((e) => e.hasRole('videographer'))
+  temp_ceo.dart:7863:                              .map(
+  temp_ceo.dart:7864:                                (e) => DropdownMenuItem(
+  temp_ceo.dart:7865:                                  value: e.id,
+  temp_ceo.dart:7866:                                  child: Text(
+  temp_ceo.dart:7867:                                    e.name,
+  temp_ceo.dart:7868:                                    style: const TextStyle(fontSize: 12),
+  temp_ceo.dart:7869:                                  ),
+  temp_ceo.dart:7870:                                ),
+  temp_ceo.dart:7871:                              ),
+  temp_ceo.dart:7872:                        ],
+  temp_ceo.dart:7873:                        onChanged: (v) =>
+  temp_ceo.dart:7874:                            setState(() => assignedVideographerId = v),
+  temp_ceo.dart:7875:                      ),
+  temp_ceo.dart:7876:                      const SizedBox(height: 10),
+  temp_ceo.dart:7877:                      SageTextField(
+  temp_ceo.dart:7878:                        controller: sessionRateCtrl,
+  temp_ceo.dart:7879:                        label: "Session Rate (Γé╣)",
+  temp_ceo.dart:7880:                        keyboardType: TextInputType.number,
+  temp_ceo.dart:7881:                      ),
+  temp_ceo.dart:7882:                      const SizedBox(height: 10),
+  temp_ceo.dart:7883:                      DropdownButtonFormField<String>(
+  temp_ceo.dart:7884:                        value: retentionHealth,
+  temp_ceo.dart:7885:                        decoration: const InputDecoration(
+  temp_ceo.dart:7886:                          labelText: "Retention Health",
+  temp_ceo.dart:7887:                        ),
+  temp_ceo.dart:7888:                        dropdownColor: Colors.white,
+  temp_ceo.dart:7889:                        items: ['Great', 'Good', 'Bad']
+  temp_ceo.dart:7890:                            .map(
+  temp_ceo.dart:7891:                              (s) => DropdownMenuItem(
+  temp_ceo.dart:7892:                                value: s,
+  temp_ceo.dart:7893:                                child: Text(
+  temp_ceo.dart:7894:                                  s,
+  temp_ceo.dart:7895:                                  style: const TextStyle(fontSize: 12),
+  temp_ceo.dart:7896:                                ),
+  temp_ceo.dart:7897:                              ),
+  temp_ceo.dart:7898:                            )
+  temp_ceo.dart:7899:                            .toList(),
+  temp_ceo.dart:7900:                        onChanged: (v) =>
+  temp_ceo.dart:7901:                            setState(() => retentionHealth = v ?? 'Good'),
+  temp_ceo.dart:7902:                      ),
+  temp_ceo.dart:7903:                      const SizedBox(height: 10),
+  temp_ceo.dart:7904:                      SageTextField(
+  temp_ceo.dart:7905:                        controller: pendingMonthsCtrl,
+  temp_ceo.dart:7906:                        label: "Pending Months of Payment",
+  temp_ceo.dart:7907:                        keyboardType: TextInputType.number,
+  temp_ceo.dart:7908:                      ),
+  temp_ceo.dart:7909:                      const SizedBox(height: 10),
+  temp_ceo.dart:7910:                      if (serviceType.toLowerCase().contains('commerce')) ...[
+  temp_ceo.dart:7911:                        DropdownButtonFormField<String>(
+  temp_ceo.dart:7912:                          value: ecomPaymentType,
+  temp_ceo.dart:7913:                          decoration: const InputDecoration(
+  temp_ceo.dart:7914:                            labelText: "Ecom Payment Type",
+  temp_ceo.dart:7915:                          ),
+  temp_ceo.dart:7916:                          dropdownColor: Colors.white,
+  temp_ceo.dart:7917:                          items: ['Monthly', 'Per SKU']
+  temp_ceo.dart:7918:                              .map(
+  temp_ceo.dart:7919:                                (s) => DropdownMenuItem(
+  temp_ceo.dart:7920:                                  value: s,
+  temp_ceo.dart:7921:                                  child: Text(
+  temp_ceo.dart:7922:                                    s,
+  temp_ceo.dart:7923:                                    style: const TextStyle(fontSize: 12),
+  temp_ceo.dart:7924:                                  ),
+  temp_ceo.dart:7925:                                ),
+  temp_ceo.dart:7926:                              )
+  temp_ceo.dart:7927:                              .toList(),
+  temp_ceo.dart:7928:                          onChanged: (v) =>
+  temp_ceo.dart:7929:                              setState(() => ecomPaymentType = v ?? 'Monthly'),
+  temp_ceo.dart:7930:                        ),
+  temp_ceo.dart:7931:                        if (ecomPaymentType == 'Per SKU') ...[
+  temp_ceo.dart:7932:                          const SizedBox(height: 10),
+  temp_ceo.dart:7933:                          SageTextField(
+  temp_ceo.dart:7934:                            controller: clientSkuRateCtrl,
+  temp_ceo.dart:7935:                            label: "Per SKU Rate (Γé╣)",
+  temp_ceo.dart:7936:                            keyboardType: TextInputType.number,
+  temp_ceo.dart:7937:                          ),
+  temp_ceo.dart:7938:                          const SizedBox(height: 10),
+  temp_ceo.dart:7939:                          SageTextField(
+  temp_ceo.dart:7940:                            controller: clientDuplicateSkuRateCtrl,
+  temp_ceo.dart:7941:                            label: "Per Duplicate SKU Rate (Γé╣)",
+  temp_ceo.dart:7942:                            keyboardType: TextInputType.number,
+  temp_ceo.dart:7943:                          ),
+  temp_ceo.dart:7944:                          const SizedBox(height: 10),
+  temp_ceo.dart:7945:                          SageTextField(
+  temp_ceo.dart:7946:                            controller: clientCatalogueRateCtrl,
+  temp_ceo.dart:7947:                            label: "Per Catalogue Rate (Γé╣)",
+  temp_ceo.dart:7948:                            keyboardType: TextInputType.number,
+  temp_ceo.dart:7949:                          ),
+  temp_ceo.dart:7950:                        ],
+  temp_ceo.dart:7951:                        const SizedBox(height: 10),
+  temp_ceo.dart:7952:                      ] else ...[
+  temp_ceo.dart:7953:                        const Text(
+  temp_ceo.dart:7954:                          "DELIVERABLES",
+  temp_ceo.dart:7955:                          style: TextStyle(
+  temp_ceo.dart:7956:                            fontWeight: FontWeight.bold,
+  temp_ceo.dart:7957:                            fontSize: 11,
+  temp_ceo.dart:7958:                          ),
+  temp_ceo.dart:7959:                        ),
+  temp_ceo.dart:7960:                        const SizedBox(height: 4),
+  temp_ceo.dart:7961:                        SageTextField(
+  temp_ceo.dart:7962:                          controller: reelsCtrl,
+  temp_ceo.dart:7963:                          label: "Reels/wk",
+  temp_ceo.dart:7964:                          keyboardType: TextInputType.number,
+  temp_ceo.dart:7965:                        ),
+  temp_ceo.dart:7966:                        const SizedBox(height: 10),
+  temp_ceo.dart:7967:                        SageTextField(
+  temp_ceo.dart:7968:                          controller: postsCtrl,
+  temp_ceo.dart:7969:                          label: "Posts/wk",
+  temp_ceo.dart:7970:                          keyboardType: TextInputType.number,
+  temp_ceo.dart:7971:                        ),
+  temp_ceo.dart:7972:                        const SizedBox(height: 10),
+  temp_ceo.dart:7973:                        SageTextField(
+  temp_ceo.dart:7974:                          controller: carouselsCtrl,
+  temp_ceo.dart:7975:                          label: "Carousels",
+  temp_ceo.dart:7976:                          keyboardType: TextInputType.number,
+  temp_ceo.dart:7977:                        ),
+  temp_ceo.dart:7978:                        const SizedBox(height: 10),
+  temp_ceo.dart:7979:                        SageTextField(
+  temp_ceo.dart:7980:                          controller: storiesCtrl,
+  temp_ceo.dart:7981:                          label: "Stories",
+  temp_ceo.dart:7982:                          keyboardType: TextInputType.number,
+  temp_ceo.dart:7983:                        ),
+  temp_ceo.dart:7984:                        const SizedBox(height: 10),
+  temp_ceo.dart:7985:                        if (packageType == 'Performance') ...[
+  temp_ceo.dart:7986:                          SageTextField(
+  temp_ceo.dart:7987:                            controller: campaignsCtrl,
+  temp_ceo.dart:7988:                            label: "Campaigns",
+  temp_ceo.dart:7989:                            keyboardType: TextInputType.number,
+  temp_ceo.dart:7990:                          ),
+  temp_ceo.dart:7991:                          const SizedBox(height: 10),
+  temp_ceo.dart:7992:                          SageTextField(
+  temp_ceo.dart:7993:                            controller: campaignReachCtrl,
+  temp_ceo.dart:7994:                            label: "Reach",
+  temp_ceo.dart:7995:                          ),
+  temp_ceo.dart:7996:                          const SizedBox(height: 10),
+  temp_ceo.dart:7997:                        ],
+  temp_ceo.dart:7998:                      ],
+  temp_ceo.dart:7999:                      SageTextField(
+  temp_ceo.dart:8000:                        controller: guidelinesCtrl,
+  temp_ceo.dart:8001:                        label: "Description / Requirements",
+  temp_ceo.dart:8002:                        maxLines: 3,
+  temp_ceo.dart:8003:                      ),
+  temp_ceo.dart:8004:                    ],
+  temp_ceo.dart:8005:                  ],
+  temp_ceo.dart:8006:                ),
+  temp_ceo.dart:8007:              ),
+  temp_ceo.dart:8008:              actions: [
+  temp_ceo.dart:8009:                TextButton(
+  temp_ceo.dart:8010:                  onPressed: () => Navigator.pop(ctx),
+  temp_ceo.dart:8011:                  child: const Text("CANCEL"),
+  temp_ceo.dart:8012:                ),
+  temp_ceo.dart:8013:                ElevatedButton(
+  temp_ceo.dart:8014:                  style: ElevatedButton.styleFrom(
+  temp_ceo.dart:8015:                    backgroundColor: SageColors.primary,
+  temp_ceo.dart:8016:                  ),
+  temp_ceo.dart:8017:                  onPressed: () {
+  temp_ceo.dart:8018:                    context.read<AppState>().updateClient(
+  temp_ceo.dart:8019:                      c.id,
+  temp_ceo.dart:8020:                      name: nameCtrl.text,
+  temp_ceo.dart:8021:                      contactName: contactNameCtrl.text,
+  temp_ceo.dart:8022:                      contactEmail: contactEmailCtrl.text,
+  temp_ceo.dart:8023:                      contactPhone: contactPhoneCtrl.text,
+  temp_ceo.dart:8024:                      contactAddress: contactAddressCtrl.text,
+  temp_ceo.dart:8025:                      contactWebsite: contactWebsiteCtrl.text,
+  temp_ceo.dart:8026:                      monthlyPayable: double.tryParse(payableCtrl.text),
+  temp_ceo.dart:8027:                      serviceType: serviceType,
+  temp_ceo.dart:8028:                      hasMarketingCommission: hasMarketingCommission,
+  temp_ceo.dart:8029:                      marketingExecutiveId: marketingExecutiveId,
+  temp_ceo.dart:8030:                      packageType: packageType,
+  temp_ceo.dart:8031:                      contractPeriod: contractPeriod,
+  temp_ceo.dart:8032:                      conversionProbability: conversionProbability,
+  temp_ceo.dart:8033:                      retentionHealth: retentionHealth,
+  temp_ceo.dart:8034:                      paymentMode: paymentMode,
+  temp_ceo.dart:8035:                      dueDateDay: int.tryParse(dueDateDayCtrl.text),
+  temp_ceo.dart:8036:                      paymentsDue: int.tryParse(pendingMonthsCtrl.text),
+  temp_ceo.dart:8037:                      weeklyReels: int.tryParse(reelsCtrl.text),
+  temp_ceo.dart:8038:                      weeklyPosts: int.tryParse(postsCtrl.text),
+  temp_ceo.dart:8039:                      weeklyCarousels: int.tryParse(carouselsCtrl.text),
+  temp_ceo.dart:8040:                      weeklyStories: int.tryParse(storiesCtrl.text),
+  temp_ceo.dart:8041:                      campaigns: int.tryParse(campaignsCtrl.text),
+  temp_ceo.dart:8042:                      campaignReach: campaignReachCtrl.text,
+  temp_ceo.dart:8043:                      assignedVideographerId: assignedVideographerId,
+  temp_ceo.dart:8044:                      sessionRate: double.tryParse(sessionRateCtrl.text),
+  temp_ceo.dart:8045:                      postRequirements: guidelinesCtrl.text,
+  temp_ceo.dart:8046:                      contractDate: selectedContractDate,
+  temp_ceo.dart:8047:                      ecomPaymentType: ecomPaymentType,
+  temp_ceo.dart:8048:                      clientSkuRate: double.tryParse(clientSkuRateCtrl.text),
+  temp_ceo.dart:8049:                      clientDuplicateSkuRate: double.tryParse(
+  temp_ceo.dart:8050:                        clientDuplicateSkuRateCtrl.text,
+  temp_ceo.dart:8051:                      ),
+  temp_ceo.dart:8052:                      clientCatalogueRate: double.tryParse(
+  temp_ceo.dart:8053:                        clientCatalogueRateCtrl.text,
+  temp_ceo.dart:8054:                      ),
+  temp_ceo.dart:8055:                      isWebsiteHandlingActive: isWebsiteHandlingActive,
+  temp_ceo.dart:8056:                      websiteHandlingFee:
+  temp_ceo.dart:8057:                          double.tryParse(websiteHandlingFeeCtrl.text) ?? 0,
+  temp_ceo.dart:8058:                    );
+  temp_ceo.dart:8059:                    context.read<AppState>().updateClientVideographer(
+  temp_ceo.dart:8060:                      c.id,
+  temp_ceo.dart:8061:                      assignedVideographerId,
+  temp_ceo.dart:8062:                    );
+  temp_ceo.dart:8063:                    Navigator.pop(ctx);
+  temp_ceo.dart:8064:                  },
+  temp_ceo.dart:8065:                  child: const Text("SAVE"),
+  temp_ceo.dart:8066:                ),
+  temp_ceo.dart:8067:              ],
+  temp_ceo.dart:8068:            );
+  temp_ceo.dart:8069:          },
+  temp_ceo.dart:8070:        );
+  temp_ceo.dart:8071:      },
+  temp_ceo.dart:8072:    );
+  temp_ceo.dart:8073:  }
+  temp_ceo.dart:8074:  // --- Popup Dialog: Add Member ---
+  temp_ceo.dart:8075:
+  temp_ceo.dart:8076:  void _showAddMemberDialog(BuildContext context) {
+  temp_ceo.dart:8077:    final nameCtrl = TextEditingController();
+  temp_ceo.dart:8078:    final salaryCtrl = TextEditingController(text: "0");
+  temp_ceo.dart:8079:    final rateCtrl1 = TextEditingController(text: "0");
+  temp_ceo.dart:8080:    final rateCtrl2 = TextEditingController(text: "0");
+  temp_ceo.dart:8081:    final rateCtrl3 = TextEditingController(text: "0");
+  temp_ceo.dart:8082:    final rateCtrl4 = TextEditingController(text: "0");
+  temp_ceo.dart:8083:    List<String> selectedRoles = ['Video Editor'];
+  temp_ceo.dart:8084:
+  temp_ceo.dart:8085:    showDialog(
+  temp_ceo.dart:8086:      context: context,
+  temp_ceo.dart:8087:      builder: (ctx) => StatefulBuilder(
+  temp_ceo.dart:8088:        builder: (ctx, setS) => Dialog(
+  temp_ceo.dart:8089:          backgroundColor: SageColors.background,
+  temp_ceo.dart:8090:          insetPadding: const EdgeInsets.symmetric(
+  temp_ceo.dart:8091:            horizontal: 16,
+  temp_ceo.dart:8092:            vertical: 24,
+  temp_ceo.dart:8093:          ),
+  temp_ceo.dart:8094:          child: SingleChildScrollView(
+  temp_ceo.dart:8095:            padding: const EdgeInsets.all(20),
+  temp_ceo.dart:8096:            child: TerminalPanel(
+  temp_ceo.dart:8097:              title: "ADD TEAM MEMBER",
+  temp_ceo.dart:8098:              child: Column(
+  temp_ceo.dart:8099:                children: [
+  temp_ceo.dart:8100:                  SageTextField(controller: nameCtrl, label: "Full Name"),
+  temp_ceo.dart:8101:                  const SizedBox(height: 10),
+  temp_ceo.dart:8102:                  Row(
+  temp_ceo.dart:8103:                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  temp_ceo.dart:8104:                    children: [
+  temp_ceo.dart:8105:                      const Text(
+  temp_ceo.dart:8106:                        "Select Roles",
+  temp_ceo.dart:8107:                        style: TextStyle(
+  temp_ceo.dart:8108:                          fontWeight: FontWeight.bold,
+  temp_ceo.dart:8109:                          fontSize: 12,
+  temp_ceo.dart:8110:                        ),
+  temp_ceo.dart:8111:                      ),
+  temp_ceo.dart:8112:                      if (selectedRoles.length >= 2)
+  temp_ceo.dart:8113:                        Container(
+  temp_ceo.dart:8114:                          padding: const EdgeInsets.symmetric(
+  temp_ceo.dart:8115:                            horizontal: 8,
+  temp_ceo.dart:8116:                            vertical: 2,
+  temp_ceo.dart:8117:                          ),
+  temp_ceo.dart:8118:                          decoration: BoxDecoration(
+  temp_ceo.dart:8119:                            color: SageColors.error.withValues(alpha: 0.15),
+  temp_ceo.dart:8120:                            borderRadius: BorderRadius.circular(8),
+  temp_ceo.dart:8121:                            border: Border.all(
+  temp_ceo.dart:8122:                              color: SageColors.error,
+  temp_ceo.dart:8123:                              width: 1,
+  temp_ceo.dart:8124:                            ),
+  temp_ceo.dart:8125:                          ),
+  temp_ceo.dart:8126:                          child: const Text(
+  temp_ceo.dart:8127:                            "MAX 2 ROLES",
+  temp_ceo.dart:8128:                            style: TextStyle(
+  temp_ceo.dart:8129:                              fontSize: 9,
+  temp_ceo.dart:8130:                              fontWeight: FontWeight.bold,
+  temp_ceo.dart:8131:                              color: SageColors.error,
+  temp_ceo.dart:8132:                            ),
+  temp_ceo.dart:8133:                          ),
+  temp_ceo.dart:8134:                        ),
+  temp_ceo.dart:8135:                    ],
+  temp_ceo.dart:8136:                  ),
+  temp_ceo.dart:8137:                  const SizedBox(height: 5),
+  temp_ceo.dart:8138:                  Wrap(
+  temp_ceo.dart:8139:                    spacing: 6,
+  temp_ceo.dart:8140:                    runSpacing: -8,
+  temp_ceo.dart:8141:                    children:
+  temp_ceo.dart:8142:                        [
+  temp_ceo.dart:8143:                          'Video Editor',
+  temp_ceo.dart:8144:                          'Graphics Editor',
+  temp_ceo.dart:8145:                          'Videographer',
+  temp_ceo.dart:8146:                          'Marketing Executive',
+  temp_ceo.dart:8147:                          'Page Management Executive',
+  temp_ceo.dart:8148:                          'Ecom Executive',
+  temp_ceo.dart:8149:                        ].map((role) {
+  temp_ceo.dart:8150:                          final isSelected = selectedRoles.contains(role);
+  temp_ceo.dart:8151:                          final isDisabled =
+  temp_ceo.dart:8152:                              !isSelected && selectedRoles.length >= 2;
+  temp_ceo.dart:8153:                          return FilterChip(
+  temp_ceo.dart:8154:                            label: Text(
+  temp_ceo.dart:8155:                              role,
+  temp_ceo.dart:8156:                              style: TextStyle(
+  temp_ceo.dart:8157:                                fontSize: 10,
+  temp_ceo.dart:8158:                                color: isDisabled ? Colors.grey : Colors.black,
+  temp_ceo.dart:8159:                              ),
+  temp_ceo.dart:8160:                            ),
+  temp_ceo.dart:8161:                            selected: isSelected,
+  temp_ceo.dart:8162:                            onSelected: isDisabled
+  temp_ceo.dart:8163:                                ? null
+  temp_ceo.dart:8164:                                : (val) {
+  temp_ceo.dart:8165:                                    setS(() {
+  temp_ceo.dart:8166:                                      if (val) {
+  temp_ceo.dart:8167:                                        if (selectedRoles.length < 2)
+  temp_ceo.dart:8168:                                          selectedRoles.add(role);
+  temp_ceo.dart:8169:                                      } else {
+  temp_ceo.dart:8170:                                        selectedRoles.remove(role);
+  temp_ceo.dart:8171:                                        if (selectedRoles.isEmpty)
+  temp_ceo.dart:8172:                                          selectedRoles.add('Video Editor');
+  temp_ceo.dart:8173:                                      }
+  temp_ceo.dart:8174:                                    });
+  temp_ceo.dart:8175:                                  },
+  temp_ceo.dart:8176:                            selectedColor: SageColors.yellowAccent,
+  temp_ceo.dart:8177:                            checkmarkColor: Colors.black,
+  temp_ceo.dart:8178:                            disabledColor: Colors.grey.shade200,
+  temp_ceo.dart:8179:                          );
+  temp_ceo.dart:8180:                        }).toList(),
+  temp_ceo.dart:8181:                  ),
+  temp_ceo.dart:8182:                  const SizedBox(height: 10),
+  temp_ceo.dart:8183:                  SageTextField(
+  temp_ceo.dart:8184:                    controller: salaryCtrl,
+  temp_ceo.dart:8185:                    label: "Fixed Monthly Salary (Γé╣)",
+  temp_ceo.dart:8186:                    keyboardType: TextInputType.number,
+  temp_ceo.dart:8187:                  ),
+  temp_ceo.dart:8188:                  const SizedBox(height: 10),
+  temp_ceo.dart:8189:                  SageTextField(
+  temp_ceo.dart:8190:                    controller: rateCtrl1,
+  temp_ceo.dart:8191:                    label: "Per Video/Reel Rate (Γé╣)",
+  temp_ceo.dart:8192:                    keyboardType: TextInputType.number,
+  temp_ceo.dart:8193:                  ),
+  temp_ceo.dart:8194:                  const SizedBox(height: 10),
+  temp_ceo.dart:8195:                  SageTextField(
+  temp_ceo.dart:8196:                    controller: rateCtrl2,
+  temp_ceo.dart:8197:                    label: "Per Session Rate (Γé╣)",
+  temp_ceo.dart:8198:                    keyboardType: TextInputType.number,
+  temp_ceo.dart:8199:                  ),
+  temp_ceo.dart:8200:                  const SizedBox(height: 10),
+  temp_ceo.dart:8201:                  SageTextField(
+  temp_ceo.dart:8202:                    controller: rateCtrl3,
+  temp_ceo.dart:8203:                    label: "Per SKU Rate (Γé╣)",
+  temp_ceo.dart:8204:                    keyboardType: TextInputType.number,
+  temp_ceo.dart:8205:                  ),
+  temp_ceo.dart:8206:                  const SizedBox(height: 10),
+  temp_ceo.dart:8207:                  SageTextField(
+  temp_ceo.dart:8208:                    controller: rateCtrl4,
+  temp_ceo.dart:8209:                    label: "Per Design Rate (Γé╣)",
+  temp_ceo.dart:8210:                    keyboardType: TextInputType.number,
+  temp_ceo.dart:8211:                  ),
+  temp_ceo.dart:8212:                  const SizedBox(height: 20),
+  temp_ceo.dart:8213:                  Row(
+  temp_ceo.dart:8214:                    mainAxisAlignment: MainAxisAlignment.end,
+  temp_ceo.dart:8215:                    children: [
+  temp_ceo.dart:8216:                      TextButton(
+  temp_ceo.dart:8217:                        onPressed: () => Navigator.pop(ctx),
+  temp_ceo.dart:8218:                        child: const Text(
+  temp_ceo.dart:8219:                          "CANCEL",
+  temp_ceo.dart:8220:                          style: TextStyle(color: Colors.white),
+  temp_ceo.dart:8221:                        ),
+  temp_ceo.dart:8222:                      ),
+  temp_ceo.dart:8223:                      ElevatedButton(
+  temp_ceo.dart:8224:                        style: ElevatedButton.styleFrom(
+  temp_ceo.dart:8225:                          backgroundColor: SageColors.primary,
+  temp_ceo.dart:8226:                        ),
+  temp_ceo.dart:8227:                        onPressed: () {
+  temp_ceo.dart:8228:                          final creds = context.read<AppState>().addEmployee(
+  temp_ceo.dart:8229:                            name: nameCtrl.text,
+  temp_ceo.dart:8230:                            role: selectedRoles.join(', '),
+  temp_ceo.dart:8231:                            department: 'Operations',
+  temp_ceo.dart:8232:                            monthlySalary:
+  temp_ceo.dart:8233:                                double.tryParse(salaryCtrl.text) ?? 0.0,
+  temp_ceo.dart:8234:                            perSessionRate:
+  temp_ceo.dart:8235:                                double.tryParse(rateCtrl2.text) ?? 0.0,
+  temp_ceo.dart:8236:                            perSkuRate: double.tryParse(rateCtrl3.text) ?? 0.0,
+  temp_ceo.dart:8237:                            perDesignRate: double.tryParse(rateCtrl4.text) ?? 0.0,
+  temp_ceo.dart:8238:                            perVideoRate:
+  temp_ceo.dart:8239:                                double.tryParse(rateCtrl1.text) ?? 0.0,
+  temp_ceo.dart:8240:                          );
+  temp_ceo.dart:8241:                          Navigator.pop(ctx);
+  temp_ceo.dart:8242:                          if (creds != null && creds.containsKey('id')) {
+  temp_ceo.dart:8243:                            showDialog(
+  temp_ceo.dart:8244:                              context: context,
+  temp_ceo.dart:8245:                              builder: (ctx) => AlertDialog(
+  temp_ceo.dart:8246:                                backgroundColor: SageColors.background,
+  temp_ceo.dart:8247:                                title: const Text("Employee Created", style: TextStyle(color: 
+Colors.white)),
+  temp_ceo.dart:8248:                                content: Text("ID: ${creds['id']}\nPassword: 
+${creds['password']}\n\nPlease save these credentials before closing.", style: const TextStyle(color: Colors.white)),
+  temp_ceo.dart:8249:                                actions: [
+  temp_ceo.dart:8250:                                  TextButton(
+  temp_ceo.dart:8251:                                    onPressed: () => Navigator.pop(ctx),
+  temp_ceo.dart:8252:                                    child: const Text("OK", style: TextStyle(color: 
+SageColors.primary)),
+  temp_ceo.dart:8253:                                  )
+  temp_ceo.dart:8254:                                ],
+  temp_ceo.dart:8255:                              )
+  temp_ceo.dart:8256:                            );
+  temp_ceo.dart:8257:                          }
+  temp_ceo.dart:8258:                        },
+  temp_ceo.dart:8259:                        child: const Text("SAVE"),
+  temp_ceo.dart:8260:                      ),
+  temp_ceo.dart:8261:                    ],
+  temp_ceo.dart:8262:                  ),
+
+

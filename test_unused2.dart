@@ -1,5 +1,3 @@
-
 void main() {
   void myLocalFunction() {}
 }
-

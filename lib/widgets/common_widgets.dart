@@ -57,11 +57,7 @@ class NeonBox extends StatelessWidget {
         color: fillColor ?? SageColors.surface,
         border: Border.all(color: Colors.black, width: borderWidth),
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black,
-            offset: Offset(3, 3),
-            blurRadius: 0,
-          ),
+          BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
         ],
       ),
       child: child,
@@ -163,7 +159,9 @@ class DashboardTile extends StatelessWidget {
           color: backgroundColor,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: Colors.black, width: 1.5),
-          boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0)],
+          boxShadow: const [
+            BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,7 +215,11 @@ class DashboardTile extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const Icon(Icons.arrow_forward, color: Colors.black87, size: 18),
+                const Icon(
+                  Icons.arrow_forward,
+                  color: Colors.black87,
+                  size: 18,
+                ),
               ],
             ),
           ],
@@ -334,10 +336,7 @@ class SageTextField extends StatelessWidget {
       obscureText: obscureText,
       onChanged: onChanged,
       onSubmitted: onSubmitted,
-      style: const TextStyle(
-        color: SageColors.onSurface,
-        fontSize: 14,
-      ),
+      style: const TextStyle(color: SageColors.onSurface, fontSize: 14),
       cursorColor: SageColors.primary,
       decoration: InputDecoration(
         labelText: label,
@@ -390,8 +389,8 @@ class StatusBadge extends StatelessWidget {
           color: color == SageColors.primary
               ? SageColors.primaryDim
               : (color == SageColors.secondary
-                  ? SageColors.secondaryDim
-                  : color),
+                    ? SageColors.secondaryDim
+                    : color),
           fontSize: 10,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.5,
@@ -439,9 +438,7 @@ class _BlinkingCursorState extends State<BlinkingCursor>
         child: Container(
           width: 9,
           height: 16,
-          decoration: BoxDecoration(
-            color: c,
-          ),
+          decoration: BoxDecoration(color: c),
         ),
       ),
     );
@@ -467,16 +464,16 @@ class NeonDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 1.5,
-      color: Colors.black,
-    );
+    return Container(height: 1.5, color: Colors.black);
   }
 }
 
 // ─── DIALOGS ──────────────────────────────────────────────────────────────────
 Future<bool> showConfirmDialog(
-    BuildContext context, String title, String message) async {
+  BuildContext context,
+  String title,
+  String message,
+) async {
   final result = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -508,7 +505,9 @@ Future<bool> showConfirmDialog(
 }
 
 Future<bool> showAdminPinDialog(
-    BuildContext context, bool Function(String) verifyPin) async {
+  BuildContext context,
+  bool Function(String) verifyPin,
+) async {
   final pinCtrl = TextEditingController();
   String? error;
   final result = await showDialog<bool>(
@@ -516,11 +515,13 @@ Future<bool> showAdminPinDialog(
     barrierDismissible: false,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx2, setState) => AlertDialog(
-        title: const Row(children: [
-          Icon(Icons.lock, color: Colors.black, size: 16),
-          const SizedBox(width: 8),
-          const Text('ADMIN SECURITY CHECK'),
-        ]),
+        title: const Row(
+          children: [
+            Icon(Icons.lock, color: Colors.black, size: 16),
+            const SizedBox(width: 8),
+            const Text('ADMIN SECURITY CHECK'),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -561,7 +562,10 @@ Future<bool> showAdminPinDialog(
             onPressed: () => Navigator.pop(ctx2, false),
             child: const Text(
               'CANCEL',
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           ElevatedButton(
@@ -618,7 +622,20 @@ class _LiveClockWidgetState extends State<LiveClockWidget> {
   }
 
   String _formatDate(DateTime dt) {
-    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
     return '${dt.day.toString().padLeft(2, '0')} ${months[dt.month - 1]} ${dt.year}';
   }
 
@@ -632,11 +649,7 @@ class _LiveClockWidgetState extends State<LiveClockWidget> {
         borderRadius: BorderRadius.circular(16),
         /* border removed for pastel style */
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black,
-            offset: Offset(3, 3),
-            blurRadius: 0,
-          ),
+          BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
         ],
       ),
       child: Row(
@@ -679,6 +692,7 @@ class SageMultiSelectDropdown<T> extends StatelessWidget {
   final void Function(List<T>) onChanged;
   final String labelText;
   final String emptyText;
+  final bool Function(T, T)? compareFn;
 
   const SageMultiSelectDropdown({
     super.key,
@@ -688,6 +702,7 @@ class SageMultiSelectDropdown<T> extends StatelessWidget {
     required this.onChanged,
     required this.labelText,
     this.emptyText = 'Select options',
+    this.compareFn,
   });
 
   @override
@@ -702,6 +717,7 @@ class SageMultiSelectDropdown<T> extends StatelessWidget {
               initialSelectedItems: selectedItems,
               labelBuilder: labelBuilder,
               title: labelText,
+              compareFn: compareFn,
             );
           },
         );
@@ -733,12 +749,14 @@ class _MultiSelectDialog<T> extends StatefulWidget {
   final List<T> initialSelectedItems;
   final String Function(T) labelBuilder;
   final String title;
+  final bool Function(T, T)? compareFn;
 
   const _MultiSelectDialog({
     required this.items,
     required this.initialSelectedItems,
     required this.labelBuilder,
     required this.title,
+    this.compareFn,
   });
 
   @override
@@ -757,14 +775,19 @@ class _MultiSelectDialogState<T> extends State<_MultiSelectDialog<T>> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(
+        widget.title,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       content: SizedBox(
         width: double.maxFinite,
         child: ListView(
           shrinkWrap: true,
           children: widget.items.map((item) {
-            final isSelected = _selectedItems.contains(item);
+            final isSelected = widget.compareFn != null
+                ? _selectedItems.any((e) => widget.compareFn!(e, item))
+                : _selectedItems.contains(item);
             return CheckboxListTile(
               title: Text(widget.labelBuilder(item)),
               value: isSelected,
@@ -774,7 +797,13 @@ class _MultiSelectDialogState<T> extends State<_MultiSelectDialog<T>> {
                   if (checked == true) {
                     _selectedItems.add(item);
                   } else {
-                    _selectedItems.remove(item);
+                    if (widget.compareFn != null) {
+                      _selectedItems.removeWhere(
+                        (e) => widget.compareFn!(e, item),
+                      );
+                    } else {
+                      _selectedItems.remove(item);
+                    }
                   }
                 });
               },
@@ -789,8 +818,14 @@ class _MultiSelectDialogState<T> extends State<_MultiSelectDialog<T>> {
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(context, _selectedItems),
-          style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary, foregroundColor: Colors.black),
-          child: const Text('CONFIRM', style: TextStyle(fontWeight: FontWeight.bold)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: SageColors.primary,
+            foregroundColor: Colors.black,
+          ),
+          child: const Text(
+            'CONFIRM',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
       ],
     );

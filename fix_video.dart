@@ -1,8 +1,10 @@
 import 'dart:io';
 
 void main() {
-  final scratch = File(r'C:\Users\Priyajit Bhowmik\.gemini\antigravity\brain\7e2e15eb-23c2-4912-b232-ed42e5836f5e\scratch\videographer_dashboard.dart.txt').readAsStringSync();
-  
+  final scratch = File(
+    r'C:\Users\Priyajit Bhowmik\.gemini\antigravity\brain\7e2e15eb-23c2-4912-b232-ed42e5836f5e\scratch\videographer_dashboard.dart.txt',
+  ).readAsStringSync();
+
   final fStart1 = scratch.indexOf('    Widget _buildFinanceTab');
   final fStart = scratch.indexOf('    Widget _buildFinanceTab', fStart1 + 1);
   final fEnd = scratch.indexOf('  Widget _buildProfileTab');
@@ -14,7 +16,8 @@ void main() {
   final startIdx = target.indexOf('  Widget _buildSessionApprovalCard');
   final endIdx = target.indexOf('  void _showEditPersonalDetailsDialog');
 
-  final sessionCard = '''  Widget _buildSessionApprovalCard(BuildContext context, AppState state, Task t) {
+  final sessionCard =
+      '''  Widget _buildSessionApprovalCard(BuildContext context, AppState state, Task t) {
     final client = state.clients.where((c) => c.id == t.clientId).firstOrNull;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -47,7 +50,8 @@ void main() {
 
 ''';
 
-  final profileTab = '''  Widget _buildProfileTab(BuildContext context, AppState state, Persona persona) {
+  final profileTab =
+      '''  Widget _buildProfileTab(BuildContext context, AppState state, Persona persona) {
     final emp = state.employees.firstWhere((e) => e.id == persona.id);
     final isVideoEditor = emp.role.toLowerCase().contains('video editor');
     final unpaidSessionsList = state.tasks.where((t) => t.assignedTo == emp.id && (isVideoEditor ? true : t.taskType == 'Session') && t.isCompleted && !t.isPaidToVideographer).toList();
@@ -129,7 +133,12 @@ void main() {
 
 ''';
 
-  final newContent = target.substring(0, startIdx) + sessionCard + financeTab + profileTab + target.substring(endIdx);
+  final newContent =
+      target.substring(0, startIdx) +
+      sessionCard +
+      financeTab +
+      profileTab +
+      target.substring(endIdx);
   targetFile.writeAsStringSync(newContent);
   print('Success');
 }

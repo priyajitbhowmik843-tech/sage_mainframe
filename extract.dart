@@ -1,4 +1,3 @@
-
 import "dart:io";
 
 void main() {
@@ -9,4 +8,3 @@ void main() {
   var methodText = text.substring(start, end);
   print(methodText);
 }
-

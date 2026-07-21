@@ -5,7 +5,10 @@ void main() {
   var content = file.readAsStringSync();
 
   // 1. Replace payEmployeeSalary
-  final oldPayEmployeeSalary = RegExp(r'void payEmployeeSalary.*?notifyListeners\(\);\s*\}\s*\}', dotAll: true);
+  final oldPayEmployeeSalary = RegExp(
+    r'void payEmployeeSalary.*?notifyListeners\(\);\s*\}\s*\}',
+    dotAll: true,
+  );
   final newPayEmployeeSalary = '''
   void payEmployeeSalary(String employeeId, List<String> months, double amount) {
     final idx = _employees.indexWhere((e) => e.id == employeeId);
@@ -38,10 +41,16 @@ void main() {
     }
   }
 ''';
-  content = content.replaceFirst(oldPayEmployeeSalary, newPayEmployeeSalary.trim());
+  content = content.replaceFirst(
+    oldPayEmployeeSalary,
+    newPayEmployeeSalary.trim(),
+  );
 
   // 2. Replace payVideographerSessions
-  final oldPayVideographerSessions = RegExp(r'void payVideographerSessions.*?notifyListeners\(\);\s*\}', dotAll: true);
+  final oldPayVideographerSessions = RegExp(
+    r'void payVideographerSessions.*?notifyListeners\(\);\s*\}',
+    dotAll: true,
+  );
   final newPayVideographerSessions = '''
   void payVideographerSessions(String videographerId, int sessionCount) {
     final emp = _employees.where((e) => e.id == videographerId).firstOrNull;
@@ -93,10 +102,16 @@ void main() {
     notifyListeners();
   }
 ''';
-  content = content.replaceFirst(oldPayVideographerSessions, newPayVideographerSessions.trim());
+  content = content.replaceFirst(
+    oldPayVideographerSessions,
+    newPayVideographerSessions.trim(),
+  );
 
   // 3. Replace toggleEmployeePaymentApproved
-  final oldToggleEmployeePaymentApproved = RegExp(r'void toggleEmployeePaymentApproved.*?notifyListeners\(\);\s*\}\s*\}', dotAll: true);
+  final oldToggleEmployeePaymentApproved = RegExp(
+    r'void toggleEmployeePaymentApproved.*?notifyListeners\(\);\s*\}\s*\}',
+    dotAll: true,
+  );
   final newToggleEmployeePaymentApproved = '''
   void toggleEmployeePaymentApproved(String id, bool value) {
     final idx = _employees.indexWhere((e) => e.id == id);
@@ -145,7 +160,10 @@ void main() {
     }
   }
 ''';
-  content = content.replaceFirst(oldToggleEmployeePaymentApproved, newToggleEmployeePaymentApproved.trim());
+  content = content.replaceFirst(
+    oldToggleEmployeePaymentApproved,
+    newToggleEmployeePaymentApproved.trim(),
+  );
 
   file.writeAsStringSync(content);
   print('Successfully updated app_state.dart!');

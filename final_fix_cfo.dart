@@ -29,7 +29,7 @@ void main() {
   final tempCfoFile = File('temp_cfo_client.txt');
   final extractFile = File('dialog_extract.txt');
   final ceoFile = File('lib/screens/ceo_dashboard.dart');
-  
+
   // 1. Base content from temp_cfo_client.txt
   String cfoContent = tempCfoFile.readAsStringSync();
   // Ensure temp_cfo_client.txt actually ends cleanly with _getAvatarColor closing brace
@@ -59,13 +59,25 @@ void main() {
 
   // 4. Add missing methods from CEO
   String ceoContent = ceoFile.readAsStringSync();
-  String getAssignees = extractMethod(ceoContent, 'List<Map<String, String>> _getAssigneesForRole');
+  String getAssignees = extractMethod(
+    ceoContent,
+    'List<Map<String, String>> _getAssigneesForRole',
+  );
   String getAssigneeName = extractMethod(ceoContent, 'String _getAssigneeName');
   String addClient = extractMethod(ceoContent, 'void _showAddClientDialog');
   String editClient = extractMethod(ceoContent, 'void _showEditClientDialog');
-  
-  cfoContent += '\n' + getAssignees + '\n' + getAssigneeName + '\n' + addClient + '\n' + editClient + '\n}\n';
-  
+
+  cfoContent +=
+      '\n' +
+      getAssignees +
+      '\n' +
+      getAssigneeName +
+      '\n' +
+      addClient +
+      '\n' +
+      editClient +
+      '\n}\n';
+
   cfoFile.writeAsStringSync(cfoContent);
   print('CFO perfectly reconstructed!');
 }

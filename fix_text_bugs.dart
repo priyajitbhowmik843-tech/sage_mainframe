@@ -5,11 +5,11 @@ void main() {
     final file = File(path);
     if (!file.existsSync()) return;
     String content = file.readAsStringSync();
-    
+
     replacements.forEach((target, replacement) {
       content = content.replaceAll(target, replacement);
     });
-    
+
     file.writeAsStringSync(content);
   }
 
@@ -40,11 +40,11 @@ void main() {
     '"₹\${pendingClients.length}': '"\${pendingClients.length}',
     '"₹\${pct.toStringAsFixed(0)}%"': '"\${pct.toStringAsFixed(0)}%"',
   });
-  
+
   replaceInFile('lib/state/app_state.dart', {
-    "'Payment received! \${c.name} paid ?\${c.monthlyPayable.toStringAsFixed(0)}'": 
-    "'Payment received! \${c.name} paid ₹\${c.monthlyPayable.toStringAsFixed(0)}'",
-    "'Payment received! \${c.name} paid ?\${c.monthlyPayable.toStringAsFixed(0)} for Month \$month'": 
-    "'Payment received! \${c.name} paid ₹\${c.monthlyPayable.toStringAsFixed(0)} for Month \$month'",
+    "'Payment received! \${c.name} paid ?\${c.monthlyPayable.toStringAsFixed(0)}'":
+        "'Payment received! \${c.name} paid ₹\${c.monthlyPayable.toStringAsFixed(0)}'",
+    "'Payment received! \${c.name} paid ?\${c.monthlyPayable.toStringAsFixed(0)} for Month \$month'":
+        "'Payment received! \${c.name} paid ₹\${c.monthlyPayable.toStringAsFixed(0)} for Month \$month'",
   });
 }

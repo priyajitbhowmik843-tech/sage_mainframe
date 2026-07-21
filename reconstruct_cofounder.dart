@@ -3,13 +3,16 @@ import 'dart:io';
 void main() {
   final file = File('lib/screens/cofounder_dashboard.dart');
   final lines = file.readAsLinesSync();
-  
+
   final out = <String>[];
   bool injected = false;
-  
+
   for (int i = 0; i < lines.length; i++) {
     out.add(lines[i]);
-    if (lines[i].contains('valueColor: SageColors.secondary,') && !injected && i > 2900 && i < 3100) {
+    if (lines[i].contains('valueColor: SageColors.secondary,') &&
+        !injected &&
+        i > 2900 &&
+        i < 3100) {
       out.add(r'''
                 icon: Icons.trending_down,
               ),
@@ -95,7 +98,7 @@ void main() {
       injected = true;
     }
   }
-  
+
   file.writeAsStringSync(out.join('\n'));
   print('done');
 }

@@ -38,23 +38,31 @@ void main() async {
                               children: [
                                 pw.Container(
                                   color: _tealColor,
-                                  padding: const pw.EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                                  padding: const pw.EdgeInsets.symmetric(
+                                    horizontal: 15,
+                                    vertical: 8,
+                                  ),
                                   child: pw.Text("DELIVERABLES"),
                                 ),
                                 pw.SizedBox(height: 10),
                                 pw.Padding(
                                   padding: const pw.EdgeInsets.only(bottom: 6),
                                   child: pw.Row(
-                                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        pw.CrossAxisAlignment.start,
                                     children: [
                                       pw.Padding(
-                                        padding: const pw.EdgeInsets.only(top: 0),
+                                        padding: const pw.EdgeInsets.only(
+                                          top: 0,
+                                        ),
                                         child: pw.Text("•"),
                                       ),
                                       pw.SizedBox(width: 8),
                                       pw.Container(
                                         width: 220,
-                                        child: pw.Text("This is a test deliverable"),
+                                        child: pw.Text(
+                                          "This is a test deliverable",
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -70,7 +78,10 @@ void main() async {
                               children: [
                                 pw.Container(
                                   color: _tealColor,
-                                  padding: const pw.EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                                  padding: const pw.EdgeInsets.symmetric(
+                                    horizontal: 15,
+                                    vertical: 8,
+                                  ),
                                   child: pw.Text("ADD-ONS"),
                                 ),
                               ],

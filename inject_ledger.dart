@@ -1,7 +1,10 @@
 import 'dart:io';
 
 void main() {
-  final files = ['lib/screens/ceo_dashboard.dart', 'lib/screens/cofounder_dashboard.dart'];
+  final files = [
+    'lib/screens/ceo_dashboard.dart',
+    'lib/screens/cofounder_dashboard.dart',
+  ];
 
   for (final path in files) {
     final file = File(path);
@@ -130,7 +133,7 @@ void main() {
             ...displayedClients.map((c) {
 ''';
     content = content.replaceFirst(oldRenderLogic, newRenderLogic);
-    
+
     // 3. Inject the _buildEcomLedgerView function right before _buildClientsTab
     if (!content.contains('Widget _buildEcomLedgerView')) {
       String ledgerFunc = r'''
@@ -238,7 +241,10 @@ void main() {
     );
   }
 ''';
-      content = content.replaceFirst('  Widget _buildClientsTab() {', ledgerFunc + '\n  Widget _buildClientsTab() {');
+      content = content.replaceFirst(
+        '  Widget _buildClientsTab() {',
+        ledgerFunc + '\n  Widget _buildClientsTab() {',
+      );
     }
 
     file.writeAsStringSync(content);

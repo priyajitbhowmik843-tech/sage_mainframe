@@ -16,7 +16,10 @@ class PoolData {
 ''';
 
   if (!content.contains('class PoolData')) {
-    content = content.replaceFirst('class AppState extends ChangeNotifier {', poolDataClass + '\nclass AppState extends ChangeNotifier {');
+    content = content.replaceFirst(
+      'class AppState extends ChangeNotifier {',
+      poolDataClass + '\nclass AppState extends ChangeNotifier {',
+    );
   }
 
   final replacement = '''

@@ -6,7 +6,9 @@ import 'lib/firebase_options.dart';
 void main() async {
   try {
     print("Initializing Firebase...");
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     print("Firebase Initialized!");
 
     print("Attempting to read tasks collection...");

@@ -38,7 +38,7 @@ class Persona {
   final PersonaRole role;
   String initials;
   String password;
-  
+
   // Executive Profile Fields
   String phone;
   String email;
@@ -80,12 +80,20 @@ class Persona {
   factory Persona.fromFirestore(Map<String, dynamic> data, String docId) {
     PersonaRole pRole;
     switch (data['role']) {
-      case 'CEO': pRole = PersonaRole.ceo; break;
-      case 'CO-FOUNDER': pRole = PersonaRole.cofounder; break;
-      case 'EMPLOYEE': pRole = PersonaRole.employee; break;
-      default: 
-        print('WARNING: Unknown persona role: ${data["role"]} - defaulting to EMPLOYEE');
-        pRole = PersonaRole.employee; 
+      case 'CEO':
+        pRole = PersonaRole.ceo;
+        break;
+      case 'CO-FOUNDER':
+        pRole = PersonaRole.cofounder;
+        break;
+      case 'EMPLOYEE':
+        pRole = PersonaRole.employee;
+        break;
+      default:
+        print(
+          'WARNING: Unknown persona role: ${data["role"]} - defaulting to EMPLOYEE',
+        );
+        pRole = PersonaRole.employee;
         break;
     }
     return Persona(
@@ -99,7 +107,9 @@ class Persona {
       address: data['address'] ?? '',
       dob: data['dob'] ?? '',
       gender: data['gender'] ?? '',
-      avatar: (data['avatar'] is int) ? ((data['avatar'] as int).clamp(0, 6)) : 0,
+      avatar: (data['avatar'] is int)
+          ? ((data['avatar'] as int).clamp(0, 6))
+          : 0,
       preferredName: data['preferredName'] ?? '',
       emergencyContact: data['emergencyContact'] ?? '',
       professionalBio: data['professionalBio'] ?? '',
@@ -114,10 +124,18 @@ class Persona {
   Map<String, dynamic> toFirestore() {
     String roleStr;
     switch (role) {
-      case PersonaRole.ceo: roleStr = 'CEO'; break;
-      case PersonaRole.cofounder: roleStr = 'CO-FOUNDER'; break;
-      case PersonaRole.employee: roleStr = 'EMPLOYEE'; break;
-      default: roleStr = 'EMPLOYEE'; break;
+      case PersonaRole.ceo:
+        roleStr = 'CEO';
+        break;
+      case PersonaRole.cofounder:
+        roleStr = 'CO-FOUNDER';
+        break;
+      case PersonaRole.employee:
+        roleStr = 'EMPLOYEE';
+        break;
+      default:
+        roleStr = 'EMPLOYEE';
+        break;
     }
     return {
       'name': name,
@@ -143,9 +161,12 @@ class Persona {
 
   String get roleLabel {
     switch (role) {
-      case PersonaRole.ceo: return 'CEO';
-      case PersonaRole.cofounder: return 'CO-FOUNDER';
-      case PersonaRole.employee: return 'EMPLOYEE';
+      case PersonaRole.ceo:
+        return 'CEO';
+      case PersonaRole.cofounder:
+        return 'CO-FOUNDER';
+      case PersonaRole.employee:
+        return 'EMPLOYEE';
     }
   }
 }
@@ -190,7 +211,6 @@ class Employee {
   String paymentMode;
   String videoEditorPayType; // 'Salary' or 'Per Video Rate'
 
-
   Employee({
     required this.id,
     required this.name,
@@ -229,8 +249,8 @@ class Employee {
     this.videoEditorPayType = 'Per Video Rate',
     DateTime? joiningDate,
     DateTime? lastPaidDate,
-  })  : joiningDate = joiningDate ?? DateTime(2025, 5, 1),
-        lastPaidDate = lastPaidDate ?? DateTime.now();
+  }) : joiningDate = joiningDate ?? DateTime(2025, 5, 1),
+       lastPaidDate = lastPaidDate ?? DateTime.now();
 
   bool hasRole(String checkRole) {
     final r = role.toLowerCase();
@@ -261,7 +281,9 @@ class Employee {
       address: data['address'] ?? '',
       phone: data['phone'] ?? '',
       email: data['email'] ?? '',
-      avatar: (data['avatar'] is int) ? ((data['avatar'] as int).clamp(0, 6)) : 0,
+      avatar: (data['avatar'] is int)
+          ? ((data['avatar'] as int).clamp(0, 6))
+          : 0,
       pendingPayMonth: data['pendingPayMonth'],
       pendingPayAmount: (data['pendingPayAmount'] ?? 0.0).toDouble(),
       pendingPayDeduction: (data['pendingPayDeduction'] ?? 0.0).toDouble(),
@@ -274,8 +296,11 @@ class Employee {
       strengths: List<String>.from(data['strengths'] ?? []),
       workStylePreference: data['workStylePreference'] ?? '',
       interests: data['interests'] ?? '',
-      videoEditorPayType: data['videoEditorPayType'] ?? ((data['monthlySalary'] ?? 0.0) > 0 ? 'Salary' : 'Per Video Rate'),
-      joiningDate: (_parseDateNullable(data['joiningDate']) ?? DateTime(2025, 5, 1)),
+      videoEditorPayType:
+          data['videoEditorPayType'] ??
+          ((data['monthlySalary'] ?? 0.0) > 0 ? 'Salary' : 'Per Video Rate'),
+      joiningDate:
+          (_parseDateNullable(data['joiningDate']) ?? DateTime(2025, 5, 1)),
       lastPaidDate: _parseDate(data['lastPaidDate']),
     );
   }
@@ -333,7 +358,7 @@ class Task {
   final String assignedBy; // persona id
   final DateTime deadline;
   bool isCompleted;
-    bool isMissed;
+  bool isMissed;
   bool isSubmitted;
   final DateTime createdAt;
   final String? clientId;
@@ -348,7 +373,7 @@ class Task {
   bool isPostponeRequested;
   final DateTime? postponeRequestedDate;
   bool isPaidToVideoEditor = false;
-    bool isPaidToVideographer = false;
+  bool isPaidToVideographer = false;
   bool isPaymentAcknowledgedByVideographer = false;
   bool isPaidToGraphicsEditor = false;
   bool isPaymentAcknowledgedByGraphicsEditor = false;
@@ -363,7 +388,7 @@ class Task {
     required this.assignedBy,
     required this.deadline,
     this.isCompleted = false,
-      this.isMissed = false,
+    this.isMissed = false,
     this.isSubmitted = false,
     DateTime? createdAt,
     this.clientId,
@@ -375,7 +400,7 @@ class Task {
     this.isApprovedByVideographer = false,
     this.isApprovedByGraphicsEditor = false,
     this.isPaidToVideoEditor = false,
-      this.isPaidToVideographer = false,
+    this.isPaidToVideographer = false,
     this.isPaymentAcknowledgedByVideographer = false,
     this.isPaidToGraphicsEditor = false,
     this.isPaymentAcknowledgedByGraphicsEditor = false,
@@ -395,7 +420,7 @@ class Task {
       assignedBy: data['assignedBy'] ?? '',
       deadline: _parseDate(data['deadline']),
       isCompleted: data['isCompleted'] ?? false,
-        isMissed: data['isMissed'] ?? false,
+      isMissed: data['isMissed'] ?? false,
       isSubmitted: data['isSubmitted'] ?? false,
       createdAt: _parseDate(data['createdAt']),
       clientId: data['clientId'],
@@ -407,10 +432,12 @@ class Task {
       isApprovedByVideographer: data['isApprovedByVideographer'] ?? false,
       isApprovedByGraphicsEditor: data['isApprovedByGraphicsEditor'] ?? false,
       isPaidToVideoEditor: data['isPaidToVideoEditor'] ?? false,
-        isPaidToVideographer: data['isPaidToVideographer'] ?? false,
-      isPaymentAcknowledgedByVideographer: data['isPaymentAcknowledgedByVideographer'] ?? false,
+      isPaidToVideographer: data['isPaidToVideographer'] ?? false,
+      isPaymentAcknowledgedByVideographer:
+          data['isPaymentAcknowledgedByVideographer'] ?? false,
       isPaidToGraphicsEditor: data['isPaidToGraphicsEditor'] ?? false,
-      isPaymentAcknowledgedByGraphicsEditor: data['isPaymentAcknowledgedByGraphicsEditor'] ?? false,
+      isPaymentAcknowledgedByGraphicsEditor:
+          data['isPaymentAcknowledgedByGraphicsEditor'] ?? false,
       sessionClientIds: List<String>.from(data['sessionClientIds'] ?? []),
       isPostponeRequested: data['isPostponeRequested'] ?? false,
       postponeRequestedDate: _parseDateNullable(data['postponeRequestedDate']),
@@ -427,7 +454,7 @@ class Task {
       'assignedBy': assignedBy,
       'deadline': Timestamp.fromDate(deadline),
       'isCompleted': isCompleted,
-        'isMissed': isMissed,
+      'isMissed': isMissed,
       'isSubmitted': isSubmitted,
       'createdAt': Timestamp.fromDate(createdAt),
       if (clientId != null) 'clientId': clientId,
@@ -439,15 +466,19 @@ class Task {
       'isApprovedByVideographer': isApprovedByVideographer,
       'isApprovedByGraphicsEditor': isApprovedByGraphicsEditor,
       'isPaidToVideoEditor': isPaidToVideoEditor,
-        'isPaidToVideographer': isPaidToVideographer,
-      'isPaymentAcknowledgedByVideographer': isPaymentAcknowledgedByVideographer,
+      'isPaidToVideographer': isPaidToVideographer,
+      'isPaymentAcknowledgedByVideographer':
+          isPaymentAcknowledgedByVideographer,
       'isPaidToGraphicsEditor': isPaidToGraphicsEditor,
-      'isPaymentAcknowledgedByGraphicsEditor': isPaymentAcknowledgedByGraphicsEditor,
+      'isPaymentAcknowledgedByGraphicsEditor':
+          isPaymentAcknowledgedByGraphicsEditor,
       if (sessionClientIds.isNotEmpty) 'sessionClientIds': sessionClientIds,
       'isPostponeRequested': isPostponeRequested,
-      if (postponeRequestedDate != null) 'postponeRequestedDate': Timestamp.fromDate(postponeRequestedDate!),
+      if (postponeRequestedDate != null)
+        'postponeRequestedDate': Timestamp.fromDate(postponeRequestedDate!),
       if (uploadTaskId != null) 'uploadTaskId': uploadTaskId,
-      if (manualPaymentAmount != null) 'manualPaymentAmount': manualPaymentAmount,
+      if (manualPaymentAmount != null)
+        'manualPaymentAmount': manualPaymentAmount,
     };
   }
 }
@@ -460,7 +491,13 @@ class ClientContact {
   final String address;
   final String website;
 
-  const ClientContact({required this.name, required this.email, required this.phone, this.address = '', this.website = ''});
+  const ClientContact({
+    required this.name,
+    required this.email,
+    required this.phone,
+    this.address = '',
+    this.website = '',
+  });
 }
 
 class EcomSkuLog {
@@ -494,7 +531,9 @@ class EcomSkuLog {
   factory EcomSkuLog.fromFirestore(Map<String, dynamic> data) {
     return EcomSkuLog(
       id: data['id'] ?? '',
-      timestamp: data['timestamp'] != null ? DateTime.parse(data['timestamp']) : DateTime.now(),
+      timestamp: data['timestamp'] != null
+          ? DateTime.parse(data['timestamp'])
+          : DateTime.now(),
       sku: data['sku'] ?? 0,
       duplicate: data['duplicate'] ?? 0,
       catalogue: data['catalogue'] ?? 0,
@@ -513,6 +552,7 @@ class ClientAddOn {
   bool isBilled;
   bool isPaid;
   DateTime dateAdded;
+  double discount;
 
   ClientAddOn({
     required this.id,
@@ -523,6 +563,7 @@ class ClientAddOn {
     this.description,
     this.isBilled = false,
     this.isPaid = false,
+    this.discount = 0.0,
     DateTime? dateAdded,
   }) : dateAdded = dateAdded ?? DateTime.now();
 
@@ -535,6 +576,7 @@ class ClientAddOn {
     'description': description,
     'isBilled': isBilled,
     'isPaid': isPaid,
+    'discount': discount,
     'dateAdded': dateAdded.toIso8601String(),
   };
 
@@ -547,7 +589,10 @@ class ClientAddOn {
     description: map['description'],
     isBilled: map['isBilled'] ?? false,
     isPaid: map['isPaid'] ?? false,
-    dateAdded: map['dateAdded'] != null ? DateTime.parse(map['dateAdded']) : DateTime.now(),
+    discount: (map['discount'] ?? 0).toDouble(),
+    dateAdded: map['dateAdded'] != null
+        ? DateTime.parse(map['dateAdded'])
+        : DateTime.now(),
   );
 }
 
@@ -563,39 +608,38 @@ class Client {
   DateTime contractDate;
   String status;
   List<String> remarks;
-  
+
   List<ClientAddOn> addOns;
   Map<String, double> monthlyDiscounts;
   bool isWebsiteHandlingActive;
   double websiteHandlingFee;
 
-
   // ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ New Package & Deliverables Fields ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬
-  String packageType;       // 'Growth' or 'Performance'
-  String contractPeriod;    // e.g. '3 Months', '6 Months', '1 Year'
-  double monthlyPayable;    // base monthly fee in \u20B9
+  String packageType; // 'Growth' or 'Performance'
+  String contractPeriod; // e.g. '3 Months', '6 Months', '1 Year'
+  double monthlyPayable; // base monthly fee in \u20B9
   int weeklyReels;
   int weeklyPosts;
   int weeklyCarousels;
   int weeklyStories;
-  int campaigns;            // only for Performance package
-  String campaignReach;     // only for Performance package, e.g. '50k-100k'
+  int campaigns; // only for Performance package
+  String campaignReach; // only for Performance package, e.g. '50k-100k'
 
   int paymentsDue;
 
   // ---- Lead-specific fields ----
-  List<String> followUpDates;    // e.g. ['2026-06-25', '2026-07-01']
-  List<String> notes;            // comments/notes from meetings
-  String conversionProbability;  // 'High', 'Medium', 'Low'
+  List<String> followUpDates; // e.g. ['2026-06-25', '2026-07-01']
+  List<String> notes; // comments/notes from meetings
+  String conversionProbability; // 'High', 'Medium', 'Low'
 
   // ---- Active client retention & payment health ----
-  String retentionHealth;        // 'Great', 'Good', 'Bad'
-  String nextDueDate;            // e.g. '5th of every month' or '2026-07-05'
-  String paymentMode;            // 'Advance', 'Running', 'Late'
-  int dueDateDay;                // 1-31
+  String retentionHealth; // 'Great', 'Good', 'Bad'
+  String nextDueDate; // e.g. '5th of every month' or '2026-07-05'
+  String paymentMode; // 'Advance', 'Running', 'Late'
+  int dueDateDay; // 1-31
   bool isPaidForMonth;
   List<int> paidMonths;
-  
+
   // ---- Videographer Link ----
   String? assignedVideographerId;
   double sessionRate;
@@ -604,14 +648,14 @@ class Client {
   String? assignedGraphicsEditorId;
 
   // ---- Marketing Executive Link & Splits ----
-  String serviceType;             // 'Marketing', 'E-commerce', 'Video Production'
-  bool hasMarketingCommission;    // true if ME gets 20%
-  String? marketingExecutiveId;   // ID of ME
-  String source;                  // 'my_lead', 'assigned', or 'general'
-  bool isApprovedByCeo;           // false if ME converted it and CEO hasn't approved
-  String? previousStatus;         // status to revert to if CEO rejects conversion
-  String paidTill;                  // e.g. 'June 2026' - last month client payment was confirmed
-  bool isTerminationRequested;      // true if ME requested termination
+  String serviceType; // 'Marketing', 'E-commerce', 'Video Production'
+  bool hasMarketingCommission; // true if ME gets 20%
+  String? marketingExecutiveId; // ID of ME
+  String source; // 'my_lead', 'assigned', or 'general'
+  bool isApprovedByCeo; // false if ME converted it and CEO hasn't approved
+  String? previousStatus; // status to revert to if CEO rejects conversion
+  String paidTill; // e.g. 'June 2026' - last month client payment was confirmed
+  bool isTerminationRequested; // true if ME requested termination
   String ecomPaymentType; // 'Monthly' or 'Per SKU'
   double clientSkuRate;
   double clientDuplicateSkuRate;
@@ -620,11 +664,15 @@ class Client {
 
   double getPayableForMonth(int month, int year) {
     double total = monthlyPayable;
-    if (serviceType.toLowerCase().contains('commerce') && ecomPaymentType == 'Per SKU') {
+    if (serviceType.toLowerCase().contains('commerce') &&
+        ecomPaymentType == 'Per SKU') {
       total = 0;
       for (var log in ecomSkuLogs) {
         if (log.timestamp.month == month && log.timestamp.year == year) {
-          total += (log.sku * clientSkuRate) + (log.duplicate * clientDuplicateSkuRate) + (log.catalogue * clientCatalogueRate);
+          total +=
+              (log.sku * clientSkuRate) +
+              (log.duplicate * clientDuplicateSkuRate) +
+              (log.catalogue * clientCatalogueRate);
         }
       }
     }
@@ -644,14 +692,14 @@ class Client {
     List<int> pending = [];
     int currentYear = DateTime.now().year;
     int currentMonth = DateTime.now().month;
-    
+
     int startMonth = 1;
     if (contractDate.year == currentYear) {
       startMonth = contractDate.month;
     } else if (contractDate.year > currentYear) {
       return pending;
     }
-    
+
     for (int m = startMonth; m <= currentMonth; m++) {
       if (!paidMonths.contains(m)) {
         pending.add(m);
@@ -685,7 +733,8 @@ class Client {
       dueDateForThisMonth = DateTime(currentYear, month, dueDateDay);
     }
 
-    return now.isAfter(dueDateForThisMonth) || now.isAtSameMomentAs(dueDateForThisMonth);
+    return now.isAfter(dueDateForThisMonth) ||
+        now.isAtSameMomentAs(dueDateForThisMonth);
   }
 
   /// Computed: expected paid months based on paymentMode and dueDateDay
@@ -697,7 +746,8 @@ class Client {
         total += getPayableForMonth(i, currentYear);
       }
     }
-    if (serviceType.toLowerCase().contains('commerce') && ecomPaymentType == 'Per SKU') {
+    if (serviceType.toLowerCase().contains('commerce') &&
+        ecomPaymentType == 'Per SKU') {
       int currentMonth = DateTime.now().month;
       if (!isMonthDue(currentMonth) && !paidMonths.contains(currentMonth)) {
         total += getPayableForMonth(currentMonth, currentYear);
@@ -713,7 +763,8 @@ class Client {
         dueCount++;
       }
     }
-    if (serviceType.toLowerCase().contains('commerce') && ecomPaymentType == 'Per SKU') {
+    if (serviceType.toLowerCase().contains('commerce') &&
+        ecomPaymentType == 'Per SKU') {
       int currentMonth = DateTime.now().month;
       if (!isMonthDue(currentMonth) && !paidMonths.contains(currentMonth)) {
         if (getPayableForMonth(currentMonth, DateTime.now().year) > 0) {
@@ -814,11 +865,19 @@ class Client {
       paymentMode: data['paymentMode'] ?? 'Running',
       dueDateDay: data['dueDateDay'] ?? 10,
       isPaidForMonth: data['isPaidForMonth'] ?? false,
-      paidMonths: (data['paidMonths'] as List<dynamic>?)?.map((e) => int.tryParse(e.toString()) ?? 0).toList() ?? [],
+      paidMonths:
+          (data['paidMonths'] as List<dynamic>?)
+              ?.map((e) => int.tryParse(e.toString()) ?? 0)
+              .toList() ??
+          [],
       assignedVideographerId: data['assignedVideographerId'],
       assignedGraphicsEditorId: data['assignedGraphicsEditorId'],
       sessionRate: (data['sessionRate'] ?? 0.0).toDouble(),
-      serviceType: (data['serviceType'] ?? 'Marketing').toString().toLowerCase() == 'e-commerce' ? 'E-Commerce' : (data['serviceType'] ?? 'Marketing'),
+      serviceType:
+          (data['serviceType'] ?? 'Marketing').toString().toLowerCase() ==
+              'e-commerce'
+          ? 'E-Commerce'
+          : (data['serviceType'] ?? 'Marketing'),
       hasMarketingCommission: data['hasMarketingCommission'] ?? false,
       marketingExecutiveId: data['marketingExecutiveId'],
       source: data['source'] ?? 'general',
@@ -828,11 +887,19 @@ class Client {
       isTerminationRequested: data['isTerminationRequested'] ?? false,
       ecomPaymentType: data['ecomPaymentType'] ?? 'Monthly',
       clientSkuRate: (data['clientSkuRate'] ?? 0.0).toDouble(),
-      clientDuplicateSkuRate: (data['clientDuplicateSkuRate'] ?? 0.0).toDouble(),
+      clientDuplicateSkuRate: (data['clientDuplicateSkuRate'] ?? 0.0)
+          .toDouble(),
       clientCatalogueRate: (data['clientCatalogueRate'] ?? 0.0).toDouble(),
-      ecomSkuLogs: (data['ecomSkuLogs'] as List<dynamic>? ?? []).map((e) => EcomSkuLog.fromFirestore(e)).toList(),
-      addOns: (data['addOns'] as List<dynamic>? ?? []).map((e) => ClientAddOn.fromMap(Map<String, dynamic>.from(e))).toList(),
-      monthlyDiscounts: (data['monthlyDiscounts'] as Map<dynamic, dynamic>? ?? {}).map((key, value) => MapEntry(key.toString(), (value as num).toDouble())),
+      ecomSkuLogs: (data['ecomSkuLogs'] as List<dynamic>? ?? [])
+          .map((e) => EcomSkuLog.fromFirestore(e))
+          .toList(),
+      addOns: (data['addOns'] as List<dynamic>? ?? [])
+          .map((e) => ClientAddOn.fromMap(Map<String, dynamic>.from(e)))
+          .toList(),
+      monthlyDiscounts:
+          (data['monthlyDiscounts'] as Map<dynamic, dynamic>? ?? {}).map(
+            (key, value) => MapEntry(key.toString(), (value as num).toDouble()),
+          ),
       isWebsiteHandlingActive: data['isWebsiteHandlingActive'] ?? false,
       websiteHandlingFee: (data['websiteHandlingFee'] ?? 0.0).toDouble(),
     );
@@ -873,12 +940,15 @@ class Client {
     'dueDateDay': dueDateDay,
     'isPaidForMonth': isPaidForMonth,
     'paidMonths': paidMonths,
-    if (assignedVideographerId != null) 'assignedVideographerId': assignedVideographerId,
-    if (assignedGraphicsEditorId != null) 'assignedGraphicsEditorId': assignedGraphicsEditorId,
+    if (assignedVideographerId != null)
+      'assignedVideographerId': assignedVideographerId,
+    if (assignedGraphicsEditorId != null)
+      'assignedGraphicsEditorId': assignedGraphicsEditorId,
     'sessionRate': sessionRate,
     'serviceType': serviceType,
     'hasMarketingCommission': hasMarketingCommission,
-    if (marketingExecutiveId != null) 'marketingExecutiveId': marketingExecutiveId,
+    if (marketingExecutiveId != null)
+      'marketingExecutiveId': marketingExecutiveId,
     'source': source,
     'isApprovedByCeo': isApprovedByCeo,
     if (previousStatus != null) 'previousStatus': previousStatus,
@@ -896,7 +966,7 @@ class Client {
   };
 }
 
-// 
+//
 class FinanceEntry {
   final String id;
   final String label;
@@ -906,8 +976,8 @@ class FinanceEntry {
   final String category;
 
   // Linked fields
-  final String? incomeType;      // 'Monthly Payment' or 'Others'
-  final String? expenseType;     // 'Salary' or 'Expense'
+  final String? incomeType; // 'Monthly Payment' or 'Others'
+  final String? expenseType; // 'Salary' or 'Expense'
   final String? clientId;
   final String? employeeId;
   final String? paymentMonth;
@@ -942,11 +1012,12 @@ class FinanceEntry {
     this.marketingExecutiveId,
   });
 
-
   factory FinanceEntry.fromFirestore(Map<String, dynamic> data, String docId) {
     double parsedAmount = 0.0;
-    if (data['amount'] is num) parsedAmount = (data['amount'] as num).toDouble();
-    else if (data['amount'] is String) parsedAmount = double.tryParse(data['amount']) ?? 0.0;
+    if (data['amount'] is num)
+      parsedAmount = (data['amount'] as num).toDouble();
+    else if (data['amount'] is String)
+      parsedAmount = double.tryParse(data['amount']) ?? 0.0;
 
     return FinanceEntry(
       id: docId,
@@ -990,7 +1061,8 @@ class FinanceEntry {
       if (paymentMethod != null) 'paymentMethod': paymentMethod,
       'discount': discount,
       if (serviceType != null) 'serviceType': serviceType,
-      if (marketingExecutiveId != null) 'marketingExecutiveId': marketingExecutiveId,
+      if (marketingExecutiveId != null)
+        'marketingExecutiveId': marketingExecutiveId,
     };
   }
 }
@@ -1016,7 +1088,10 @@ class SageNotification {
     this.isRead = false,
   });
 
-  factory SageNotification.fromFirestore(Map<String, dynamic> data, String docId) {
+  factory SageNotification.fromFirestore(
+    Map<String, dynamic> data,
+    String docId,
+  ) {
     return SageNotification(
       id: docId,
       message: data['message'] ?? '',
@@ -1037,5 +1112,3 @@ class SageNotification {
     };
   }
 }
-
-

@@ -4,7 +4,7 @@ void main() {
   void fixFile(String path) {
     final file = File(path);
     if (!file.existsSync()) return;
-    
+
     String content = file.readAsStringSync(encoding: systemEncoding);
     bool changed = false;
 
@@ -41,7 +41,7 @@ void main() {
       content = content.replaceAll('const Column(', 'Column(');
       changed = true;
     }
-    
+
     if (changed) {
       file.writeAsStringSync(content);
       print('Fixed regex corruption in \$path');

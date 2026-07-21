@@ -27,13 +27,15 @@ void main() {
         return true;
       },
       child: Scaffold(''';
-      
+
     content = content.replaceFirst('return Scaffold(', willPopScopeString);
 
     // Find the end of the build method by looking for the FIRST method declaration after build
     // Because build is usually the first method.
     // Methods usually start with `  Widget _`, `  Color _`, `  String _`, `  void _`, `  bool _`
-    final methodStartRegex = RegExp(r'\n  \}\n\n  (Widget|Color|String|bool|void) _');
+    final methodStartRegex = RegExp(
+      r'\n  \}\n\n  (Widget|Color|String|bool|void) _',
+    );
     content = content.replaceFirstMapped(methodStartRegex, (match) {
       return '\n    );\n  }\n\n  ${match.group(1)} _';
     });

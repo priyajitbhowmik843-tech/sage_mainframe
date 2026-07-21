@@ -35,7 +35,7 @@ class NeonTabBar extends StatelessWidget {
               color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 10,
               offset: const Offset(0, 4),
-            )
+            ),
           ],
         ),
         child: Row(
@@ -125,7 +125,9 @@ class NeonListTile extends StatelessWidget {
           color: SageColors.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: SageColors.outlineVariant, width: 1),
-          boxShadow: glow ? SageColors.neonGlow(color, spread: 0, blur: 4) : null,
+          boxShadow: glow
+              ? SageColors.neonGlow(color, spread: 0, blur: 4)
+              : null,
         ),
         child: Row(
           children: [
@@ -136,7 +138,10 @@ class NeonListTile extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   title,
-                  if (subtitle != null) ...[const SizedBox(height: 3), subtitle!],
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 3),
+                    subtitle!,
+                  ],
                 ],
               ),
             ),

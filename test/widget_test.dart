@@ -4,7 +4,9 @@ import 'package:sage_mainframe/main.dart';
 import 'package:sage_mainframe/state/app_state.dart';
 
 void main() {
-  testWidgets('App launches and shows login screen', (WidgetTester tester) async {
+  testWidgets('App launches and shows login screen', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       ChangeNotifierProvider(
         create: (_) => AppState(),

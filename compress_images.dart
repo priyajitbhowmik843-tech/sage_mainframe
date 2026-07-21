@@ -7,7 +7,10 @@ void main() {
   if (logoFile.existsSync()) {
     final logoImage = img.decodeImage(logoFile.readAsBytesSync());
     if (logoImage != null) {
-      final resizedLogo = img.copyResize(logoImage, width: 400); // Resize to 400px width
+      final resizedLogo = img.copyResize(
+        logoImage,
+        width: 400,
+      ); // Resize to 400px width
       logoFile.writeAsBytesSync(img.encodePng(resizedLogo, level: 9));
       print('invoice_logo.png resized and compressed.');
     }
@@ -18,7 +21,10 @@ void main() {
   if (signFile.existsSync()) {
     final signImage = img.decodeImage(signFile.readAsBytesSync());
     if (signImage != null) {
-      final resizedSign = img.copyResize(signImage, width: 400); // Resize to 400px width
+      final resizedSign = img.copyResize(
+        signImage,
+        width: 400,
+      ); // Resize to 400px width
       signFile.writeAsBytesSync(img.encodePng(resizedSign, level: 9));
       print('ceo e sign.png resized and compressed.');
     }

@@ -3,12 +3,14 @@ import 'dart:io';
 void main() {
   final file = File('lib/screens/employee_dashboard.dart');
   final lines = file.readAsLinesSync();
-  
+
   final out = <String>[];
   bool injected = false;
-  
+
   for (int i = 0; i < lines.length; i++) {
-    if (lines[i].contains("final pendingApprovals = myTasks.where((t) => t.taskType == 'Session'")) {
+    if (lines[i].contains(
+      "final pendingApprovals = myTasks.where((t) => t.taskType == 'Session'",
+    )) {
       out.add(lines[i]);
       if (!injected) {
         out.add(r'''
@@ -141,7 +143,7 @@ void main() {
       out.add(lines[i]);
     }
   }
-  
+
   file.writeAsStringSync(out.join('\n'));
   print('done');
 }

@@ -1,7 +1,9 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 void main() {
-  final file = File('c:/Users/Priyajit Bhowmik/Downloads/n sage os/sage os/sage os/sage_mainframe/lib/models/models.dart');
+  final file = File(
+    'c:/Users/Priyajit Bhowmik/Downloads/n sage os/sage os/sage os/sage_mainframe/lib/models/models.dart',
+  );
   var content = file.readAsStringSync();
 
   final fromDb = '''
@@ -15,11 +17,12 @@ void main() {
         workStylePreference: data['workStylePreference'] ?? '',
         interests: data['interests'] ?? '',
 ''';
-  
+
   // Use string replace instead of regex to avoid issues.
   content = content.replaceAll(
-      "        pendingPayAmount: (data['pendingPayAmount'] ?? 0.0).toDouble(),", 
-      fromDb);
+    "        pendingPayAmount: (data['pendingPayAmount'] ?? 0.0).toDouble(),",
+    fromDb,
+  );
 
   file.writeAsStringSync(content);
   print("models.dart updated.");

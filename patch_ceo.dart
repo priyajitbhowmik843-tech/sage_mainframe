@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 void main() {
   final file = File('lib/screens/ceo_dashboard.dart');
@@ -6,7 +6,10 @@ void main() {
 
   // Add state variables
   if (!content.contains('bool _showMainPoolShares = false;')) {
-    content = content.replaceFirst('bool _showDetailedShares = false;', 'bool _showMainPoolShares = false;\n  bool _showVideoPoolShares = false;');
+    content = content.replaceFirst(
+      'bool _showDetailedShares = false;',
+      'bool _showMainPoolShares = false;\n  bool _showVideoPoolShares = false;',
+    );
   }
 
   // Define the new UI
@@ -363,7 +366,7 @@ void main() {
   // We need to replace from // --- Total Net Running Balance --- up to the next const SizedBox(height: 14), before // Income / Expenses Stat Grid
   final startIndex = content.indexOf('// --- Total Net Running Balance ---');
   final endIndex = content.indexOf('// Income / Expenses Stat Grid');
-  
+
   if (startIndex != -1 && endIndex != -1) {
     final toReplace = content.substring(startIndex, endIndex);
     content = content.replaceFirst(toReplace, newUi + '\n        ');

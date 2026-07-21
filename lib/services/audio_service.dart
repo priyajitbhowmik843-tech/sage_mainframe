@@ -2,7 +2,7 @@ import 'package:audioplayers/audioplayers.dart';
 
 class AudioService {
   static final AudioPlayer _player = AudioPlayer();
-  
+
   static Future<void> playNotification(String type) async {
     try {
       if (type == 'task_assigned') {

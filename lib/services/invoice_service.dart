@@ -35,7 +35,7 @@ class InvoiceService {
   static Future<void> generateAndShareInvoice(
     Client client,
     DateTime month,
-    {List<ClientAddOn> selectedAddOns = const []}
+    {List<ClientAddOn> selectedAddOns = const [], double monthDiscount = 0.0}
   ) async {
     final pdf = pw.Document();
 
@@ -65,7 +65,7 @@ class InvoiceService {
           margin: const pw.EdgeInsets.all(0),
         ),
         build: (context) => [
-          _buildInvoicePage(client, month, invoiceNo, theme, selectedAddOns, logoImage, signImage),
+          _buildInvoicePage(client, month, invoiceNo, theme, selectedAddOns, logoImage, signImage, monthDiscount),
         ],
       ),
     );
@@ -94,6 +94,7 @@ class InvoiceService {
     List<ClientAddOn> selectedAddOns,
     pw.MemoryImage logoImage,
     pw.MemoryImage signImage,
+    double monthDiscount,
   ) {
     return pw.Container(
       height: PdfPageFormat.a4.height,
@@ -459,7 +460,7 @@ class InvoiceService {
                       // Right Totals
                       pw.Expanded(
                         flex: 4,
-                        child: _buildTotalsColumn(client, month, selectedAddOns),
+                        child: _buildTotalsColumn(client, month, selectedAddOns, monthDiscount),
                       ),
                     ],
                   ),
@@ -497,10 +498,10 @@ class InvoiceService {
     );
   }
 
-  static pw.Widget _buildTotalsColumn(Client client, DateTime month, List<ClientAddOn> selectedAddOns) {
+  static pw.Widget _buildTotalsColumn(Client client, DateTime month, List<ClientAddOn> selectedAddOns, double overrideMonthDiscount) {
     double baseAmount = client.monthlyPayable;
-    double discountAmount = client.monthlyDiscounts[month.month.toString()] ?? 0;
-    double addOnsTotal = selectedAddOns.fold(0, (sum, a) => sum + a.amount);
+    double discountAmount = overrideMonthDiscount > 0 ? overrideMonthDiscount : (client.monthlyDiscounts[month.month.toString()] ?? 0);
+    double addOnsTotal = selectedAddOns.fold(0, (sum, a) => sum + (a.amount - a.discount));
     double websiteHandlingFee = client.isWebsiteHandlingActive ? client.websiteHandlingFee : 0;
     double grandTotal = baseAmount + websiteHandlingFee + addOnsTotal - discountAmount;
     if (client.ecomPaymentType == 'Per SKU') {
@@ -725,3 +726,4 @@ class InvoiceService {
         .toList();
   }
 }
+

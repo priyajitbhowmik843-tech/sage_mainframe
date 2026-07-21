@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 void main() {
   final files = ['ceo_dashboard.dart', 'cofounder_dashboard.dart'];

@@ -1,15 +1,19 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 void main() {
   final f = File('widgets/common_widgets.dart');
   final lines = f.readAsLinesSync();
-  
-  final startIdx = lines.indexWhere((l) => l.contains('class DashboardTile extends StatelessWidget {'));
-  final endIdx = lines.indexWhere((l) => l.contains('class StatChip extends StatelessWidget {'));
-  
+
+  final startIdx = lines.indexWhere(
+    (l) => l.contains('class DashboardTile extends StatelessWidget {'),
+  );
+  final endIdx = lines.indexWhere(
+    (l) => l.contains('class StatChip extends StatelessWidget {'),
+  );
+
   // Actually, we want to replace from startIdx up to the line before // ─── STAT CHIP ─
   final statChipCommentIdx = lines.indexWhere((l) => l.contains('STAT CHIP'));
-  
+
   final newClass = """
 class DashboardTile extends StatelessWidget {
   final String title;
@@ -107,6 +111,6 @@ class DashboardTile extends StatelessWidget {
 
   final before = lines.sublist(0, startIdx).join('\n');
   final after = lines.sublist(statChipCommentIdx).join('\n');
-  
+
   f.writeAsStringSync(before + '\n' + newClass + '\n' + after);
 }

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+
 void main() {
   final dir = Directory('lib');
   for (final file in dir.listSync(recursive: true)) {

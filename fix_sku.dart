@@ -1,31 +1,44 @@
 import 'dart:io';
 
 void main() {
-  final files = ['lib/screens/ceo_dashboard.dart', 'lib/screens/cofounder_dashboard.dart'];
+  final files = [
+    'lib/screens/ceo_dashboard.dart',
+    'lib/screens/cofounder_dashboard.dart',
+  ];
 
   for (final path in files) {
     final file = File(path);
     var content = file.readAsStringSync();
-    
-    int startIdx = content.indexOf("if (c.serviceType.toLowerCase().contains('commerce') && c.ecomPaymentType == 'Per SKU') ...[");
+
+    int startIdx = content.indexOf(
+      "if (c.serviceType.toLowerCase().contains('commerce') && c.ecomPaymentType == 'Per SKU') ...[",
+    );
     if (startIdx != -1) {
       // Find the second instance of the if block since the first one is inside _showMonthlyPaymentDialog
-      startIdx = content.indexOf("if (c.serviceType.toLowerCase().contains('commerce') && c.ecomPaymentType == 'Per SKU') ...[", startIdx + 1);
-      
+      startIdx = content.indexOf(
+        "if (c.serviceType.toLowerCase().contains('commerce') && c.ecomPaymentType == 'Per SKU') ...[",
+        startIdx + 1,
+      );
+
       if (startIdx != -1) {
         // Now find the start of the line where startIdx is located
-        while (startIdx > 0 && (content[startIdx - 1] == ' ' || content[startIdx - 1] == '\t')) {
+        while (startIdx > 0 &&
+            (content[startIdx - 1] == ' ' || content[startIdx - 1] == '\t')) {
           startIdx--;
         }
 
-        int endIdx = content.indexOf("const Divider(color: Colors.black26),", startIdx);
+        int endIdx = content.indexOf(
+          "const Divider(color: Colors.black26),",
+          startIdx,
+        );
         if (endIdx != -1) {
-          while (endIdx > 0 && (content[endIdx - 1] == ' ' || content[endIdx - 1] == '\t')) {
+          while (endIdx > 0 &&
+              (content[endIdx - 1] == ' ' || content[endIdx - 1] == '\t')) {
             endIdx--;
           }
-          
+
           String badBlock = content.substring(startIdx, endIdx);
-          
+
           String cleanBlock = r'''
                         if (c.serviceType.toLowerCase().contains('commerce') && c.ecomPaymentType == 'Per SKU') ...[
                           const SizedBox(height: 10),

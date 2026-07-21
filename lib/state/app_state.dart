@@ -16,7 +16,8 @@ class PoolData {
   final double netBalance;
   final Map<String, double> shares;
 
-  PoolData({required this.income, required this.expenses, required this.shares}) : netBalance = income - expenses;
+  PoolData({required this.income, required this.expenses, required this.shares})
+    : netBalance = income - expenses;
 }
 
 class AppState extends ChangeNotifier {
@@ -641,7 +642,8 @@ class AppState extends ChangeNotifier {
     if (perVideoRate != null) emp.perVideoRate = perVideoRate;
     if (perSkuRate != null) emp.perSkuRate = perSkuRate;
     if (perDesignRate != null) emp.perDesignRate = perDesignRate;
-      if (pendingPayDeduction != null) emp.pendingPayDeduction = pendingPayDeduction;
+    if (pendingPayDeduction != null)
+      emp.pendingPayDeduction = pendingPayDeduction;
     if (sessionsPerMonth != null) emp.sessionsPerMonth = sessionsPerMonth;
     if (paymentsDue != null) emp.paymentsDue = paymentsDue;
     if (lastPaidDate != null) emp.lastPaidDate = lastPaidDate;
@@ -798,7 +800,8 @@ class AppState extends ChangeNotifier {
               (isForSessions
                   ? t.taskType == 'Session'
                   : t.taskType != 'Session') &&
-              (t.isCompleted || (isForSessions && t.isApprovedByVideographer)) &&
+              (t.isCompleted ||
+                  (isForSessions && t.isApprovedByVideographer)) &&
               !t.isPaidToVideographer,
         )
         .toList();
@@ -859,16 +862,23 @@ class AppState extends ChangeNotifier {
     if (emp == null) return;
 
     final unpaidDesigns = _tasks
-        .where((t) => t.assignedTo == employeeId && (t.isCompleted || t.isApprovedByGraphicsEditor) && !t.isPaidToGraphicsEditor)
+        .where(
+          (t) =>
+              t.assignedTo == employeeId &&
+              (t.isCompleted || t.isApprovedByGraphicsEditor) &&
+              !t.isPaidToGraphicsEditor,
+        )
         .toList();
-    
+
     unpaidDesigns.sort((a, b) => a.deadline.compareTo(b.deadline));
 
     int toPay = count > unpaidDesigns.length ? unpaidDesigns.length : count;
     for (int i = 0; i < toPay; i++) {
       final t = unpaidDesigns[i];
       t.isPaidToGraphicsEditor = true;
-      _db.collection('tasks').doc(t.id).update({'isPaidToGraphicsEditor': true});
+      _db.collection('tasks').doc(t.id).update({
+        'isPaidToGraphicsEditor': true,
+      });
     }
 
     if (totalPayout > 0) {
@@ -969,10 +979,22 @@ class AppState extends ChangeNotifier {
             amount: amt,
             isIncome: false,
             date: DateTime.now(),
-            category: monthStr.contains('Misc:') ? 'MISC SESSIONS PAYMENT' : (monthStr.contains('Sessions') || monthStr.contains('Videos')) ? 'SESSIONS PAYMENT' : 'Employee Salary',
-            expenseType: (monthStr.contains('Misc:') || monthStr.contains('Sessions') || monthStr.contains('Videos')) ? 'Session Payment' : 'Salary',
+            category: monthStr.contains('Misc:')
+                ? 'MISC SESSIONS PAYMENT'
+                : (monthStr.contains('Sessions') || monthStr.contains('Videos'))
+                ? 'SESSIONS PAYMENT'
+                : 'Employee Salary',
+            expenseType:
+                (monthStr.contains('Misc:') ||
+                    monthStr.contains('Sessions') ||
+                    monthStr.contains('Videos'))
+                ? 'Session Payment'
+                : 'Salary',
             employeeId: e.id,
-            serviceType: (e.role == 'Videographer' && monthStr.contains('Misc:')) ? 'Video Production' : null,
+            serviceType:
+                (e.role == 'Videographer' && monthStr.contains('Misc:'))
+                ? 'Video Production'
+                : null,
           ),
         );
       } else {
@@ -999,14 +1021,14 @@ class AppState extends ChangeNotifier {
         final emp = _employees[empIdx];
         final amount = t.manualPaymentAmount ?? 0;
         emp.pendingPayAmount = (emp.pendingPayAmount ?? 0) + amount;
-        
+
         final newStr = 'Misc: ${t.title}';
         if (emp.pendingPayMonth == null || emp.pendingPayMonth!.isEmpty) {
           emp.pendingPayMonth = newStr;
         } else {
           emp.pendingPayMonth = '${emp.pendingPayMonth}, $newStr';
         }
-        
+
         emp.paymentCleared = true;
         emp.paymentApprovedByEmployee = false;
 
@@ -1167,20 +1189,29 @@ class AppState extends ChangeNotifier {
   void approvePostponeTask(String taskId) {
     final idx = _tasks.indexWhere((t) => t.id == taskId);
     if (idx != -1) {
-      final requestedDate = _tasks[idx].postponeRequestedDate;
+      final task = _tasks[idx];
+      final requestedDate = task.postponeRequestedDate;
       if (requestedDate != null) {
-        _db.collection('tasks').doc(taskId).update({
-          'deadline': Timestamp.fromDate(requestedDate),
-          'isPostponeRequested': false,
-          'postponeRequestedDate': null,
-        });
+        final siblingTasks = _tasks
+            .where(
+              (t) =>
+                  t.title == task.title &&
+                  t.deadline.isAtSameMomentAs(task.deadline) &&
+                  !t.isCompleted,
+            )
+            .toList();
+
+        for (final st in siblingTasks) {
+          _db.collection('tasks').doc(st.id).update({
+            'deadline': Timestamp.fromDate(requestedDate),
+            'isPostponeRequested': false,
+            'postponeRequestedDate': null,
+          });
+        }
         _addLog(
-          'POSTPONE APPROVED: "${_tasks[idx].title}" moved to ${requestedDate.toString().substring(0, 10)}',
+          'POSTPONE APPROVED: "${task.title}" moved to ${requestedDate.toString().substring(0, 10)}',
         );
-        _addNotification(
-          'Task Postpone Approved: "${_tasks[idx].title}"',
-          'task',
-        );
+        _addNotification('Task Postpone Approved: "${task.title}"', 'task');
       }
     }
   }
@@ -1259,7 +1290,10 @@ class AppState extends ChangeNotifier {
             'isSubmitted': true,
             'submittedAt': Timestamp.now(),
           });
-          _addNotification('Task Submitted for Review: "${task.title}"', 'task');
+          _addNotification(
+            'Task Submitted for Review: "${task.title}"',
+            'task',
+          );
         }
       }
     } finally {
@@ -1272,13 +1306,13 @@ class AppState extends ChangeNotifier {
     if (idx != -1) {
       final task = _tasks[idx];
       final updates = <String, dynamic>{'isSubmitted': false};
-      
+
       if (task.uploadTaskId != null) {
         _db.collection('tasks').doc(task.uploadTaskId).delete();
         _tasks.removeWhere((t) => t.id == task.uploadTaskId);
         updates['uploadTaskId'] = FieldValue.delete();
       }
-      
+
       _db.collection('tasks').doc(taskId).update(updates);
     }
   }
@@ -1300,7 +1334,7 @@ class AppState extends ChangeNotifier {
     final idx = _tasks.indexWhere((t) => t.id == taskId);
     if (idx != -1) {
       final task = _tasks[idx];
-      
+
       final updates = <String, dynamic>{
         'isSubmitted': false,
         'rejectedAt': FieldValue.serverTimestamp(),
@@ -1683,6 +1717,7 @@ class AppState extends ChangeNotifier {
     String paymentMethod,
     DateTime paymentDate, {
     double? amountPaid,
+    double discountAmount = 0.0,
   }) async {
     final idx = _clients.indexWhere((c) => c.id == clientId);
     if (idx == -1) return;
@@ -1692,7 +1727,9 @@ class AppState extends ChangeNotifier {
     if (addOnIdx == -1) return;
 
     final addOn = c.addOns[addOnIdx];
-    final originalAmount = addOn.amount;
+    addOn.discount = discountAmount; // Save discount
+    
+    final originalAmount = addOn.amount - discountAmount;
     final payAmount = amountPaid ?? originalAmount;
 
     if (payAmount >= originalAmount) {
@@ -1704,7 +1741,8 @@ class AppState extends ChangeNotifier {
     addFinance(
       FinanceEntry(
         id: DateTime.now().millisecondsSinceEpoch.toString() + '-addon',
-        label: 'Payment received for Add-On: ${addOn.type} - ${c.name}${payAmount < originalAmount ? ' (Partial)' : ''}',
+        label:
+            'Payment received for Add-On: ${addOn.type} - ${c.name}${payAmount < originalAmount ? ' (Partial)' : ''}',
         amount: payAmount,
         isIncome: true,
         date: paymentDate,
@@ -1845,19 +1883,33 @@ class AppState extends ChangeNotifier {
       String serviceType = f.serviceType ?? 'Miscellaneous';
       String? meId = f.marketingExecutiveId;
       if (f.clientId != null) {
-        final c = _clients.firstWhere((cl) => cl.id == f.clientId, orElse: () => Client(id: '', name: '', contact: ClientContact(name: '', email: '', phone: ''), contractDate: DateTime.now()));
-        if (c.id.isNotEmpty) { serviceType = f.serviceType ?? c.serviceType; meId = c.marketingExecutiveId; }
+        final c = _clients.firstWhere(
+          (cl) => cl.id == f.clientId,
+          orElse: () => Client(
+            id: '',
+            name: '',
+            contact: ClientContact(name: '', email: '', phone: ''),
+            contractDate: DateTime.now(),
+          ),
+        );
+        if (c.id.isNotEmpty) {
+          serviceType = f.serviceType ?? c.serviceType;
+          meId = c.marketingExecutiveId;
+        }
       } else {
         Client? matchedClient;
         for (var cl in _clients) {
-          if (f.label.contains(cl.name)) { matchedClient = cl; break; }
+          if (f.label.contains(cl.name)) {
+            matchedClient = cl;
+            break;
+          }
         }
         if (matchedClient != null) {
           serviceType = f.serviceType ?? matchedClient.serviceType;
           meId = matchedClient.marketingExecutiveId;
         }
       }
-      
+
       if (serviceType == 'Video Production') continue;
 
       if (f.isIncome) {
@@ -1865,21 +1917,38 @@ class AppState extends ChangeNotifier {
         double amt = f.amount;
         double pAmt = amt;
         if (serviceType == 'Marketing' && meId != null && meId.isNotEmpty) {
-          double comm = amt * 0.20; marketingEx += comm; pAmt -= comm;
+          double comm = amt * 0.20;
+          marketingEx += comm;
+          pAmt -= comm;
         }
-        if (serviceType.toLowerCase().contains('commerce')) { ritam += pAmt * 0.80; priyajit += pAmt * 0.20; }
-        else { ritam += pAmt * 0.50; priyajit += pAmt * 0.50; }
+        if (serviceType.toLowerCase().contains('commerce')) {
+          ritam += pAmt * 0.80;
+          priyajit += pAmt * 0.20;
+        } else {
+          ritam += pAmt * 0.50;
+          priyajit += pAmt * 0.50;
+        }
       } else {
         if (f.category == 'Commission') continue;
         exp += f.amount;
         if (serviceType.toLowerCase().contains('commerce')) {
-          ritam -= f.amount * 0.80; priyajit -= f.amount * 0.20;
+          ritam -= f.amount * 0.80;
+          priyajit -= f.amount * 0.20;
         } else {
-          ritam -= f.amount * 0.50; priyajit -= f.amount * 0.50;
+          ritam -= f.amount * 0.50;
+          priyajit -= f.amount * 0.50;
         }
       }
     }
-    return PoolData(income: inc, expenses: exp, shares: {'ritam': ritam, 'priyajit': priyajit, 'marketingEx': marketingEx});
+    return PoolData(
+      income: inc,
+      expenses: exp,
+      shares: {
+        'ritam': ritam,
+        'priyajit': priyajit,
+        'marketingEx': marketingEx,
+      },
+    );
   }
 
   PoolData get videoPool {
@@ -1888,35 +1957,53 @@ class AppState extends ChangeNotifier {
     for (var f in _finances) {
       String serviceType = f.serviceType ?? 'Miscellaneous';
       if (f.clientId != null) {
-        final c = _clients.firstWhere((cl) => cl.id == f.clientId, orElse: () => Client(id: '', name: '', contact: ClientContact(name: '', email: '', phone: ''), contractDate: DateTime.now()));
-        if (c.id.isNotEmpty) { serviceType = f.serviceType ?? c.serviceType; }
+        final c = _clients.firstWhere(
+          (cl) => cl.id == f.clientId,
+          orElse: () => Client(
+            id: '',
+            name: '',
+            contact: ClientContact(name: '', email: '', phone: ''),
+            contractDate: DateTime.now(),
+          ),
+        );
+        if (c.id.isNotEmpty) {
+          serviceType = f.serviceType ?? c.serviceType;
+        }
       } else {
         Client? matchedClient;
         for (var cl in _clients) {
-          if (f.label.contains(cl.name)) { matchedClient = cl; break; }
+          if (f.label.contains(cl.name)) {
+            matchedClient = cl;
+            break;
+          }
         }
         if (matchedClient != null) {
           serviceType = f.serviceType ?? matchedClient.serviceType;
         }
       }
-      
+
       if (serviceType != 'Video Production') continue;
 
       if (f.isIncome) {
         inc += f.amount;
         double amt = f.amount;
-        ritam += amt * 0.20; priyajit += amt * 0.80;
+        ritam += amt * 0.20;
+        priyajit += amt * 0.80;
       } else {
         if (f.category == 'Commission') continue;
         exp += f.amount;
-        ritam -= f.amount * 0.20; priyajit -= f.amount * 0.80;
+        ritam -= f.amount * 0.20;
+        priyajit -= f.amount * 0.80;
       }
     }
-    return PoolData(income: inc, expenses: exp, shares: {'ritam': ritam, 'priyajit': priyajit});
+    return PoolData(
+      income: inc,
+      expenses: exp,
+      shares: {'ritam': ritam, 'priyajit': priyajit},
+    );
   }
 
   Map<String, double> get profitShares {
-
     double ritam = 0.0;
     double priyajit = 0.0;
     double marketingEx = 0.0;
@@ -2469,11 +2556,15 @@ class AppState extends ChangeNotifier {
         if (address != null) 'address': _employees[idx].address,
         if (phone != null) 'phone': _employees[idx].phone,
         if (email != null) 'email': _employees[idx].email,
-        if (preferredName != null) 'preferredName': _employees[idx].preferredName,
-        if (emergencyContact != null) 'emergencyContact': _employees[idx].emergencyContact,
-        if (professionalBio != null) 'professionalBio': _employees[idx].professionalBio,
+        if (preferredName != null)
+          'preferredName': _employees[idx].preferredName,
+        if (emergencyContact != null)
+          'emergencyContact': _employees[idx].emergencyContact,
+        if (professionalBio != null)
+          'professionalBio': _employees[idx].professionalBio,
         if (workLocation != null) 'workLocation': _employees[idx].workLocation,
-        if (workStylePreference != null) 'workStylePreference': _employees[idx].workStylePreference,
+        if (workStylePreference != null)
+          'workStylePreference': _employees[idx].workStylePreference,
         if (interests != null) 'interests': _employees[idx].interests,
         if (keySkills != null) 'keySkills': _employees[idx].keySkills,
         if (strengths != null) 'strengths': _employees[idx].strengths,

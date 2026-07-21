@@ -1,10 +1,10 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 void main() {
   final filesToEdit = [
     'lib/screens/employee_dashboard.dart',
     'lib/screens/marketing_executive_dashboard.dart',
-    'lib/screens/videographer_dashboard.dart'
+    'lib/screens/videographer_dashboard.dart',
   ];
 
   final uiInsert = '''
@@ -44,7 +44,7 @@ void main() {
   for (var filePath in filesToEdit) {
     final file = File(filePath);
     if (!file.existsSync()) continue;
-    
+
     var content = file.readAsStringSync();
 
     if (!content.contains('final prefNameCtrl =')) {
@@ -59,7 +59,7 @@ void main() {
     String selectedWorkLocation = emp.workLocation.isEmpty ? 'Office' : emp.workLocation;
     String selectedWorkStyle = emp.workStylePreference.isEmpty ? 'Independent thinker' : emp.workStylePreference;
     List<String> selectedSkills = List.from(emp.keySkills);
-    List<String> selectedStrengths = List.from(emp.strengths);'''
+    List<String> selectedStrengths = List.from(emp.strengths);''',
       );
     }
 
@@ -75,13 +75,15 @@ void main() {
                         professionalBio: bioCtrl.text,
                         workLocation: selectedWorkLocation,
                         workStylePreference: selectedWorkStyle,
-                        interests: interestsCtrl.text,'''
+                        interests: interestsCtrl.text,''',
     );
 
-    final profileFind = '''_profileRow("EMAIL", emp.email.isNotEmpty ? emp.email : '---'),
+    final profileFind =
+        '''_profileRow("EMAIL", emp.email.isNotEmpty ? emp.email : '---'),
                 const SizedBox(height: 24),''';
-    
-    final profileReplace = '''_profileRow("EMAIL", emp.email.isNotEmpty ? emp.email : '---'),
+
+    final profileReplace =
+        '''_profileRow("EMAIL", emp.email.isNotEmpty ? emp.email : '---'),
                 _profileRow("PREFERRED NAME", emp.preferredName.isNotEmpty ? emp.preferredName : '---'),
                 _profileRow("EMERGENCY", emp.emergencyContact.isNotEmpty ? emp.emergencyContact : '---'),
                 _profileRow("BIO", emp.professionalBio.isNotEmpty ? emp.professionalBio : '---'),

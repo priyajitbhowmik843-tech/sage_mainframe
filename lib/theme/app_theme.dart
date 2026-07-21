@@ -46,7 +46,11 @@ class SageColors {
   static const outlineVariant = Color(0xFF000000);
 
   // Neo-brutalist flat offset shadows
-  static List<BoxShadow> neonGlow(Color color, {double spread = 0, double blur = 0}) => [
+  static List<BoxShadow> neonGlow(
+    Color color, {
+    double spread = 0,
+    double blur = 0,
+  }) => [
     BoxShadow(
       color: Colors.black,
       blurRadius: 0,
@@ -137,7 +141,10 @@ class SageTheme {
         ),
         filled: true,
         fillColor: SageColors.surface,
-        hintStyle: const TextStyle(color: SageColors.onSurfaceVariant, fontSize: 13),
+        hintStyle: const TextStyle(
+          color: SageColors.onSurfaceVariant,
+          fontSize: 13,
+        ),
         labelStyle: const TextStyle(color: SageColors.onSurface, fontSize: 13),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -165,7 +172,10 @@ class SageTheme {
           textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
         ),
       ),
-      dividerTheme: const DividerThemeData(color: SageColors.outline, thickness: 1.5),
+      dividerTheme: const DividerThemeData(
+        color: SageColors.outline,
+        thickness: 1.5,
+      ),
       cardTheme: CardThemeData(
         color: SageColors.surface,
         shape: RoundedRectangleBorder(
@@ -198,7 +208,8 @@ class SageTheme {
       ),
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return SageColors.yellowAccent;
+          if (states.contains(WidgetState.selected))
+            return SageColors.yellowAccent;
           return Colors.transparent;
         }),
         checkColor: WidgetStateProperty.all(Colors.black),
@@ -219,4 +230,3 @@ class SageTheme {
     );
   }
 }
-

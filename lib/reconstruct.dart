@@ -3,11 +3,11 @@ import 'dart:io';
 void main() {
   final file = File('lib/screens/videographer_dashboard.dart');
   String content = file.readAsStringSync();
-  
+
   // 1. Delete lines 546 to 695
   final lines = content.split('\n');
   final newLines = <String>[];
-  
+
   for (int i = 0; i < lines.length; i++) {
     // lines are 0-indexed. Line 546 is index 545. Line 695 is index 694.
     if (i >= 545 && i <= 694) {
@@ -15,11 +15,12 @@ void main() {
     }
     newLines.add(lines[i]);
   }
-  
+
   content = newLines.join('\n');
-  
+
   // 2. Fix the end of _buildHomeTab
-  final brokenEnd = '''                          if (t.isCompleted && client != null)
+  final brokenEnd =
+      '''                          if (t.isCompleted && client != null)
                             Text('Rate: \\u20B9\${client?.sessionRate.toStringAsFixed(0) ?? 0}', style: TextStyle(fontSize: 11, color: SageColors.primary, fontWeight: FontWeight.bold)),              );
             },
           ),
@@ -27,8 +28,9 @@ void main() {
       ],
     );
   }''';
-  
-  final fixedEnd = '''                          if (t.isCompleted && client != null)
+
+  final fixedEnd =
+      '''                          if (t.isCompleted && client != null)
                             Text('Rate: \\u20B9\${client?.sessionRate.toStringAsFixed(0) ?? 0}', style: TextStyle(fontSize: 11, color: SageColors.primary, fontWeight: FontWeight.bold)),
                           Text(statusText, style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                         ],
@@ -85,13 +87,23 @@ void main() {
       ),
     );
   }''';
-  
+
   if (content.contains(brokenEnd)) {
     content = content.replaceFirst(brokenEnd, fixedEnd);
     print("Fixed _buildHomeTab!");
   } else {
     // Try relaxing newline characters
-    final regexBrokenEnd = RegExp(brokenEnd.replaceAll('\\', '\\\\').replaceAll('\$', '\\\$').replaceAll('(', '\\(').replaceAll(')', '\\)').replaceAll('[', '\\[').replaceAll(']', '\\]').replaceAll('?', '\\?').replaceAll('\n', '\\r?\\n'));
+    final regexBrokenEnd = RegExp(
+      brokenEnd
+          .replaceAll('\\', '\\\\')
+          .replaceAll('\$', '\\\$')
+          .replaceAll('(', '\\(')
+          .replaceAll(')', '\\)')
+          .replaceAll('[', '\\[')
+          .replaceAll(']', '\\]')
+          .replaceAll('?', '\\?')
+          .replaceAll('\n', '\\r?\\n'),
+    );
     if (regexBrokenEnd.hasMatch(content)) {
       content = content.replaceFirst(regexBrokenEnd, fixedEnd);
       print("Fixed _buildHomeTab with Regex!");
@@ -99,7 +111,7 @@ void main() {
       print("Could not find broken end of _buildHomeTab.");
     }
   }
-  
+
   file.writeAsStringSync(content);
   print("File updated.");
 }

@@ -5,9 +5,11 @@ void main() {
   var ceoContent = ceoFile.readAsStringSync();
 
   // Revert MyTasks filter in CEO
-  final badMyTasks = r"final myTasks = state.tasks.where((t) => t.assignedTo == state.activePersona.id && !t.isCompleted && !(t.taskType ?? '').toLowerCase().contains('upload')).toList();";
-  final correctMyTasks = r"final myTasks = state.tasks.where((t) => t.assignedTo == state.activePersona.id && !t.isCompleted).toList();";
-  
+  final badMyTasks =
+      r"final myTasks = state.tasks.where((t) => t.assignedTo == state.activePersona.id && !t.isCompleted && !(t.taskType ?? '').toLowerCase().contains('upload')).toList();";
+  final correctMyTasks =
+      r"final myTasks = state.tasks.where((t) => t.assignedTo == state.activePersona.id && !t.isCompleted).toList();";
+
   if (ceoContent.contains(badMyTasks)) {
     ceoContent = ceoContent.replaceAll(badMyTasks, correctMyTasks);
     ceoFile.writeAsStringSync(ceoContent);

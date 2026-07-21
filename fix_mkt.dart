@@ -1,13 +1,18 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 void main() {
   final file = File('lib/screens/marketing_executive_dashboard.dart');
   var content = file.readAsStringSync();
-  
-  final start = content.indexOf('  void _showEditPersonalDetailsDialog(BuildContext context, Employee emp) {');
-  final end = content.indexOf('  Widget _profileRow(String label, String val) {');
-  
-  final replacement = '''  void _showEditPersonalDetailsDialog(BuildContext context, Employee emp) {
+
+  final start = content.indexOf(
+    '  void _showEditPersonalDetailsDialog(BuildContext context, Employee emp) {',
+  );
+  final end = content.indexOf(
+    '  Widget _profileRow(String label, String val) {',
+  );
+
+  final replacement =
+      '''  void _showEditPersonalDetailsDialog(BuildContext context, Employee emp) {
     final nameCtrl = TextEditingController(text: emp.name);
     final addressCtrl = TextEditingController(text: emp.address);
     final phoneCtrl = TextEditingController(text: emp.phone);
@@ -169,7 +174,7 @@ void main() {
   }
 
 ''';
-  
+
   content = content.substring(0, start) + replacement + content.substring(end);
   file.writeAsStringSync(content);
 }

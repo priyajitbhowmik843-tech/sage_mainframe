@@ -33,7 +33,11 @@ class DeficitLineChart extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.grey.withOpacity(0.15), width: 1),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.06), offset: const Offset(0, 6), blurRadius: 16),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            offset: const Offset(0, 6),
+            blurRadius: 16,
+          ),
         ],
       ),
       child: AspectRatio(
@@ -77,7 +81,8 @@ class _DeficitLineChartPainter extends CustomPainter {
 
     final points = <Offset>[];
     for (int i = 0; i < values.length; i++) {
-      final xCenter = (size.width / values.length) * i + (size.width / (values.length * 2));
+      final xCenter =
+          (size.width / values.length) * i + (size.width / (values.length * 2));
       final double normalized = values[i] / maxValue;
       final double pointY = yBottom - (normalized * maxChartHeight);
       points.add(Offset(xCenter, pointY));
@@ -85,18 +90,35 @@ class _DeficitLineChartPainter extends CustomPainter {
       // Draw Label below point (Month)
       textPainter.text = TextSpan(
         text: labels[i],
-        style: const TextStyle(color: Colors.black54, fontSize: 11, fontWeight: FontWeight.w600),
+        style: const TextStyle(
+          color: Colors.black54,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       );
       textPainter.layout();
-      textPainter.paint(canvas, Offset(xCenter - textPainter.width / 2, yBottom + 8));
+      textPainter.paint(
+        canvas,
+        Offset(xCenter - textPainter.width / 2, yBottom + 8),
+      );
 
       // Draw Value above point
       textPainter.text = TextSpan(
         text: '-' + formatter(values[i]),
-        style: TextStyle(color: lineColor, fontSize: 11, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: lineColor,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
       );
       textPainter.layout();
-      textPainter.paint(canvas, Offset(xCenter - textPainter.width / 2, pointY - textPainter.height - 8));
+      textPainter.paint(
+        canvas,
+        Offset(
+          xCenter - textPainter.width / 2,
+          pointY - textPainter.height - 8,
+        ),
+      );
     }
 
     // Draw Line
@@ -110,7 +132,7 @@ class _DeficitLineChartPainter extends CustomPainter {
 
       final path = Path();
       path.moveTo(points[0].dx, points[0].dy);
-      
+
       // Use cubic bezier for a smoother curve
       for (int i = 0; i < points.length - 1; i++) {
         final p0 = points[i];
@@ -118,9 +140,12 @@ class _DeficitLineChartPainter extends CustomPainter {
         final controlPoint1 = Offset(p0.dx + (p1.dx - p0.dx) / 2, p0.dy);
         final controlPoint2 = Offset(p0.dx + (p1.dx - p0.dx) / 2, p1.dy);
         path.cubicTo(
-          controlPoint1.dx, controlPoint1.dy,
-          controlPoint2.dx, controlPoint2.dy,
-          p1.dx, p1.dy,
+          controlPoint1.dx,
+          controlPoint1.dy,
+          controlPoint2.dx,
+          controlPoint2.dy,
+          p1.dx,
+          p1.dy,
         );
       }
       canvas.drawPath(path, linePaint);
@@ -143,6 +168,6 @@ class _DeficitLineChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DeficitLineChartPainter oldDelegate) {
-    return true; 
+    return true;
   }
 }

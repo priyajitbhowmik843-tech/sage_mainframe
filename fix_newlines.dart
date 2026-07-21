@@ -6,7 +6,7 @@ void fixVideoDashboard(String filename) {
   var content = file.readAsStringSync();
 
   content = content.replaceAll(r"\n", "\n");
-  
+
   file.writeAsStringSync(content);
 }
 

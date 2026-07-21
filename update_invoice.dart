@@ -95,7 +95,8 @@ void main() {
   content = content.replaceAll(oldTopSection, newTopSection);
 
   // 2. Move Signature
-  String oldSignature = """                                pw.SizedBox(height: 25),
+  String oldSignature =
+      """                                pw.SizedBox(height: 25),
                                 pw.Center(
                                   child: pw.Column(
                                     children: [
@@ -177,7 +178,8 @@ void main() {
   content = content.replaceAll(termsEnd, newSignature);
 
   // 3. Update _buildDynamicChecklist and Add _buildAddOnsList
-  String oldChecklistFunc = """  static List<pw.Widget> _buildDynamicChecklist(Client client, DateTime month, List<ClientAddOn> selectedAddOns) {
+  String oldChecklistFunc =
+      """  static List<pw.Widget> _buildDynamicChecklist(Client client, DateTime month, List<ClientAddOn> selectedAddOns) {
     List<String> items = [];
 
     items.add("Social Media Strategy (\${client.packageType} Package)");
@@ -263,7 +265,8 @@ void main() {
         .toList();
   }""";
 
-  String newChecklists = """  static List<pw.Widget> _buildDynamicChecklist(Client client, DateTime month) {
+  String newChecklists =
+      """  static List<pw.Widget> _buildDynamicChecklist(Client client, DateTime month) {
     List<String> items = [];
 
     items.add("Social Media Strategy (\${client.packageType} Package)");

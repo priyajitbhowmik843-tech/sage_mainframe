@@ -1,7 +1,10 @@
 import 'dart:io';
 
 void main() {
-  final files = ['lib/screens/ceo_dashboard.dart', 'lib/screens/cofounder_dashboard.dart'];
+  final files = [
+    'lib/screens/ceo_dashboard.dart',
+    'lib/screens/cofounder_dashboard.dart',
+  ];
 
   String skuTrackerCode = r'''
                       if (c.serviceType.toLowerCase().contains('commerce') && c.ecomPaymentType == 'Per SKU') ...[
@@ -69,10 +72,12 @@ void main() {
   for (final path in files) {
     final file = File(path);
     var content = file.readAsStringSync();
-    
+
     // Find the exact line using regex: spaces + const Divider(color: Colors.black26), + spaces + if (c.postRequirements.isNotEmpty
-    RegExp regExp = RegExp(r"([ \t]+const Divider\(color: Colors\.black26\),[\r\n \t]+if \(c\.postRequirements\.isNotEmpty)");
-    
+    RegExp regExp = RegExp(
+      r"([ \t]+const Divider\(color: Colors\.black26\),[\r\n \t]+if \(c\.postRequirements\.isNotEmpty)",
+    );
+
     if (!content.contains('2026 SKU Tracker')) {
       final match = regExp.firstMatch(content);
       if (match != null) {

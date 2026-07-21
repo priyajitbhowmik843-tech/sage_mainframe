@@ -14,7 +14,7 @@ void main() async {
   for (var doc in snapshot.docs) {
     final data = doc.data();
     final name = (data['name'] as String?)?.toLowerCase() ?? '';
-    
+
     if (name.contains('debjit')) {
       print("Found Debjit: ${doc.id}");
       await doc.reference.update({
@@ -25,7 +25,7 @@ void main() async {
       });
       print("Updated Debjit.");
     }
-    
+
     if (name.contains('soumyabrata')) {
       print("Found Soumyabrata: ${doc.id}");
       await doc.reference.update({

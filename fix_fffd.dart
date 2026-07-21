@@ -5,15 +5,24 @@ void main() {
   void fixFile(String path) {
     final file = File(path);
     if (!file.existsSync()) return;
-    
+
     String content = file.readAsStringSync();
     bool changed = false;
 
     // Use \uFFFD for the replacement character
     if (content.contains('\uFFFD,1\${')) {
-      content = content.replaceAll('"\uFFFD,1\${assignedLeads.length})"', '(\${assignedLeads.length})');
-      content = content.replaceAll('"\uFFFD,1\${c.contact.phone})"', '(\${c.contact.phone})');
-      content = content.replaceAll('\uFFFD,1\${emp.pendingPayAmount', '₹\${emp.pendingPayAmount');
+      content = content.replaceAll(
+        '"\uFFFD,1\${assignedLeads.length})"',
+        '(\${assignedLeads.length})',
+      );
+      content = content.replaceAll(
+        '"\uFFFD,1\${c.contact.phone})"',
+        '(\${c.contact.phone})',
+      );
+      content = content.replaceAll(
+        '\uFFFD,1\${emp.pendingPayAmount',
+        '₹\${emp.pendingPayAmount',
+      );
       content = content.replaceAll('\uFFFD,1\${', '₹\${');
       changed = true;
     }

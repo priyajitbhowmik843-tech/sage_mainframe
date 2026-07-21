@@ -1,22 +1,25 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 void replaceInFile(String path, String startStr, String endStr) {
   final file = File(path);
   var content = file.readAsStringSync();
-  
+
   if (content.contains('bool _showMainPoolShares = false;')) {
     print(path + ' already updated');
     return;
   }
-  
-  content = content.replaceFirst('bool _showDetailedShares = false;', 'bool _showMainPoolShares = false;\n  bool _showVideoPoolShares = false;');
-  
+
+  content = content.replaceFirst(
+    'bool _showDetailedShares = false;',
+    'bool _showMainPoolShares = false;\n  bool _showVideoPoolShares = false;',
+  );
+
   final startIndex = content.indexOf(startStr);
   final endIndex = content.indexOf(endStr);
-  
+
   if (startIndex != -1 && endIndex != -1) {
     final toReplace = content.substring(startIndex, endIndex);
-    
+
     final newUi = '''
         // --- Main Pool Balance ---
         GestureDetector(
@@ -195,7 +198,7 @@ void replaceInFile(String path, String startStr, String endStr) {
         ),
         const SizedBox(height: 14),
 ''';
-    
+
     content = content.replaceFirst(toReplace, newUi);
     file.writeAsStringSync(content);
     print(path + ' updated');
@@ -205,6 +208,14 @@ void replaceInFile(String path, String startStr, String endStr) {
 }
 
 void main() {
-  replaceInFile('lib/screens/ceo_dashboard.dart', '// Main balance box - tappable accordion', '// Income / Expenses Stat Grid');
-  replaceInFile('lib/screens/cofounder_dashboard.dart', '// Main balance box - tappable accordion', '// Income / Expenses Stat Grid');
+  replaceInFile(
+    'lib/screens/ceo_dashboard.dart',
+    '// Main balance box - tappable accordion',
+    '// Income / Expenses Stat Grid',
+  );
+  replaceInFile(
+    'lib/screens/cofounder_dashboard.dart',
+    '// Main balance box - tappable accordion',
+    '// Income / Expenses Stat Grid',
+  );
 }

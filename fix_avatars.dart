@@ -25,13 +25,16 @@ void main() {
   }
 
   Widget _buildPersonnelTab() {''';
-      content = content.replaceAll('  Widget _buildPersonnelTab() {', roleColorFunc);
+      content = content.replaceAll(
+        '  Widget _buildPersonnelTab() {',
+        roleColorFunc,
+      );
     }
 
     // 2. Replace persona color logic
     content = content.replaceAll(
       'final color = pastelColors[i % pastelColors.length];',
-      'final color = _getRoleColor(p.roleLabel);'
+      'final color = _getRoleColor(p.roleLabel);',
     );
     // Replace employee color logic (it uses the same variable name, but for employees we need to use employee.role)
     // Wait, in the map it says `final color = pastelColors[i % pastelColors.length];` for employees too.
@@ -46,7 +49,7 @@ void main() {
         ...state.employees.asMap().entries.map((entry) {
           final i = entry.key + AppState.personas.length;
           final employee = entry.value;
-          final color = _getRoleColor(employee.role);'''
+          final color = _getRoleColor(employee.role);''',
     );
 
     // 3. Replace Persona ExpansionTile leading
@@ -96,7 +99,7 @@ void main() {
     // 4. Replace Employee ExpansionTile leading and fix corrupted subtitle
     // I need to use RegExp because the corrupted text might vary slightly.
     final employeePattern = RegExp(
-      r'leading:\s*Container\([\s\S]*?ClipOval\([\s\S]*?Image\.asset\(availableAvatars\[employee\.avatar\s*%\s*availableAvatars\.length\],\s*fit:\s*BoxFit\.cover,\s*width:\s*88,\s*height:\s*88\)\),\s*\),\s*title:\s*Text\(employee\.name[^)]*\)\),\s*subtitle:\s*Text\("[^"]*\$\{employee\.role\}\s*//\s*\$\{employee\.department\}"[^)]*\)\),'
+      r'leading:\s*Container\([\s\S]*?ClipOval\([\s\S]*?Image\.asset\(availableAvatars\[employee\.avatar\s*%\s*availableAvatars\.length\],\s*fit:\s*BoxFit\.cover,\s*width:\s*88,\s*height:\s*88\)\),\s*\),\s*title:\s*Text\(employee\.name[^)]*\)\),\s*subtitle:\s*Text\("[^"]*\$\{employee\.role\}\s*//\s*\$\{employee\.department\}"[^)]*\)\),',
     );
     final newEmployeeTitle = '''
               title: Row(
@@ -131,9 +134,18 @@ void main() {
     // "dY"z ${employee.phone" -> "📞 ${employee.phone"
     // "o%,? ${employee.email" -> "✉️ ${employee.email"
     // "dY? ${employee.address" -> "📍 ${employee.address"
-    content = content.replaceAll(RegExp(r'"[^"]*\$\{employee\.phone\.isNotEmpty'), '"📞 \${employee.phone.isNotEmpty');
-    content = content.replaceAll(RegExp(r'"[^"]*\$\{employee\.email\.isNotEmpty'), '"✉️ \${employee.email.isNotEmpty');
-    content = content.replaceAll(RegExp(r'"[^"]*\$\{employee\.address\.isNotEmpty'), '"📍 \${employee.address.isNotEmpty');
+    content = content.replaceAll(
+      RegExp(r'"[^"]*\$\{employee\.phone\.isNotEmpty'),
+      '"📞 \${employee.phone.isNotEmpty',
+    );
+    content = content.replaceAll(
+      RegExp(r'"[^"]*\$\{employee\.email\.isNotEmpty'),
+      '"✉️ \${employee.email.isNotEmpty',
+    );
+    content = content.replaceAll(
+      RegExp(r'"[^"]*\$\{employee\.address\.isNotEmpty'),
+      '"📍 \${employee.address.isNotEmpty',
+    );
 
     file.writeAsStringSync(content);
     print('Updated \$path');

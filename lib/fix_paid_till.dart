@@ -3,10 +3,12 @@ import 'dart:io';
 void main() {
   final file = File('lib/screens/employee_dashboard.dart');
   String content = file.readAsStringSync();
-  
-  final oldLogic = 'String paidTillStr = "\${months[emp.lastPaidDate.month - 1]} \${emp.lastPaidDate.year}";';
-  final newLogic = "String paidTillStr = emp.paidMonths.isEmpty ? 'None' : const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].lastWhere((m) => emp.paidMonths.contains(m), orElse: () => emp.paidMonths.last);";
-  
+
+  final oldLogic =
+      'String paidTillStr = "\${months[emp.lastPaidDate.month - 1]} \${emp.lastPaidDate.year}";';
+  final newLogic =
+      "String paidTillStr = emp.paidMonths.isEmpty ? 'None' : const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].lastWhere((m) => emp.paidMonths.contains(m), orElse: () => emp.paidMonths.last);";
+
   if (content.contains(oldLogic)) {
     content = content.replaceFirst(oldLogic, newLogic);
     file.writeAsStringSync(content);
@@ -17,14 +19,19 @@ void main() {
 
   final videoFile = File('lib/screens/videographer_dashboard.dart');
   String videoContent = videoFile.readAsStringSync();
-  
-  if (videoContent.contains('final displaySessions = emp.paymentCleared ? (emp.pendingPayMonth ?? "\$unpaidSessionsCount") : "\\\$unpaidSessionsCount";')) {
+
+  if (videoContent.contains(
+    'final displaySessions = emp.paymentCleared ? (emp.pendingPayMonth ?? "\$unpaidSessionsCount") : "\\\$unpaidSessionsCount";',
+  )) {
     final videoInsert = '''
       final displaySessions = emp.paymentCleared ? (emp.pendingPayMonth ?? "\$unpaidSessionsCount") : "\$unpaidSessionsCount";
       final paidTillStr = emp.paidMonths.isEmpty ? 'None' : const ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].lastWhere((m) => emp.paidMonths.contains(m), orElse: () => emp.paidMonths.last);
 ''';
-    videoContent = videoContent.replaceFirst('final displaySessions = emp.paymentCleared ? (emp.pendingPayMonth ?? "\$unpaidSessionsCount") : "\\\$unpaidSessionsCount";', videoInsert);
-    
+    videoContent = videoContent.replaceFirst(
+      'final displaySessions = emp.paymentCleared ? (emp.pendingPayMonth ?? "\$unpaidSessionsCount") : "\\\$unpaidSessionsCount";',
+      videoInsert,
+    );
+
     final financeDataInsert = '''
             title: "FINANCE DATA",
             child: Column(

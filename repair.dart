@@ -33,7 +33,7 @@ void main() {
   // Make it whitespace insensitive if possible, or just replace exact substrings
   // Let's replace line by line or using Regex if needed.
   // Actually, we can just replace everything between `_navIcon(0` and `child: Container(`
-  
+
   t = t.replaceAll(broken, fixed);
   File(p).writeAsStringSync(t);
   print('Repaired videographer!');

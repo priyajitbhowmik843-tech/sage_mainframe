@@ -6,7 +6,9 @@ import 'lib/firebase_options.dart';
 void main() async {
   try {
     print("Initializing Firebase...");
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     print("Firebase Initialized!");
 
     // Find Soumyabrata
@@ -26,8 +28,11 @@ void main() async {
     }
 
     // Find all 'Session' tasks assigned to him
-    final tasks = await FirebaseFirestore.instance.collection('tasks').where('assignedTo', isEqualTo: soumyaId).get();
-    
+    final tasks = await FirebaseFirestore.instance
+        .collection('tasks')
+        .where('assignedTo', isEqualTo: soumyaId)
+        .get();
+
     int deletedCount = 0;
     for (var doc in tasks.docs) {
       if (doc.data()['taskType'] == 'Session') {

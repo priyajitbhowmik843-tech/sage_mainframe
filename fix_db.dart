@@ -7,7 +7,7 @@ void main() async {
   print("Initializing Firebase...");
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final db = FirebaseFirestore.instance;
-  
+
   print("Fixing notifications...");
   final notifs = await db.collection('notifications').get();
   int count = 0;
@@ -15,7 +15,7 @@ void main() async {
     String message = doc.data()['message'] ?? '';
     if (message.contains('â‚¹')) {
       await db.collection('notifications').doc(doc.id).update({
-        'message': message.replaceAll('â‚¹', '\u20B9')
+        'message': message.replaceAll('â‚¹', '\u20B9'),
       });
       count++;
     }
@@ -29,7 +29,7 @@ void main() async {
     String message = doc.data()['message'] ?? '';
     if (message.contains('â‚¹')) {
       await db.collection('archived_notifications').doc(doc.id).update({
-        'message': message.replaceAll('â‚¹', '\u20B9')
+        'message': message.replaceAll('â‚¹', '\u20B9'),
       });
       archCount++;
     }
@@ -43,7 +43,7 @@ void main() async {
     String label = doc.data()['label'] ?? '';
     if (label.contains('â‚¹')) {
       await db.collection('finances').doc(doc.id).update({
-        'label': label.replaceAll('â‚¹', '\u20B9')
+        'label': label.replaceAll('â‚¹', '\u20B9'),
       });
       finCount++;
     }
@@ -57,13 +57,13 @@ void main() async {
     String label = doc.data()['label'] ?? '';
     if (label.contains('â‚¹')) {
       await db.collection('archived_finances').doc(doc.id).update({
-        'label': label.replaceAll('â‚¹', '\u20B9')
+        'label': label.replaceAll('â‚¹', '\u20B9'),
       });
       archFinCount++;
     }
   }
   print("Fixed \$archFinCount archived finances.");
-  
+
   print("Done! Exiting.");
   exit(0);
 }

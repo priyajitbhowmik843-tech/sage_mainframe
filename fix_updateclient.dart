@@ -5,13 +5,15 @@ void fixMissingUpdateClientArgs(String filename) {
   if (!file.existsSync()) return;
   var content = file.readAsStringSync();
 
-  var brokenCall = '''                        weeklyStories: int.tryParse(storiesCtrl.text),
+  var brokenCall =
+      '''                        weeklyStories: int.tryParse(storiesCtrl.text),
                         campaigns: int.tryParse(campaignsCtrl.text),
                         campaignReach: campaignReachCtrl.text,
                         postRequirements: guidelinesCtrl.text,
                       );''';
-                      
-  var fixedCall = '''                        weeklyStories: int.tryParse(storiesCtrl.text),
+
+  var fixedCall =
+      '''                        weeklyStories: int.tryParse(storiesCtrl.text),
                         campaigns: int.tryParse(campaignsCtrl.text),
                         campaignReach: campaignReachCtrl.text,
                         assignedVideographerId: assignedVideographerId,

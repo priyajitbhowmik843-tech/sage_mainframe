@@ -1,7 +1,9 @@
 import 'dart:io';
 
 void main() {
-  String content = File('lib/screens/cofounder_dashboard.dart').readAsStringSync();
+  String content = File(
+    'lib/screens/cofounder_dashboard.dart',
+  ).readAsStringSync();
   int braceCount = 0;
   List<String> lines = content.split('\n');
   for (int i = 0; i < lines.length; i++) {
@@ -11,7 +13,9 @@ void main() {
       if (line[j] == '{') braceCount++;
       if (line[j] == '}') braceCount--;
     }
-    if (line.contains('_buildTaskPendingSubTab') || line.contains('_buildTaskReviewSubTab') || line.contains('List<Map<String, String>> _getAssigneesForRole')) {
+    if (line.contains('_buildTaskPendingSubTab') ||
+        line.contains('_buildTaskReviewSubTab') ||
+        line.contains('List<Map<String, String>> _getAssigneesForRole')) {
       print(i.toString() + ': ' + braceCount.toString() + ' - ' + line);
     }
   }

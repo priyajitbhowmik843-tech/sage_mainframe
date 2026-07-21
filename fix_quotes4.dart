@@ -6,17 +6,17 @@ void main() {
     if (!file.existsSync()) return;
 
     final content = file.readAsStringSync();
-    
+
     // Pattern to find ` "₹\${...}`
     // It captures:
     // 1: the space before the quote (or any char really, let's just match the quote and ₹)
     // Actually let's just match `"₹\$\{` and the content inside the braces, and the character after the closing brace.
     final regex = RegExp(r'"₹\$\{([^}]+)\}(.)');
-    
+
     final newContent = content.replaceAllMapped(regex, (match) {
       final inside = match.group(1)!;
       final after = match.group(2)!;
-      
+
       if (after == ')') {
         // It was meant to be a parenthesis block `(\${...})`
         // But wait, what if it was `"LEADS "₹\${...})"` ?

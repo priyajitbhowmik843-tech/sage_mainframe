@@ -12,10 +12,12 @@ class MarketingExecutiveDashboard extends StatefulWidget {
   const MarketingExecutiveDashboard({super.key});
 
   @override
-  State<MarketingExecutiveDashboard> createState() => _MarketingExecutiveDashboardState();
+  State<MarketingExecutiveDashboard> createState() =>
+      _MarketingExecutiveDashboardState();
 }
 
-class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboard> {
+class _MarketingExecutiveDashboardState
+    extends State<MarketingExecutiveDashboard> {
   int _tab = 0;
   late PageController _pageController; // 0: Home, 1: Finance, 2: Profile
   int _tabKeyCounter = 0;
@@ -45,13 +47,16 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
     final persona = state.activePersona;
 
     // Find matching employee details
-    final emp = state.employees.firstWhere((e) => e.id == persona.id, orElse: () => Employee(
-      id: persona.id,
-      name: persona.name,
-      role: 'Marketing Executive',
-      department: 'Marketing',
-      password: persona.password,
-    ));
+    final emp = state.employees.firstWhere(
+      (e) => e.id == persona.id,
+      orElse: () => Employee(
+        id: persona.id,
+        name: persona.name,
+        role: 'Marketing Executive',
+        department: 'Marketing',
+        password: persona.password,
+      ),
+    );
 
     return PopScope(
       canPop: false,
@@ -62,83 +67,96 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
         }
       },
       child: Scaffold(
-      backgroundColor: SageColors.background,
-      body: Stack(
-        children: [
-          // Header Background color block
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 180,
-              decoration: BoxDecoration(
-                color: _getHeaderColor(),
-                border: const Border(bottom: BorderSide(color: Colors.black, width: 1.5)),
-              ),
-            ),
-          ),
-
-          SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                // Top Custom Header Row
-                _buildTopHeader(context, persona, emp),
-
-                // Active Page Content
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 100),
-                    child: _buildActiveTab(context, state, emp),
+        backgroundColor: SageColors.background,
+        body: Stack(
+          children: [
+            // Header Background color block
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 180,
+                decoration: BoxDecoration(
+                  color: _getHeaderColor(),
+                  border: const Border(
+                    bottom: BorderSide(color: Colors.black, width: 1.5),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
 
-          // Floating Bottom Navigation Bar
-          Positioned(
-            bottom: 20,
-            left: 16,
-            right: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-              decoration: BoxDecoration(
-                color: SageColors.yellowAccent,
-                borderRadius: BorderRadius.circular(40),
-                border: Border.all(color: Colors.black, width: 1.5),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black,
-                    offset: Offset(4, 4),
-                    blurRadius: 0,
+            SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  // Top Custom Header Row
+                  _buildTopHeader(context, persona, emp),
+
+                  // Active Page Content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 100),
+                      child: _buildActiveTab(context, state, emp),
+                    ),
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildBottomIcon(0, Icons.home_outlined, Icons.home),
-                  _buildBottomIcon(1, Icons.payments_outlined, Icons.payments),
-                  _buildBottomIcon(2, Icons.person_outline, Icons.person),
+            ),
+
+            // Floating Bottom Navigation Bar
+            Positioned(
+              bottom: 20,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: SageColors.yellowAccent,
+                  borderRadius: BorderRadius.circular(40),
+                  border: Border.all(color: Colors.black, width: 1.5),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black,
+                      offset: Offset(4, 4),
+                      blurRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildBottomIcon(0, Icons.home_outlined, Icons.home),
+                    _buildBottomIcon(
+                      1,
+                      Icons.payments_outlined,
+                      Icons.payments,
+                    ),
+                    _buildBottomIcon(2, Icons.person_outline, Icons.person),
                     _buildBottomIcon(3, Icons.group_outlined, Icons.group),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 
   Color _getHeaderColor() {
     switch (_tab) {
-      case 0: return SageColors.yellowAccentContainer;
-      case 1: return SageColors.primaryContainer;
-      case 2: return SageColors.secondaryContainer;
-      default: return SageColors.background;
+      case 0:
+        return SageColors.yellowAccentContainer;
+      case 1:
+        return SageColors.primaryContainer;
+      case 2:
+        return SageColors.secondaryContainer;
+      default:
+        return SageColors.background;
     }
   }
 
@@ -168,7 +186,11 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.black, width: 1.5),
               ),
-              child: const Icon(Icons.arrow_back, color: Colors.black, size: 18),
+              child: const Icon(
+                Icons.arrow_back,
+                color: Colors.black,
+                size: 18,
+              ),
             ),
           ),
 
@@ -205,17 +227,18 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
     );
   }
 
-  Widget _buildBottomIcon(int index, IconData outlineIcon, IconData filledIcon) {
+  Widget _buildBottomIcon(
+    int index,
+    IconData outlineIcon,
+    IconData filledIcon,
+  ) {
     final isSelected = _tab == index;
     return GestureDetector(
       onTap: () => _switchTab(index),
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: isSelected
-            ? const BoxDecoration(
-                color: Colors.black,
-                shape: BoxShape.circle,
-              )
+            ? const BoxDecoration(color: Colors.black, shape: BoxShape.circle)
             : null,
         child: Icon(
           isSelected ? filledIcon : outlineIcon,
@@ -225,7 +248,6 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
       ),
     );
   }
-
 
   void _switchTab(int index) {
     if (_tab == index) return;
@@ -239,11 +261,16 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
 
   Widget _buildActiveTab(BuildContext context, AppState state, Employee emp) {
     switch (_tab) {
-      case 0: return _buildHomeTab(context, state, emp);
-      case 1: return _buildFinanceTab(context, state, emp);
-      case 2: return _buildProfileTab(context, state, emp);
-      case 3: return TeamMembersView();
-      default: return const SizedBox();
+      case 0:
+        return _buildHomeTab(context, state, emp);
+      case 1:
+        return _buildFinanceTab(context, state, emp);
+      case 2:
+        return _buildProfileTab(context, state, emp);
+      case 3:
+        return TeamMembersView();
+      default:
+        return const SizedBox();
     }
   }
 
@@ -262,12 +289,19 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
         children: [
           Row(
             children: [
-              Icon(isPhysical ? Icons.location_on : Icons.videocam, size: 20, color: Colors.black),
+              Icon(
+                isPhysical ? Icons.location_on : Icons.videocam,
+                size: 20,
+                color: Colors.black,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   task.title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ],
@@ -286,7 +320,10 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                     state.submitTask(task.id);
                   },
                   icon: const Icon(Icons.check, size: 16),
-                  label: const Text("MARK COMPLETE", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                  label: const Text(
+                    "MARK COMPLETE",
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
@@ -301,7 +338,10 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                     _showPostponeDialog(context, state, task.id);
                   },
                   icon: const Icon(Icons.calendar_today, size: 16),
-                  label: const Text("POSTPONE", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                  label: const Text(
+                    "POSTPONE",
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
                     foregroundColor: Colors.white,
@@ -316,7 +356,11 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
     );
   }
 
-  void _showPostponeDialog(BuildContext context, AppState state, String taskId) async {
+  void _showPostponeDialog(
+    BuildContext context,
+    AppState state,
+    String taskId,
+  ) async {
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now().add(const Duration(days: 1)),
@@ -325,27 +369,49 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
     );
     if (pickedDate != null && context.mounted) {
       state.requestPostponeTask(taskId, pickedDate);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Postpone request sent to CEO for approval."),
-        backgroundColor: Colors.green,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Postpone request sent to CEO for approval."),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 
   // ---- TAB 0: HOME ----
   Widget _buildHomeTab(BuildContext context, AppState state, Employee emp) {
-    final activeConverted = state.clients.where((c) => c.marketingExecutiveId == emp.id && c.status == 'Active').toList();
-    final myLeads = state.clients.where((c) => c.marketingExecutiveId == emp.id && c.status == 'Lead' && c.source == 'my_lead').toList();
-    final assignedLeads = state.clients.where((c) => c.marketingExecutiveId == emp.id && c.status == 'Lead' && c.source != 'my_lead').toList();
+    final activeConverted = state.clients
+        .where((c) => c.marketingExecutiveId == emp.id && c.status == 'Active')
+        .toList();
+    final myLeads = state.clients
+        .where(
+          (c) =>
+              c.marketingExecutiveId == emp.id &&
+              c.status == 'Lead' &&
+              c.source == 'my_lead',
+        )
+        .toList();
+    final assignedLeads = state.clients
+        .where(
+          (c) =>
+              c.marketingExecutiveId == emp.id &&
+              c.status == 'Lead' &&
+              c.source != 'my_lead',
+        )
+        .toList();
 
     // Query pending scheduled meetings
-    final scheduledMeetings = state.tasks.where((t) => 
-      t.assignedTo == emp.id && 
-      !t.isCompleted &&
-      !t.isSubmitted &&
-      !t.isPostponeRequested &&
-      (t.taskType == 'Lead Meeting' || t.taskType == 'Active Client Meeting')
-    ).toList();
+    final scheduledMeetings = state.tasks
+        .where(
+          (t) =>
+              t.assignedTo == emp.id &&
+              !t.isCompleted &&
+              !t.isSubmitted &&
+              !t.isPostponeRequested &&
+              (t.taskType == 'Lead Meeting' ||
+                  t.taskType == 'Active Client Meeting'),
+        )
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -368,12 +434,19 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                   children: [
                     Text(
                       "WELCOME BACK, ${emp.name}!",
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Colors.black,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     const Text(
                       "Keep pushing your daily targets.",
-                      style: TextStyle(fontSize: 10, color: SageColors.onSurfaceVariant),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: SageColors.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -384,22 +457,51 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
         const SizedBox(height: 20),
 
         if (scheduledMeetings.isNotEmpty) ...[
-          const Text("SCHEDULED MEETINGS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: SageColors.onSurfaceVariant)),
+          const Text(
+            "SCHEDULED MEETINGS",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+              color: SageColors.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: 10),
           ...scheduledMeetings.map((t) => _buildMeetingCard(context, state, t)),
           const SizedBox(height: 20),
         ],
 
-        const Text("ACTIVE CONVERTED CLIENTS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: SageColors.onSurfaceVariant)),
+        const Text(
+          "ACTIVE CONVERTED CLIENTS",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 11,
+            color: SageColors.onSurfaceVariant,
+          ),
+        ),
         const SizedBox(height: 10),
         if (activeConverted.isEmpty)
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.black, width: 1.5), borderRadius: BorderRadius.circular(16)),
-            child: const Center(child: Text("NO CONVERTED CLIENTS YET", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12))),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.black, width: 1.5),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Center(
+              child: Text(
+                "NO CONVERTED CLIENTS YET",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
           )
         else
-          ...activeConverted.map((c) => _buildClientCard(context, state, c, true)),
+          ...activeConverted.map(
+            (c) => _buildClientCard(context, state, c, true),
+          ),
 
         const SizedBox(height: 20),
 
@@ -409,9 +511,14 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
             GestureDetector(
               onTap: () => setState(() => _leadSubTab = 'MY_LEADS'),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
-                  color: _leadSubTab == 'MY_LEADS' ? Colors.black : Colors.white,
+                  color: _leadSubTab == 'MY_LEADS'
+                      ? Colors.black
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.black, width: 1.5),
                 ),
@@ -420,7 +527,9 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: _leadSubTab == 'MY_LEADS' ? Colors.white : Colors.black,
+                    color: _leadSubTab == 'MY_LEADS'
+                        ? Colors.white
+                        : Colors.black,
                   ),
                 ),
               ),
@@ -429,9 +538,14 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
             GestureDetector(
               onTap: () => setState(() => _leadSubTab = 'ASSIGNED'),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
-                  color: _leadSubTab == 'ASSIGNED' ? Colors.black : Colors.white,
+                  color: _leadSubTab == 'ASSIGNED'
+                      ? Colors.black
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.black, width: 1.5),
                 ),
@@ -440,7 +554,9 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: _leadSubTab == 'ASSIGNED' ? Colors.white : Colors.black,
+                    color: _leadSubTab == 'ASSIGNED'
+                        ? Colors.white
+                        : Colors.black,
                   ),
                 ),
               ),
@@ -452,12 +568,30 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(_leadSubTab == 'MY_LEADS' ? "MY LEADS DATABASE" : "ASSIGNED LEADS BY CEO/CFO", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: SageColors.onSurfaceVariant)),
+            Text(
+              _leadSubTab == 'MY_LEADS'
+                  ? "MY LEADS DATABASE"
+                  : "ASSIGNED LEADS BY CEO/CFO",
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+                color: SageColors.onSurfaceVariant,
+              ),
+            ),
             if (_leadSubTab == 'MY_LEADS')
               ElevatedButton(
-                onPressed: () => setState(() => _showAddLeadForm = !_showAddLeadForm),
-                style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
-                child: Text(_showAddLeadForm ? "CANCEL" : "+ ADD LEAD", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10)),
+                onPressed: () =>
+                    setState(() => _showAddLeadForm = !_showAddLeadForm),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: SageColors.primary,
+                ),
+                child: Text(
+                  _showAddLeadForm ? "CANCEL" : "+ ADD LEAD",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
               ),
           ],
         ),
@@ -468,13 +602,27 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
             title: "ADD NEW LEAD",
             child: Column(
               children: [
-                SageTextField(controller: _companyNameCtrl, label: "Company Name"),
+                SageTextField(
+                  controller: _companyNameCtrl,
+                  label: "Company Name",
+                ),
                 const SizedBox(height: 10),
-                SageTextField(controller: _contactNameCtrl, label: "Contact Person"),
+                SageTextField(
+                  controller: _contactNameCtrl,
+                  label: "Contact Person",
+                ),
                 const SizedBox(height: 10),
-                SageTextField(controller: _contactPhoneCtrl, label: "Contact Phone", keyboardType: TextInputType.phone),
+                SageTextField(
+                  controller: _contactPhoneCtrl,
+                  label: "Contact Phone",
+                  keyboardType: TextInputType.phone,
+                ),
                 const SizedBox(height: 10),
-                SageTextField(controller: _contactEmailCtrl, label: "Contact Email", keyboardType: TextInputType.emailAddress),
+                SageTextField(
+                  controller: _contactEmailCtrl,
+                  label: "Contact Email",
+                  keyboardType: TextInputType.emailAddress,
+                ),
                 const SizedBox(height: 14),
                 SizedBox(
                   width: double.infinity,
@@ -504,7 +652,9 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                       _contactPhoneCtrl.clear();
                       _contactEmailCtrl.clear();
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: SageColors.yellowAccent),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: SageColors.yellowAccent,
+                    ),
                     child: const Text("SAVE LEAD"),
                   ),
                 ),
@@ -514,45 +664,83 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
           const SizedBox(height: 14),
         ],
 
-        Builder(builder: (context) {
-          final list = _leadSubTab == 'MY_LEADS' ? myLeads : assignedLeads;
-          if (list.isEmpty) {
-            return Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.black, width: 1.5), borderRadius: BorderRadius.circular(16)),
-              child: const Center(child: Text("NO LEADS FOUND", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12))),
+        Builder(
+          builder: (context) {
+            final list = _leadSubTab == 'MY_LEADS' ? myLeads : assignedLeads;
+            if (list.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: Colors.black, width: 1.5),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Center(
+                  child: Text(
+                    "NO LEADS FOUND",
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              );
+            }
+            return Column(
+              children: list
+                  .map((c) => _buildClientCard(context, state, c, false))
+                  .toList(),
             );
-          }
-          return Column(
-            children: list.map((c) => _buildClientCard(context, state, c, false)).toList(),
-          );
-        }),
+          },
+        ),
       ],
     );
   }
 
-  Widget _buildClientCard(BuildContext context, AppState state, Client c, bool isActive) {
+  Widget _buildClientCard(
+    BuildContext context,
+    AppState state,
+    Client c,
+    bool isActive,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.black, width: 1.5),
-        boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0)],
+        boxShadow: const [
+          BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
+        ],
       ),
       child: SageExpansionTile(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        collapsedShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
         title: Row(
           children: [
-            Expanded(child: Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black))),
+            Expanded(
+              child: Text(
+                c.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Colors.black,
+                ),
+              ),
+            ),
             if (isActive && !c.isApprovedByCeo)
               const StatusBadge(label: "AWAITING CEO", color: Colors.red)
             else if (isActive)
               const StatusBadge(label: "ACTIVE", color: Colors.green),
           ],
         ),
-        subtitle: Text("Contact: ${c.contact.name} (${c.contact.phone})", style: const TextStyle(fontSize: 10, color: Colors.black54)),
+        subtitle: Text(
+          "Contact: ${c.contact.name} (${c.contact.phone})",
+          style: const TextStyle(fontSize: 10, color: Colors.black54),
+        ),
         childrenPadding: const EdgeInsets.all(12),
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -560,8 +748,14 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
           _buildDetailRow("Contact Email", c.contact.email),
           _buildDetailRow("Contact Phone", c.contact.phone),
           if (isActive) ...[
-            _buildDetailRow("Monthly Payable", "\u20B9${c.monthlyPayable.toStringAsFixed(0)}"),
-            _buildDetailRow("Calculated Share (20%)", "\u20B9${(c.monthlyPayable * 0.20).toStringAsFixed(0)}"),
+            _buildDetailRow(
+              "Monthly Payable",
+              "\u20B9${c.monthlyPayable.toStringAsFixed(0)}",
+            ),
+            _buildDetailRow(
+              "Calculated Share (20%)",
+              "\u20B9${(c.monthlyPayable * 0.20).toStringAsFixed(0)}",
+            ),
           ],
           if (!isActive) ...[
             const SizedBox(height: 8),
@@ -569,19 +763,49 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 if (c.isTerminationRequested)
-                  const StatusBadge(label: "TERMINATION PENDING", color: Colors.orange)
+                  const StatusBadge(
+                    label: "TERMINATION PENDING",
+                    color: Colors.orange,
+                  )
                 else
                   ElevatedButton(
                     onPressed: () {
                       state.requestLeadTermination(c.id);
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6)),
-                    child: const Text("REQUEST TERMINATION", style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                    ),
+                    child: const Text(
+                      "REQUEST TERMINATION",
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ElevatedButton(
-                  onPressed: () => _showConvertToActiveDialog(context, state, c),
-                  style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6)),
-                  child: const Text("CONVERT TO ACTIVE", style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                  onPressed: () =>
+                      _showConvertToActiveDialog(context, state, c),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: SageColors.primary,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                  ),
+                  child: const Text(
+                    "CONVERT TO ACTIVE",
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -596,33 +820,71 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          SizedBox(width: 140, child: Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54))),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black))),
+          SizedBox(
+            width: 140,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.black54,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  void _showConvertToActiveDialog(BuildContext context, AppState state, Client c) {
+  void _showConvertToActiveDialog(
+    BuildContext context,
+    AppState state,
+    Client c,
+  ) {
     final feeCtrl = TextEditingController(text: "15000");
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           backgroundColor: SageColors.background,
-          title: Text("CONVERT ${c.name.toUpperCase()} TO ACTIVE", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          title: Text(
+            "CONVERT ${c.name.toUpperCase()} TO ACTIVE",
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Specify monthly contract fee (in \u20B9). After conversion, this will wait for CEO approval.", style: TextStyle(fontSize: 11)),
+              const Text(
+                "Specify monthly contract fee (in \u20B9). After conversion, this will wait for CEO approval.",
+                style: TextStyle(fontSize: 11),
+              ),
               const SizedBox(height: 12),
-              SageTextField(controller: feeCtrl, label: "Monthly Payable Fee", keyboardType: TextInputType.number),
+              SageTextField(
+                controller: feeCtrl,
+                label: "Monthly Payable Fee",
+                keyboardType: TextInputType.number,
+              ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("CANCEL"),
+            ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: SageColors.primary,
+              ),
               onPressed: () {
                 final fee = double.tryParse(feeCtrl.text) ?? 10000.0;
                 state.updateClient(
@@ -648,13 +910,19 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
     final activeClients = state.clients
         .where((c) => c.marketingExecutiveId == emp.id && c.status == 'Active')
         .toList();
-    final commissionEst = activeClients.fold(0.0, (s, c) => s + c.monthlyPayable * 0.20);
+    final commissionEst = activeClients.fold(
+      0.0,
+      (s, c) => s + c.monthlyPayable * 0.20,
+    );
     final now = DateTime.now();
     final currentMonth = now.month;
 
     // Clients with commission enabled whose current-month payment is NOT yet recorded
     final pendingClients = activeClients
-        .where((c) => c.hasMarketingCommission && !c.paidMonths.contains(currentMonth))
+        .where(
+          (c) =>
+              c.hasMarketingCommission && !c.paidMonths.contains(currentMonth),
+        )
         .toList();
 
     return Column(
@@ -670,7 +938,13 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
               color: const Color(0xFFFFF9C4),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.amber.shade900, width: 1.5),
-              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0)],
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black,
+                  offset: Offset(2, 2),
+                  blurRadius: 0,
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -679,7 +953,16 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                   children: [
                     Icon(Icons.payment, color: Colors.amber.shade900),
                     const SizedBox(width: 10),
-                    const Expanded(child: Text("COMMISSION CLEARANCE PENDING", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black))),
+                    const Expanded(
+                      child: Text(
+                        "COMMISSION CLEARANCE PENDING",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -690,14 +973,25 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () async {
-                    final ok = await showConfirmDialog(context, "APPROVE COMMISSION PAYOUT",
-                        "I acknowledge that I received \u20B9${emp.pendingPayAmount.toStringAsFixed(0)} for ${emp.pendingPayMonth}.");
+                    final ok = await showConfirmDialog(
+                      context,
+                      "APPROVE COMMISSION PAYOUT",
+                      "I acknowledge that I received \u20B9${emp.pendingPayAmount.toStringAsFixed(0)} for ${emp.pendingPayMonth}.",
+                    );
                     if (ok && context.mounted) {
                       state.approveMarketingCommission(emp.id);
                     }
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                  child: const Text("CONFIRM & APPROVE PAYOUT", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                  ),
+                  child: const Text(
+                    "CONFIRM & APPROVE PAYOUT",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -716,52 +1010,82 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
             ),
             child: Row(
               children: [
-                const Icon(Icons.warning_amber_rounded, color: Color(0xFFB71C1C), size: 18),
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Color(0xFFB71C1C),
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   "${pendingClients.length} client${pendingClients.length > 1 ? 's' : ''} pending payment this month",
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFFB71C1C)),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                    color: Color(0xFFB71C1C),
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 10),
-          ...pendingClients.map((c) => Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFEBEE),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE57373), width: 1.5),
-              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0)],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFCDD2),
-                    borderRadius: BorderRadius.circular(10),
+          ...pendingClients.map(
+            (c) => Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFEBEE),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE57373), width: 1.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black,
+                    offset: Offset(2, 2),
+                    blurRadius: 0,
                   ),
-                  child: const Icon(Icons.hourglass_top, color: Color(0xFFC62828), size: 18),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black)),
-                      Text(
-                        "\u20B9${(c.monthlyPayable * 0.20).toStringAsFixed(0)} commission not yet received this month",
-                        style: const TextStyle(fontSize: 10, color: Color(0xFFC62828)),
-                      ),
-                    ],
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFCDD2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.hourglass_top,
+                      color: Color(0xFFC62828),
+                      size: 18,
+                    ),
                   ),
-                ),
-                const StatusBadge(label: "UNPAID", color: Color(0xFFE53935)),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          c.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: Colors.black,
+                          ),
+                        ),
+                        Text(
+                          "\u20B9${(c.monthlyPayable * 0.20).toStringAsFixed(0)} commission not yet received this month",
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Color(0xFFC62828),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const StatusBadge(label: "UNPAID", color: Color(0xFFE53935)),
+                ],
+              ),
             ),
-          )),
+          ),
           const SizedBox(height: 16),
         ],
 
@@ -772,26 +1096,51 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: Colors.black, width: 1.5),
-            boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0)],
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black,
+                offset: Offset(3, 3),
+                blurRadius: 0,
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 "\u20B9${commissionEst.toStringAsFixed(0)}",
-                style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black),
+                style: const TextStyle(
+                  fontSize: 34,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
               ),
               const Text(
                 "TOTAL ACTIVE MONTHLY COMMISSION ESTIMATE",
-                style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: SageColors.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: SageColors.onSurfaceVariant,
+                ),
               ),
               if (pendingClients.isEmpty && activeClients.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 const Row(
                   children: [
-                    Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 14),
+                    Icon(
+                      Icons.check_circle,
+                      color: Color(0xFF4CAF50),
+                      size: 14,
+                    ),
                     SizedBox(width: 4),
-                    Text("All clients paid this month", style: TextStyle(fontSize: 10, color: Color(0xFF4CAF50), fontWeight: FontWeight.bold)),
+                    Text(
+                      "All clients paid this month",
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Color(0xFF4CAF50),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -801,65 +1150,124 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
         const SizedBox(height: 12),
 
         // â”€â”€ COLLECTION RATE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        Builder(builder: (context) {
-          final commissioned = activeClients.where((c) => c.hasMarketingCommission).toList();
-          if (commissioned.isEmpty) return const SizedBox.shrink();
-          final paidCount = commissioned.where((c) => c.paidMonths.contains(currentMonth)).length;
-          final total = commissioned.length;
-          final pct = total > 0 ? (paidCount / total * 100) : 0.0;
-          final allPaid = paidCount == total;
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: allPaid ? const Color(0xFFE8F5E9) : const Color(0xFFFFF8E1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: allPaid ? const Color(0xFF4CAF50) : Colors.amber.shade700, width: 1.5),
-              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0)],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "THIS MONTH COLLECTION RATE",
-                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: allPaid ? const Color(0xFF2E7D32) : Colors.amber.shade900),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "$paidCount of $total clients paid",
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: allPaid ? const Color(0xFF1B5E20) : Colors.black87),
-                    ),
-                  ],
+        Builder(
+          builder: (context) {
+            final commissioned = activeClients
+                .where((c) => c.hasMarketingCommission)
+                .toList();
+            if (commissioned.isEmpty) return const SizedBox.shrink();
+            final paidCount = commissioned
+                .where((c) => c.paidMonths.contains(currentMonth))
+                .length;
+            final total = commissioned.length;
+            final pct = total > 0 ? (paidCount / total * 100) : 0.0;
+            final allPaid = paidCount == total;
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: allPaid
+                    ? const Color(0xFFE8F5E9)
+                    : const Color(0xFFFFF8E1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: allPaid
+                      ? const Color(0xFF4CAF50)
+                      : Colors.amber.shade700,
+                  width: 1.5,
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: allPaid ? const Color(0xFF4CAF50) : Colors.amber.shade700,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.black, width: 1.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black,
+                    offset: Offset(2, 2),
+                    blurRadius: 0,
                   ),
-                  child: Text(
-                    "${pct.toStringAsFixed(0)}%",
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "THIS MONTH COLLECTION RATE",
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: allPaid
+                              ? const Color(0xFF2E7D32)
+                              : Colors.amber.shade900,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "$paidCount of $total clients paid",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: allPaid
+                              ? const Color(0xFF1B5E20)
+                              : Colors.black87,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-          );
-        }),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: allPaid
+                          ? const Color(0xFF4CAF50)
+                          : Colors.amber.shade700,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.black, width: 1.5),
+                    ),
+                    child: Text(
+                      "${pct.toStringAsFixed(0)}%",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
         const SizedBox(height: 16),
 
-
         // â”€â”€ ACTIVE COMMISSION SHARES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        const Text("ACTIVE COMMISSION SHARES", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: SageColors.onSurfaceVariant)),
+        const Text(
+          "ACTIVE COMMISSION SHARES",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 11,
+            color: SageColors.onSurfaceVariant,
+          ),
+        ),
         const SizedBox(height: 10),
         if (activeClients.isEmpty)
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.black, width: 1.5), borderRadius: BorderRadius.circular(16)),
-            child: const Center(child: Text("NO ACTIVE SHARING CLIENTS", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12))),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.black, width: 1.5),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Center(
+              child: Text(
+                "NO ACTIVE SHARING CLIENTS",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
           )
         else
           ...activeClients.map((c) {
@@ -870,14 +1278,25 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isPaid ? const Color(0xFF4CAF50) : Colors.black, width: 1.5),
-                boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0)],
+                border: Border.all(
+                  color: isPaid ? const Color(0xFF4CAF50) : Colors.black,
+                  width: 1.5,
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black,
+                    offset: Offset(2, 2),
+                    blurRadius: 0,
+                  ),
+                ],
               ),
               child: Row(
                 children: [
                   Icon(
                     isPaid ? Icons.check_circle : Icons.trending_up,
-                    color: isPaid ? const Color(0xFF4CAF50) : SageColors.primary,
+                    color: isPaid
+                        ? const Color(0xFF4CAF50)
+                        : SageColors.primary,
                     size: 20,
                   ),
                   const SizedBox(width: 10),
@@ -885,8 +1304,20 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                        Text("Monthly Fee: \u20B9${c.monthlyPayable.toStringAsFixed(0)}", style: const TextStyle(fontSize: 9, color: Colors.black54)),
+                        Text(
+                          c.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Text(
+                          "Monthly Fee: \u20B9${c.monthlyPayable.toStringAsFixed(0)}",
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: Colors.black54,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -895,10 +1326,22 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                     children: [
                       Text(
                         "\u20B9${(c.monthlyPayable * 0.20).toStringAsFixed(0)}",
-                        style: TextStyle(fontWeight: FontWeight.bold, color: isPaid ? const Color(0xFF4CAF50) : SageColors.primary),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isPaid
+                              ? const Color(0xFF4CAF50)
+                              : SageColors.primary,
+                        ),
                       ),
                       if (isPaid)
-                        const Text("PAID âœ“", style: TextStyle(fontSize: 8, color: Color(0xFF4CAF50), fontWeight: FontWeight.bold)),
+                        const Text(
+                          "PAID âœ“",
+                          style: TextStyle(
+                            fontSize: 8,
+                            color: Color(0xFF4CAF50),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                     ],
                   ),
                 ],
@@ -917,20 +1360,47 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                 color: const Color(0xFFE3F2FD),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.calendar_month, size: 14, color: Color(0xFF1565C0)),
+              child: const Icon(
+                Icons.calendar_month,
+                size: 14,
+                color: Color(0xFF1565C0),
+              ),
             ),
             const SizedBox(width: 8),
-            const Text("PAID TILL TRACKER", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: SageColors.onSurfaceVariant)),
+            const Text(
+              "PAID TILL TRACKER",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+                color: SageColors.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 4),
-        const Text("Record up to which month the client's payment has been confirmed.", style: TextStyle(fontSize: 10, color: SageColors.onSurfaceVariant)),
+        const Text(
+          "Record up to which month the client's payment has been confirmed.",
+          style: TextStyle(fontSize: 10, color: SageColors.onSurfaceVariant),
+        ),
         const SizedBox(height: 10),
         if (activeClients.isEmpty)
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: Colors.white, border: Border.all(color: Colors.black, width: 1.5), borderRadius: BorderRadius.circular(16)),
-            child: const Center(child: Text("NO ACTIVE CLIENTS", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12))),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.black, width: 1.5),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Center(
+              child: Text(
+                "NO ACTIVE CLIENTS",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
           )
         else
           ...activeClients.map((c) => _buildPaidTillCard(context, state, c)),
@@ -947,14 +1417,18 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.black, width: 1.5),
-        boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0)],
+        boxShadow: const [
+          BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
+        ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: hasRecord ? const Color(0xFFE8F5E9) : const Color(0xFFF3F4F6),
+              color: hasRecord
+                  ? const Color(0xFFE8F5E9)
+                  : const Color(0xFFF3F4F6),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
@@ -968,7 +1442,14 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black)),
+                Text(
+                  c.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: Colors.black,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   hasRecord ? "Paid till: ${c.paidTill}" : "Not recorded yet",
@@ -988,7 +1469,6 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
 
   // â”€â”€â”€ TAB 2: PROFILE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildProfileTab(BuildContext context, AppState state, Employee emp) {
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -998,16 +1478,24 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
           child: Column(
             children: [
               Center(
-                  child: ClipOval(
-                    child: Image.asset(availableAvatars[emp.avatar % availableAvatars.length], fit: BoxFit.cover, width: 140, height: 140),
+                child: ClipOval(
+                  child: Image.asset(
+                    availableAvatars[emp.avatar % availableAvatars.length],
+                    fit: BoxFit.cover,
+                    width: 140,
+                    height: 140,
                   ),
                 ),
+              ),
               const SizedBox(height: 16),
               _profileRow("NAME", emp.name),
               _profileRow("ROLE", emp.role),
               _profileRow("DEPARTMENT", emp.department),
               _profileRow("ID CODE", emp.id),
-              _profileRow("ADDRESS", emp.address.isNotEmpty ? emp.address : '---'),
+              _profileRow(
+                "ADDRESS",
+                emp.address.isNotEmpty ? emp.address : '---',
+              ),
               _profileRow("PHONE", emp.phone.isNotEmpty ? emp.phone : '---'),
               _profileRow("EMAIL", emp.email.isNotEmpty ? emp.email : '---'),
               const SizedBox(height: 24),
@@ -1028,9 +1516,13 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
     final emergencyCtrl = TextEditingController(text: emp.emergencyContact);
     final bioCtrl = TextEditingController(text: emp.professionalBio);
     final interestsCtrl = TextEditingController(text: emp.interests);
-    
-    String selectedWorkLocation = emp.workLocation.isEmpty ? 'Office' : emp.workLocation;
-    String selectedWorkStyle = emp.workStylePreference.isEmpty ? 'Independent thinker' : emp.workStylePreference;
+
+    String selectedWorkLocation = emp.workLocation.isEmpty
+        ? 'Office'
+        : emp.workLocation;
+    String selectedWorkStyle = emp.workStylePreference.isEmpty
+        ? 'Independent thinker'
+        : emp.workStylePreference;
     List<String> selectedSkills = List.from(emp.keySkills);
     List<String> selectedStrengths = List.from(emp.strengths);
 
@@ -1043,7 +1535,14 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
           builder: (context, setState) {
             return AlertDialog(
               backgroundColor: SageColors.background,
-              title: const Text("EDIT PERSONAL DETAILS", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14)),
+              title: const Text(
+                "EDIT PERSONAL DETAILS",
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1056,73 +1555,148 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                     const SizedBox(height: 10),
                     SageTextField(controller: emailCtrl, label: "Email"),
                     const SizedBox(height: 10),
-                    SageTextField(controller: prefNameCtrl, label: "Preferred Name"),
+                    SageTextField(
+                      controller: prefNameCtrl,
+                      label: "Preferred Name",
+                    ),
                     const SizedBox(height: 10),
-                    SageTextField(controller: emergencyCtrl, label: "Emergency Contact"),
+                    SageTextField(
+                      controller: emergencyCtrl,
+                      label: "Emergency Contact",
+                    ),
                     const SizedBox(height: 10),
-                    SageTextField(controller: bioCtrl, label: "Professional Bio", maxLines: 3),
+                    SageTextField(
+                      controller: bioCtrl,
+                      label: "Professional Bio",
+                      maxLines: 3,
+                    ),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
                       value: selectedWorkLocation,
-                      decoration: const InputDecoration(labelText: "Work Location"),
-                      items: ['Office', 'Remote', 'Hybrid'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                      onChanged: (v) => setState(() => selectedWorkLocation = v ?? 'Office'),
+                      decoration: const InputDecoration(
+                        labelText: "Work Location",
+                      ),
+                      items: ['Office', 'Remote', 'Hybrid']
+                          .map(
+                            (s) => DropdownMenuItem(value: s, child: Text(s)),
+                          )
+                          .toList(),
+                      onChanged: (v) =>
+                          setState(() => selectedWorkLocation = v ?? 'Office'),
                       dropdownColor: Colors.white,
                     ),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
                       value: selectedWorkStyle,
-                      decoration: const InputDecoration(labelText: "Work Style Preference"),
-                      items: ['Independent thinker', 'Team collaborator', 'Detail-oriented', 'Fast executor', 'Strategic planner'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                      onChanged: (v) => setState(() => selectedWorkStyle = v ?? 'Independent thinker'),
+                      decoration: const InputDecoration(
+                        labelText: "Work Style Preference",
+                      ),
+                      items:
+                          [
+                                'Independent thinker',
+                                'Team collaborator',
+                                'Detail-oriented',
+                                'Fast executor',
+                                'Strategic planner',
+                              ]
+                              .map(
+                                (s) =>
+                                    DropdownMenuItem(value: s, child: Text(s)),
+                              )
+                              .toList(),
+                      onChanged: (v) => setState(
+                        () => selectedWorkStyle = v ?? 'Independent thinker',
+                      ),
                       dropdownColor: Colors.white,
                     ),
                     const SizedBox(height: 10),
-                    SageTextField(controller: interestsCtrl, label: "Interests / Hobbies"),
-                    const SizedBox(height: 10),
-                    const Text("KEY SKILLS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                    Wrap(
-                      spacing: 8,
-                      children: ['Editing', 'Sales', 'Design', 'Marketing', 'Coding'].map((skill) {
-                        final isSelected = selectedSkills.contains(skill);
-                        return FilterChip(
-                          label: Text(skill, style: const TextStyle(fontSize: 10)),
-                          selected: isSelected,
-                          onSelected: (bool selected) {
-                            setState(() {
-                              if (selected) {
-                                selectedSkills.add(skill);
-                              } else {
-                                selectedSkills.remove(skill);
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
+                    SageTextField(
+                      controller: interestsCtrl,
+                      label: "Interests / Hobbies",
                     ),
                     const SizedBox(height: 10),
-                    const Text("STRENGTHS", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    const Text(
+                      "KEY SKILLS",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     Wrap(
                       spacing: 8,
-                      children: ['Leadership', 'Problem Solving', 'Creativity', 'Communication'].map((strength) {
-                        final isSelected = selectedStrengths.contains(strength);
-                        return FilterChip(
-                          label: Text(strength, style: const TextStyle(fontSize: 10)),
-                          selected: isSelected,
-                          onSelected: (bool selected) {
-                            setState(() {
-                              if (selected) {
-                                selectedStrengths.add(strength);
-                              } else {
-                                selectedStrengths.remove(strength);
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
+                      children:
+                          [
+                            'Editing',
+                            'Sales',
+                            'Design',
+                            'Marketing',
+                            'Coding',
+                          ].map((skill) {
+                            final isSelected = selectedSkills.contains(skill);
+                            return FilterChip(
+                              label: Text(
+                                skill,
+                                style: const TextStyle(fontSize: 10),
+                              ),
+                              selected: isSelected,
+                              onSelected: (bool selected) {
+                                setState(() {
+                                  if (selected) {
+                                    selectedSkills.add(skill);
+                                  } else {
+                                    selectedSkills.remove(skill);
+                                  }
+                                });
+                              },
+                            );
+                          }).toList(),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      "STRENGTHS",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Wrap(
+                      spacing: 8,
+                      children:
+                          [
+                            'Leadership',
+                            'Problem Solving',
+                            'Creativity',
+                            'Communication',
+                          ].map((strength) {
+                            final isSelected = selectedStrengths.contains(
+                              strength,
+                            );
+                            return FilterChip(
+                              label: Text(
+                                strength,
+                                style: const TextStyle(fontSize: 10),
+                              ),
+                              selected: isSelected,
+                              onSelected: (bool selected) {
+                                setState(() {
+                                  if (selected) {
+                                    selectedStrengths.add(strength);
+                                  } else {
+                                    selectedStrengths.remove(strength);
+                                  }
+                                });
+                              },
+                            );
+                          }).toList(),
                     ),
                     const SizedBox(height: 20),
-                    const Text("CHOOSE AVATAR", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    const Text(
+                      "CHOOSE AVATAR",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 10,
@@ -1135,11 +1709,23 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: isSelected ? SageColors.primary : Colors.transparent,
+                              color: isSelected
+                                  ? SageColors.primary
+                                  : Colors.transparent,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.black, width: 1.5),
+                              border: Border.all(
+                                color: Colors.black,
+                                width: 1.5,
+                              ),
                             ),
-                            child: ClipOval(child: Image.asset(availableAvatars[index], fit: BoxFit.cover, width: 48, height: 48)),
+                            child: ClipOval(
+                              child: Image.asset(
+                                availableAvatars[index],
+                                fit: BoxFit.cover,
+                                width: 48,
+                                height: 48,
+                              ),
+                            ),
                           ),
                         );
                       }),
@@ -1148,9 +1734,14 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                 ),
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text("CANCEL"),
+                ),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: SageColors.primary),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: SageColors.primary,
+                  ),
                   onPressed: () {
                     context.read<AppState>().updateEmployee(
                       emp.id,
@@ -1174,7 +1765,7 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
                 ),
               ],
             );
-          }
+          },
         );
       },
     ).then((_) {
@@ -1195,13 +1786,24 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: SageColors.onSurfaceVariant)),
-          Text(val, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+              color: SageColors.onSurfaceVariant,
+            ),
+          ),
+          Text(
+            val,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              color: Colors.black,
+            ),
+          ),
         ],
       ),
     );
   }
 }
-
-
-

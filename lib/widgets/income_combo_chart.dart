@@ -39,7 +39,11 @@ class IncomeComboChart extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.grey.withOpacity(0.15), width: 1),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.06), offset: const Offset(0, 6), blurRadius: 16),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            offset: const Offset(0, 6),
+            blurRadius: 16,
+          ),
         ],
       ),
       child: Column(
@@ -64,7 +68,9 @@ class IncomeComboChart extends StatelessWidget {
                 labels: labels,
                 barColor: barColor,
                 maxValue: maxValue > 0 ? maxValue : 1.0,
-                maxLineValue: maxLineValue != null && maxLineValue! > 0 ? maxLineValue! : (maxValue > 0 ? maxValue : 1.0),
+                maxLineValue: maxLineValue != null && maxLineValue! > 0
+                    ? maxLineValue!
+                    : (maxValue > 0 ? maxValue : 1.0),
                 formatter: formatValue,
               ),
             ),
@@ -125,23 +131,29 @@ class _ComboChartPainter extends CustomPainter {
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
 
     final double barWidth = size.width / (values.length * 1.5);
-    final double maxBarHeight = size.height * 0.65; // Leave room for labels below
-    
-    
+    final double maxBarHeight =
+        size.height * 0.65; // Leave room for labels below
+
     // Calculate points for the line graph
     List<Offset> points = [];
 
     for (int i = 0; i < values.length; i++) {
-      final xCenter = (size.width / values.length) * i + (size.width / (values.length * 2));
+      final xCenter =
+          (size.width / values.length) * i + (size.width / (values.length * 2));
       final double normalizedValue = values[i] / maxValue;
       final double barHeight = normalizedValue * maxBarHeight;
-      
+
       final yTop = size.height * 0.8 - barHeight;
       final yBottom = size.height * 0.8;
-      
+
       // 1. Draw Bar
       final rect = RRect.fromRectAndRadius(
-        Rect.fromLTRB(xCenter - barWidth / 2, yTop, xCenter + barWidth / 2, yBottom),
+        Rect.fromLTRB(
+          xCenter - barWidth / 2,
+          yTop,
+          xCenter + barWidth / 2,
+          yBottom,
+        ),
         const Radius.circular(6),
       );
       final barGradient = LinearGradient(
@@ -150,37 +162,61 @@ class _ComboChartPainter extends CustomPainter {
         end: Alignment.bottomCenter,
       ).createShader(rect.outerRect);
       canvas.drawRRect(rect, Paint()..shader = barGradient);
-      
+
       // Calculate Line Point
       final lineVal = i < lineValues.length ? lineValues[i] : 0.0;
       final double normalizedLine = lineVal / maxLineValue;
       final double lineY = size.height * 0.8 - (normalizedLine * maxBarHeight);
       points.add(Offset(xCenter, lineY));
-      
+
       // 2. Draw Label below bar (Month)
       textPainter.text = TextSpan(
         text: labels[i],
-        style: const TextStyle(color: Colors.black54, fontSize: 11, fontWeight: FontWeight.w600),
+        style: const TextStyle(
+          color: Colors.black54,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       );
       textPainter.layout();
-      textPainter.paint(canvas, Offset(xCenter - textPainter.width / 2, yBottom + 8));
+      textPainter.paint(
+        canvas,
+        Offset(xCenter - textPainter.width / 2, yBottom + 8),
+      );
 
       // 3. Draw Inflow Value below Month
       textPainter.text = TextSpan(
         text: formatter(values[i]),
-        style: const TextStyle(color: Colors.black87, fontSize: 10, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          color: Colors.black87,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
       );
       textPainter.layout();
-      textPainter.paint(canvas, Offset(xCenter - textPainter.width / 2, yBottom + 24));
-      
+      textPainter.paint(
+        canvas,
+        Offset(xCenter - textPainter.width / 2, yBottom + 24),
+      );
+
       // Draw line value text
       if (lineVal > 0) {
         textPainter.text = TextSpan(
           text: lineVal.toStringAsFixed(0),
-          style: const TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Colors.orange,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
         );
         textPainter.layout();
-        textPainter.paint(canvas, Offset(xCenter - textPainter.width / 2, lineY - textPainter.height - 8));
+        textPainter.paint(
+          canvas,
+          Offset(
+            xCenter - textPainter.width / 2,
+            lineY - textPainter.height - 8,
+          ),
+        );
       }
     }
 
@@ -193,16 +229,24 @@ class _ComboChartPainter extends CustomPainter {
         path.lineTo(p1.dx, p1.dy);
       }
       canvas.drawShadow(path, Colors.orange.withOpacity(0.4), 4, true);
-      canvas.drawPath(path, Paint()
-        ..color = Colors.orange
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeJoin = StrokeJoin.round);
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = Colors.orange
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3
+          ..strokeJoin = StrokeJoin.round,
+      );
     }
-    
+
     // 5. Draw Dots on line
-    final dotFill = Paint()..color = Colors.white..style = PaintingStyle.fill;
-    final dotStroke = Paint()..color = Colors.orange..style = PaintingStyle.stroke..strokeWidth = 2.5;
+    final dotFill = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    final dotStroke = Paint()
+      ..color = Colors.orange
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
     for (var point in points) {
       canvas.drawCircle(point, 5, dotFill);
       canvas.drawCircle(point, 5, dotStroke);
@@ -211,6 +255,6 @@ class _ComboChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ComboChartPainter oldDelegate) {
-    return true; 
+    return true;
   }
 }

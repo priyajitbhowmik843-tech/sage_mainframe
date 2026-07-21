@@ -2,8 +2,11 @@ import 'dart:io';
 
 void main() {
   final dir = Directory('lib');
-  final files = dir.listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.dart') || f.path.endsWith('.txt'));
-  
+  final files = dir
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.dart') || f.path.endsWith('.txt'));
+
   for (final file in files) {
     try {
       String content = file.readAsStringSync();

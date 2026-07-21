@@ -1,17 +1,21 @@
 import 'dart:io';
 
 void main() {
-  final file = File('C:\\Users\\Priyajit Bhowmik\\Downloads\\extracted_video.txt');
+  final file = File(
+    'C:\\Users\\Priyajit Bhowmik\\Downloads\\extracted_video.txt',
+  );
   final lines = file.readAsLinesSync();
   final outLines = <String>[];
-  
+
   bool started = false;
   for (var line in lines) {
     if (line.startsWith('1: ')) {
       started = true;
     }
     if (started) {
-      if (line.startsWith('The above content does NOT show the entire file contents')) {
+      if (line.startsWith(
+        'The above content does NOT show the entire file contents',
+      )) {
         break;
       }
       final regex = RegExp(r'^(\d+): (.*)');
@@ -23,6 +27,8 @@ void main() {
       }
     }
   }
-  
-  File('lib/screens/videographer_dashboard_partial.dart').writeAsStringSync(outLines.join('\n'));
+
+  File(
+    'lib/screens/videographer_dashboard_partial.dart',
+  ).writeAsStringSync(outLines.join('\n'));
 }

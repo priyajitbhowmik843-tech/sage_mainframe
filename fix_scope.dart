@@ -4,7 +4,8 @@ void main() {
   final file = File('lib/state/app_state.dart');
   var content = file.readAsStringSync();
 
-  final oldBlock = '''    // 1. Process all finance entries for R&P cumulative (matches ledger exactly)
+  final oldBlock =
+      '''    // 1. Process all finance entries for R&P cumulative (matches ledger exactly)
     for (var f in _finances) {
       if (f.isIncome) {
         double amt = f.amount;
@@ -77,7 +78,8 @@ void main() {
       }
     }''';
 
-  final newBlock = '''    // 1. Process all finance entries for R&P cumulative (matches ledger exactly)
+  final newBlock =
+      '''    // 1. Process all finance entries for R&P cumulative (matches ledger exactly)
     for (var f in _finances) {
       // Determine service type and ME from the FinanceEntry or matching Client
       String serviceType = f.serviceType ?? 'Miscellaneous';

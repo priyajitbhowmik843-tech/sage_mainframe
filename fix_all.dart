@@ -1,24 +1,30 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 void main() {
   final filesToEdit = [
     'lib/screens/marketing_executive_dashboard.dart',
-    'lib/screens/videographer_dashboard.dart'
+    'lib/screens/videographer_dashboard.dart',
   ];
 
   for (var filePath in filesToEdit) {
     final file = File(filePath);
     if (!file.existsSync()) continue;
-    
+
     var content = file.readAsStringSync();
 
     // Replace the corrupted _showEditPersonalDetailsDialog in marketing_executive_dashboard.dart
     if (filePath.contains('marketing_executive_dashboard.dart')) {
-      final startIndex = content.indexOf('void _showEditPersonalDetailsDialog(BuildContext context, Employee emp) {');
+      final startIndex = content.indexOf(
+        'void _showEditPersonalDetailsDialog(BuildContext context, Employee emp) {',
+      );
       if (startIndex != -1) {
-        final endIndex = content.indexOf('void _showEditClientDialog', startIndex);
+        final endIndex = content.indexOf(
+          'void _showEditClientDialog',
+          startIndex,
+        );
         if (endIndex != -1) {
-          final replacement = '''void _showEditPersonalDetailsDialog(BuildContext context, Employee emp) {
+          final replacement =
+              '''void _showEditPersonalDetailsDialog(BuildContext context, Employee emp) {
     final nameCtrl = TextEditingController(text: emp.name);
     final addressCtrl = TextEditingController(text: emp.address);
     final phoneCtrl = TextEditingController(text: emp.phone);
@@ -180,15 +186,24 @@ void main() {
   }
 
   ''';
-          content = content.substring(0, startIndex) + replacement + content.substring(endIndex);
+          content =
+              content.substring(0, startIndex) +
+              replacement +
+              content.substring(endIndex);
         }
       }
     } else if (filePath.contains('videographer_dashboard.dart')) {
-      final startIndex = content.indexOf('void _showEditPersonalDetailsDialog(BuildContext context, Employee emp) {');
+      final startIndex = content.indexOf(
+        'void _showEditPersonalDetailsDialog(BuildContext context, Employee emp) {',
+      );
       if (startIndex != -1) {
-        final endIndex = content.indexOf('void _showEditProjectDialog', startIndex);
+        final endIndex = content.indexOf(
+          'void _showEditProjectDialog',
+          startIndex,
+        );
         if (endIndex != -1) {
-          final replacement = '''void _showEditPersonalDetailsDialog(BuildContext context, Employee emp) {
+          final replacement =
+              '''void _showEditPersonalDetailsDialog(BuildContext context, Employee emp) {
     final nameCtrl = TextEditingController(text: emp.name);
     final addressCtrl = TextEditingController(text: emp.address);
     final phoneCtrl = TextEditingController(text: emp.phone);
@@ -350,11 +365,14 @@ void main() {
   }
 
   ''';
-          content = content.substring(0, startIndex) + replacement + content.substring(endIndex);
+          content =
+              content.substring(0, startIndex) +
+              replacement +
+              content.substring(endIndex);
         }
       }
     }
-    
+
     file.writeAsStringSync(content);
     print("Updated \$filePath");
   }

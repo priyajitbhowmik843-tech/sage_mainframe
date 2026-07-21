@@ -6,7 +6,7 @@ import 'dart:io';
 void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final db = FirebaseFirestore.instance;
-  
+
   final snapshot = await db.collection('employees').get();
   for (var doc in snapshot.docs) {
     print("${doc.id} : ${doc.data()['name']} - ${doc.data()['role']}");

@@ -5,7 +5,7 @@ void main() {
   void fixFile(String path) {
     final file = File(path);
     if (!file.existsSync()) return;
-    
+
     String content = file.readAsStringSync(encoding: utf8);
     bool changed = false;
 
@@ -14,7 +14,7 @@ void main() {
       content = content.replaceAll('Text"₹', 'Text("₹');
       changed = true;
     }
-    
+
     // Also look for `Text",1` or `Text",1` or whatever it might be
     if (content.contains('Text"')) {
       content = content.replaceAll('Text",1', 'Text("₹');

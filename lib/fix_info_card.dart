@@ -3,7 +3,7 @@ import 'dart:io';
 void main() {
   final file = File('lib/screens/videographer_dashboard.dart');
   String content = file.readAsStringSync();
-  
+
   final replacement = '''        Row(
           children: [
             Expanded(
@@ -25,11 +25,14 @@ void main() {
             ),
           ],
         ),''';
-        
+
   // Replace the old Row containing InfoCards
   final regex = RegExp(r'        Row\([\s\S]*?const SizedBox\(height: 24\),');
-  content = content.replaceFirst(regex, replacement + '\n        const SizedBox(height: 24),');
-  
+  content = content.replaceFirst(
+    regex,
+    replacement + '\n        const SizedBox(height: 24),',
+  );
+
   file.writeAsStringSync(content);
   print('Fixed InfoCard to StatChip');
 }

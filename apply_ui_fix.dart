@@ -5,8 +5,10 @@ void fixCeoDashboard() {
   var content = file.readAsStringSync();
 
   // 1. Update MyTasks filter (CEO)
-  final oldMyTasks = r"final myTasks = state.tasks.where((t) => t.assignedTo == state.activePersona.id && !t.isCompleted).toList();";
-  final newMyTasks = r"final myTasks = state.tasks.where((t) => t.assignedTo == state.activePersona.id && !t.isCompleted && !(t.taskType ?? '').toLowerCase().contains('upload')).toList();";
+  final oldMyTasks =
+      r"final myTasks = state.tasks.where((t) => t.assignedTo == state.activePersona.id && !t.isCompleted).toList();";
+  final newMyTasks =
+      r"final myTasks = state.tasks.where((t) => t.assignedTo == state.activePersona.id && !t.isCompleted && !(t.taskType ?? '').toLowerCase().contains('upload')).toList();";
   content = content.replaceAll(oldMyTasks, newMyTasks);
 
   // 2. Update PendingTasks filter (CEO)
@@ -67,7 +69,8 @@ void fixCeoDashboard() {
   }
 
   // 4. Update CEO PendingTasks rendering
-  final oldPendingRender = '''              Text("\${_getAssigneeName(t.assignedTo, state)} | \${t.deadline.day}/\${t.deadline.month}", style: TextStyle(color: Colors.red.shade700, fontSize: 12, fontWeight: FontWeight.bold)),''';
+  final oldPendingRender =
+      '''              Text("\${_getAssigneeName(t.assignedTo, state)} | \${t.deadline.day}/\${t.deadline.month}", style: TextStyle(color: Colors.red.shade700, fontSize: 12, fontWeight: FontWeight.bold)),''';
   final newPendingRender = '''              Builder(
                 builder: (ctx) {
                   final typeStr = (t.taskType ?? '').toLowerCase();
@@ -108,12 +111,20 @@ void fixCfoDashboard() {
   var content = file.readAsStringSync();
 
   // 1. Update MyTasks filter (CFO)
-  final oldMyTasks = r"final myTasks = state.tasks.where((t) => t.assignedTo == state.activePersona.id && !t.isCompleted).toList();";
-  final newMyTasks = r"final myTasks = state.tasks.where((t) => t.assignedTo == state.activePersona.id && !t.isCompleted && !(t.taskType ?? '').toLowerCase().contains('upload')).toList();";
+  final oldMyTasks =
+      r"final myTasks = state.tasks.where((t) => t.assignedTo == state.activePersona.id && !t.isCompleted).toList();";
+  final newMyTasks =
+      r"final myTasks = state.tasks.where((t) => t.assignedTo == state.activePersona.id && !t.isCompleted && !(t.taskType ?? '').toLowerCase().contains('upload')).toList();";
   content = content.replaceAll(oldMyTasks, newMyTasks);
-  
-  if (!content.contains(r"myTasks.sort((a, b) => a.deadline.compareTo(b.deadline));")) {
-    content = content.replaceAll(newMyTasks, newMyTasks + "\n    myTasks.sort((a, b) => a.deadline.compareTo(b.deadline));");
+
+  if (!content.contains(
+    r"myTasks.sort((a, b) => a.deadline.compareTo(b.deadline));",
+  )) {
+    content = content.replaceAll(
+      newMyTasks,
+      newMyTasks +
+          "\n    myTasks.sort((a, b) => a.deadline.compareTo(b.deadline));",
+    );
   }
 
   // 2. Update PendingTasks filter (CFO)
@@ -124,20 +135,29 @@ void fixCfoDashboard() {
       if ((t.taskType ?? '').toLowerCase().contains('upload')) return false;''';
   content = content.replaceAll(oldPendingTasks, newPendingTasks);
 
-  if (content.contains(r"}).toList();" + "\n    \n    " + r"if (pendingTasks.isEmpty)")) {
+  if (content.contains(
+    r"}).toList();" + "\n    \n    " + r"if (pendingTasks.isEmpty)",
+  )) {
     content = content.replaceAll(
       r"}).toList();" + "\n    \n    " + r"if (pendingTasks.isEmpty)",
-      r"}).toList();" + "\n    pendingTasks.sort((a, b) => a.deadline.compareTo(b.deadline));\n    \n    " + r"if (pendingTasks.isEmpty)"
+      r"}).toList();" +
+          "\n    pendingTasks.sort((a, b) => a.deadline.compareTo(b.deadline));\n    \n    " +
+          r"if (pendingTasks.isEmpty)",
     );
-  } else if (content.contains(r"}).toList();" + "\n    " + r"if (pendingTasks.isEmpty)")) {
+  } else if (content.contains(
+    r"}).toList();" + "\n    " + r"if (pendingTasks.isEmpty)",
+  )) {
     content = content.replaceAll(
       r"}).toList();" + "\n    " + r"if (pendingTasks.isEmpty)",
-      r"}).toList();" + "\n    pendingTasks.sort((a, b) => a.deadline.compareTo(b.deadline));\n    " + r"if (pendingTasks.isEmpty)"
+      r"}).toList();" +
+          "\n    pendingTasks.sort((a, b) => a.deadline.compareTo(b.deadline));\n    " +
+          r"if (pendingTasks.isEmpty)",
     );
   }
 
   // 3. Update CFO MyTasks rendering
-  final oldMyRender = '''              Text("\${t.deadline.day}/\${t.deadline.month}", style: const TextStyle(color: SageColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),''';
+  final oldMyRender =
+      '''              Text("\${t.deadline.day}/\${t.deadline.month}", style: const TextStyle(color: SageColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),''';
   final newMyRender = '''              Builder(
                 builder: (ctx) {
                   final typeStr = (t.taskType ?? '').toLowerCase();
@@ -170,7 +190,8 @@ void fixCfoDashboard() {
   }
 
   // 4. Update CFO PendingTasks rendering
-  final oldPendingRender = '''              Text("\${_getAssigneeName(t.assignedTo, state)} | \${t.deadline.day}/\${t.deadline.month}", style: TextStyle(color: Colors.red.shade700, fontSize: 12, fontWeight: FontWeight.bold)),''';
+  final oldPendingRender =
+      '''              Text("\${_getAssigneeName(t.assignedTo, state)} | \${t.deadline.day}/\${t.deadline.month}", style: TextStyle(color: Colors.red.shade700, fontSize: 12, fontWeight: FontWeight.bold)),''';
   final newPendingRender = '''              Builder(
                 builder: (ctx) {
                   final typeStr = (t.taskType ?? '').toLowerCase();

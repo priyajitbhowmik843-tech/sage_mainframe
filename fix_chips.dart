@@ -1,10 +1,10 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 void main() {
   final filesToEdit = [
     'lib/screens/employee_dashboard.dart',
     'lib/screens/marketing_executive_dashboard.dart',
-    'lib/screens/videographer_dashboard.dart'
+    'lib/screens/videographer_dashboard.dart',
   ];
 
   final uiInsert = '''
@@ -60,7 +60,7 @@ void main() {
   for (var filePath in filesToEdit) {
     final file = File(filePath);
     if (!file.existsSync()) continue;
-    
+
     var content = file.readAsStringSync();
     content = content.replaceFirst(uiFind.trim(), uiInsert.trim());
 

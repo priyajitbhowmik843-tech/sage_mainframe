@@ -1,4 +1,3 @@
-
 import "dart:io";
 
 void main() {
@@ -13,10 +12,15 @@ void main() {
     var c = text[i];
     if (c == '\n') lineNum++;
     // handle escaped quotes correctly but simple enough
-    if (c == "'" && !inString2 && (i == 0 || text[i-1] != '\\')) inString1 = !inString1;
-    if (c == '"' && !inString1 && (i == 0 || text[i-1] != '\\')) inString2 = !inString2;
+    if (c == "'" && !inString2 && (i == 0 || text[i - 1] != '\\'))
+      inString1 = !inString1;
+    if (c == '"' && !inString1 && (i == 0 || text[i - 1] != '\\'))
+      inString2 = !inString2;
     if (!inString1 && !inString2) {
-      if (c == '{') { count++; started = true; }
+      if (c == '{') {
+        count++;
+        started = true;
+      }
       if (c == '}') count--;
     }
     if (started && count == 0) {
@@ -25,4 +29,3 @@ void main() {
     }
   }
 }
-

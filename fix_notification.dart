@@ -12,8 +12,13 @@ void main() {
     var content = file.readAsStringSync();
 
     // Replace the corrupted string using a more relaxed regex
-    final corruptedPattern = RegExp(r'"\$dateStr \$timeStr[^"]+by \$\{n\.triggeredBy\}"');
-    content = content.replaceAll(corruptedPattern, '"\$dateStr \$timeStr • by \${n.triggeredBy}"');
+    final corruptedPattern = RegExp(
+      r'"\$dateStr \$timeStr[^"]+by \$\{n\.triggeredBy\}"',
+    );
+    content = content.replaceAll(
+      corruptedPattern,
+      '"\$dateStr \$timeStr • by \${n.triggeredBy}"',
+    );
 
     file.writeAsStringSync(content);
     print('Updated \$path');

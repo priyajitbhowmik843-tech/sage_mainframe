@@ -4,7 +4,8 @@ void main() {
   final file = File("lib/services/invoice_service.dart");
   String content = file.readAsStringSync();
 
-  String oldBottomArea = """                  // Bottom Area
+  String oldBottomArea =
+      """                  // Bottom Area
                   pw.Row(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -204,7 +205,8 @@ void main() {
                     ],
                   ),""";
 
-  String newBottomArea = """                  // Bottom Area
+  String newBottomArea =
+      """                  // Bottom Area
                   pw.Builder(
                     builder: (context) {
                       double baseAmount = client.monthlyPayable;

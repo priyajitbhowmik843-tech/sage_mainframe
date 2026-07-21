@@ -1,7 +1,10 @@
 import 'dart:io';
 
 void main() {
-  final files = ['lib/screens/ceo_dashboard.dart', 'lib/screens/cofounder_dashboard.dart'];
+  final files = [
+    'lib/screens/ceo_dashboard.dart',
+    'lib/screens/cofounder_dashboard.dart',
+  ];
 
   for (final path in files) {
     final file = File(path);
@@ -38,7 +41,7 @@ void main() {
                   child: DataTable(
                     headingRowColor: MaterialStateProperty.all(Colors.grey.shade200),
 ''';
-    
+
     content = content.replaceAll(oldBlock2, newBlock2);
 
     file.writeAsStringSync(content);

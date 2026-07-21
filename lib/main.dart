@@ -20,7 +20,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 // import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'firebase_options.dart';
 
-final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -30,17 +31,15 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await _showLocalNotificationFromData(message);
 }
 
-Future<void> _showLocalNotificationFromData(RemoteMessage message) async { }
+Future<void> _showLocalNotificationFromData(RemoteMessage message) async {}
 
 // final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
-Future<void> _setupNotificationChannels() async { }
+Future<void> _setupNotificationChannels() async {}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   if (!kIsWeb) {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     await _setupNotificationChannels();
@@ -61,7 +60,6 @@ void main() async {
 }
 
 class SageMainframeApp extends StatelessWidget {
-
   const SageMainframeApp({super.key});
 
   @override
@@ -83,14 +81,17 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   late AnimationController _pulse;
 
   @override
   void initState() {
     super.initState();
-    _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000))
-      ..repeat(reverse: true);
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
   }
 
   @override
@@ -114,7 +115,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             child: Center(
               child: Opacity(
                 opacity: 0.05,
-                child: Image.asset('assets/logo/sage_logo.png', fit: BoxFit.contain, width: 300),
+                child: Image.asset(
+                  'assets/logo/sage_logo.png',
+                  fit: BoxFit.contain,
+                  width: 300,
+                ),
               ),
             ),
           ),
@@ -134,7 +139,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                           child: child,
                         );
                       },
-                      child: Image.asset('assets/logo/sage_logo.png', height: 160),
+                      child: Image.asset(
+                        'assets/logo/sage_logo.png',
+                        height: 160,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -156,20 +164,26 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                       builder: (context, state, child) {
                         final allPersonas = [
                           ...AppState.personas,
-                          ...state.employees.map((e) => Persona(
-                                id: e.id,
-                                name: e.name,
-                                role: PersonaRole.employee,
-                                initials: e.name.isNotEmpty ? e.name[0].toUpperCase() : 'E',
-                                password: e.password,
-                              )),
+                          ...state.employees.map(
+                            (e) => Persona(
+                              id: e.id,
+                              name: e.name,
+                              role: PersonaRole.employee,
+                              initials: e.name.isNotEmpty
+                                  ? e.name[0].toUpperCase()
+                                  : 'E',
+                              password: e.password,
+                            ),
+                          ),
                         ];
 
                         if (allPersonas.isEmpty) {
                           return const Center(
                             child: Padding(
                               padding: EdgeInsets.all(16.0),
-                              child: CircularProgressIndicator(color: SageColors.yellowAccent),
+                              child: CircularProgressIndicator(
+                                color: SageColors.yellowAccent,
+                              ),
                             ),
                           );
                         }
@@ -179,7 +193,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                           child: ListView.separated(
                             shrinkWrap: true,
                             itemCount: allPersonas.length,
-                            separatorBuilder: (context, index) => const SizedBox(height: 8),
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 8),
                             itemBuilder: (context, index) {
                               final p = allPersonas[index];
                               return ElevatedButton(
@@ -187,16 +202,26 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                   backgroundColor: SageColors.surface,
                                   foregroundColor: SageColors.onSurface,
                                   alignment: Alignment.centerLeft,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    side: const BorderSide(color: SageColors.outline),
+                                    side: const BorderSide(
+                                      color: SageColors.outline,
+                                    ),
                                   ),
                                 ),
                                 onPressed: () async {
                                   await context.read<AppState>().login(p);
                                 },
-                                child: Text('${p.name} - ${p.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                child: Text(
+                                  '${p.name} - ${p.id}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               );
                             },
                           ),
@@ -230,20 +255,33 @@ class MainShell extends StatelessWidget {
 
   Widget _buildDashboard(BuildContext context, Persona persona) {
     switch (persona.role) {
-      case PersonaRole.ceo: return const CeoDashboard();
-      case PersonaRole.cofounder: return const CofounderDashboard();
+      case PersonaRole.ceo:
+        return const CeoDashboard();
+      case PersonaRole.cofounder:
+        return const CofounderDashboard();
       case PersonaRole.employee:
-        final empInState = context.watch<AppState>().employees.where((e) => e.id == persona.id).firstOrNull;
+        final empInState = context
+            .watch<AppState>()
+            .employees
+            .where((e) => e.id == persona.id)
+            .firstOrNull;
         if (empInState != null) {
-          final roles = empInState.role.split(',').map((r) => r.trim()).where((r) => r.isNotEmpty && r != 'None').toList();
+          final roles = empInState.role
+              .split(',')
+              .map((r) => r.trim())
+              .where((r) => r.isNotEmpty && r != 'None')
+              .toList();
           if (roles.length > 1) {
             // Multi-role employee -> use the smart DualRoleDashboard
             return DualRoleDashboard(roles: roles);
-          } else if (empInState.hasRole('videographer') || empInState.hasRole('videographer/cinematographer')) {
+          } else if (empInState.hasRole('videographer') ||
+              empInState.hasRole('videographer/cinematographer')) {
             return const VideographerDashboard();
-          } else if (empInState.hasRole('marketing executive') || empInState.hasRole('marketing')) {
+          } else if (empInState.hasRole('marketing executive') ||
+              empInState.hasRole('marketing')) {
             return const MarketingExecutiveDashboard();
-          } else if (empInState.hasRole('graphics editor') || empInState.hasRole('graphics')) {
+          } else if (empInState.hasRole('graphics editor') ||
+              empInState.hasRole('graphics')) {
             return const GraphicsEditorDashboard();
           }
         }
@@ -251,10 +289,3 @@ class MainShell extends StatelessWidget {
     }
   }
 }
-
-
-
-
-
-
-

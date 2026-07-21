@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -15,10 +15,10 @@ class FcmService {
   static Future<void> initializeAndSaveToken(String personaId) async {
     try {
       NotificationSettings settings = await _messaging.requestPermission();
-      
+
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
         String? token = await _messaging.getToken();
-        
+
         if (token != null) {
           await _firestore.collection('fcm_tokens').doc(personaId).set({
             'token': token,
@@ -26,11 +26,13 @@ class FcmService {
           });
           print('FCM Token saved for $personaId');
         }
-        
+
         // Listen for token refreshes
         await _tokenRefreshSub?.cancel();
-        _tokenRefreshSub = FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
-           _firestore.collection('fcm_tokens').doc(personaId).set({
+        _tokenRefreshSub = FirebaseMessaging.instance.onTokenRefresh.listen((
+          newToken,
+        ) {
+          _firestore.collection('fcm_tokens').doc(personaId).set({
             'token': newToken,
             'updatedAt': FieldValue.serverTimestamp(),
           });

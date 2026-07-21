@@ -4,7 +4,7 @@ import 'package:image/image.dart' as img;
 void main() {
   var file10 = File('../avtar/10.png');
   var file11 = File('../avtar/11.png');
-  
+
   if (file10.existsSync()) {
     var image10 = img.decodeImage(file10.readAsBytesSync());
     if (image10 != null) {

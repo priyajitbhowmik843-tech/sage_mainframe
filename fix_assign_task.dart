@@ -62,7 +62,9 @@ void main() {
       manualPaymentAmount: manualPaymentAmount,
     );''';
 
-  if (content.contains('bool isApprovedByVideographer = false,\n  }) async {')) {
+  if (content.contains(
+    'bool isApprovedByVideographer = false,\n  }) async {',
+  )) {
     content = content.replaceFirst(assignTaskFind, assignTaskReplace);
   } else {
     print("Could not find assignTask exact match.");

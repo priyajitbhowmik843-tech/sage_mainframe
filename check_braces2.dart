@@ -1,4 +1,3 @@
-
 import "dart:io";
 
 void main() {
@@ -11,8 +10,10 @@ void main() {
   for (int i = 0; i < text.length; i++) {
     var c = text[i];
     if (c == '\n') lineNum++;
-    if (c == "'" && !inString2 && (i == 0 || text[i-1] != '\\')) inString1 = !inString1;
-    if (c == '"' && !inString1 && (i == 0 || text[i-1] != '\\')) inString2 = !inString2;
+    if (c == "'" && !inString2 && (i == 0 || text[i - 1] != '\\'))
+      inString1 = !inString1;
+    if (c == '"' && !inString1 && (i == 0 || text[i - 1] != '\\'))
+      inString2 = !inString2;
     if (!inString1 && !inString2) {
       if (c == '{') count++;
       if (c == '}') count--;
@@ -23,4 +24,3 @@ void main() {
     }
   }
 }
-

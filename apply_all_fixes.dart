@@ -50,18 +50,21 @@ void main() {
   }
 
   void updateClientPaymentsDue''';
-    content = content.replaceFirst('  void updateClientPaymentsDue', payMiscStr);
+    content = content.replaceFirst(
+      '  void updateClientPaymentsDue',
+      payMiscStr,
+    );
   }
 
   // 2. Add manualPaymentAmount to assignTask
   if (!content.contains('double? manualPaymentAmount,')) {
     content = content.replaceFirst(
       'bool isApprovedByVideographer = false,\n  }) async {',
-      'bool isApprovedByVideographer = false,\n    double? manualPaymentAmount,\n  }) async {'
+      'bool isApprovedByVideographer = false,\n    double? manualPaymentAmount,\n  }) async {',
     );
     content = content.replaceFirst(
       'isApprovedByVideographer: isApprovedByVideographer,\n    );',
-      'isApprovedByVideographer: isApprovedByVideographer,\n      manualPaymentAmount: manualPaymentAmount,\n    );'
+      'isApprovedByVideographer: isApprovedByVideographer,\n      manualPaymentAmount: manualPaymentAmount,\n    );',
     );
   }
 
@@ -69,17 +72,19 @@ void main() {
   if (!content.contains("serviceType: (e.role == 'Videographer'")) {
     content = content.replaceFirst(
       "employeeId: e.id,\n          ),",
-      "employeeId: e.id,\n            serviceType: (e.role == 'Videographer' && monthStr.contains('Misc:')) ? 'Video Production' : null,\n          ),"
+      "employeeId: e.id,\n            serviceType: (e.role == 'Videographer' && monthStr.contains('Misc:')) ? 'Video Production' : null,\n          ),",
     );
   }
 
   // 4. Fix acknowledgeVideographerPayment string cleaning
-  final ackOld = '''        if (emp.pendingPayMonth != null && emp.pendingPayMonth!.isNotEmpty) {
+  final ackOld =
+      '''        if (emp.pendingPayMonth != null && emp.pendingPayMonth!.isNotEmpty) {
           List<String> items = emp.pendingPayMonth!.split(',').map((e) => e.trim()).toList();
           items.removeWhere((item) => item.contains(task.title));
           emp.pendingPayMonth = items.join(', ');
         }''';
-  final ackNew = '''        if (emp.pendingPayMonth != null && emp.pendingPayMonth!.isNotEmpty) {
+  final ackNew =
+      '''        if (emp.pendingPayMonth != null && emp.pendingPayMonth!.isNotEmpty) {
           List<String> items = emp.pendingPayMonth!.split(',').map((e) => e.trim()).toList();
           String targetStr1 = 'Misc: \${task.title}';
           String targetStr2 = task.title;

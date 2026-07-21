@@ -4,11 +4,11 @@ void main() {
   void fixFile(String path) {
     final file = File(path);
     if (!file.existsSync()) return;
-    
+
     String content;
     try {
       content = file.readAsStringSync();
-    } catch(e) {
+    } catch (e) {
       // fallback
       var bytes = file.readAsBytesSync();
       content = String.fromCharCodes(bytes);
@@ -35,7 +35,7 @@ void main() {
       content = content.replaceAll(payRegex, '₹\${emp.pendingPayAmount');
       changed = true;
     }
-    
+
     // Also try without non-ascii for pay amount just in case
     final payRegex2 = RegExp(r'[^"]*,1\$\{emp\.pendingPayAmount');
     if (payRegex2.hasMatch(content)) {
@@ -49,10 +49,13 @@ void main() {
       content = content.replaceAll(genericRegex, '₹\${');
       changed = true;
     }
-    
+
     // Check if it's literally `,1${` without any special characters before it
     if (content.contains('",1\${emp.pendingPayMonth}')) {
-      content = content.replaceAll('",1\${emp.pendingPayMonth}', '₹\${emp.pendingPayMonth}');
+      content = content.replaceAll(
+        '",1\${emp.pendingPayMonth}',
+        '₹\${emp.pendingPayMonth}',
+      );
       changed = true;
     }
 
@@ -61,7 +64,7 @@ void main() {
       content = content.replaceAll('const Column(', 'Column(');
       changed = true;
     }
-    
+
     if (changed) {
       file.writeAsStringSync(content);
       print('Fixed regex corruption in \$path');

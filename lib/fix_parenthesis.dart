@@ -19,22 +19,24 @@ void main() {
     // Check if it already has WillPopScope. If not, it means my previous script didn't even run on it?
     // It should have it.
     if (!content.contains('WillPopScope(')) continue;
-    
+
     // We want to insert `\n    );` right before `\n  }\n\n  ` where the next method starts.
     // To handle \r\n vs \n, we can use \r?\n.
-    final methodStartRegex = RegExp(r'\r?\n  \}\r?\n\r?\n  (Widget|Color|String|bool|void|List) _');
-    
+    final methodStartRegex = RegExp(
+      r'\r?\n  \}\r?\n\r?\n  (Widget|Color|String|bool|void|List) _',
+    );
+
     // Check if we ALREADY added it (in case we run this multiple times)
     // If we already have `\r?\n    \);\r?\n  \}` we don't need to add another unless we need to.
     // Actually, originally it had ONE `);\r?\n  }`. We need TWO `);\r?\n    );\r?\n  }`.
     // So if it doesn't match `\);\r?\n    \);\r?\n  \}`, we replace it.
-    
+
     bool changed = false;
     content = content.replaceFirstMapped(methodStartRegex, (match) {
       changed = true;
       return '\n    );\n  }\n\n  ${match.group(1)} _';
     });
-    
+
     if (changed) {
       f.writeAsStringSync(content);
       print('Fixed parenthesis in \$file');

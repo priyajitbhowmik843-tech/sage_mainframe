@@ -5,7 +5,7 @@ void main() {
   void printLines(String path, int start, int end) {
     final file = File(path);
     if (!file.existsSync()) return;
-    
+
     final lines = file.readAsLinesSync(encoding: utf8);
     print('--- \$path ---');
     for (int i = start - 1; i < end && i < lines.length; i++) {

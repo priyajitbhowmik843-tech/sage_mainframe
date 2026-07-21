@@ -1,8 +1,11 @@
 import 'dart:io';
 
 void main() {
-  final files = ['lib/screens/ceo_dashboard.dart', 'lib/screens/cofounder_dashboard.dart'];
-  
+  final files = [
+    'lib/screens/ceo_dashboard.dart',
+    'lib/screens/cofounder_dashboard.dart',
+  ];
+
   for (final path in files) {
     final file = File(path);
     var content = file.readAsStringSync();
@@ -59,17 +62,17 @@ void main() {
 
     content = content.replaceAll(
       '                          const SizedBox(height: 10),\n                          Row(\n                            children: [\n                              ElevatedButton(\n                                onPressed: () => _showSkuLogDialog(context, c),\n                                style: ElevatedButton.styleFrom(\n                                  backgroundColor: const Color(0xFF0D0E0E),\n                                  foregroundColor: Colors.white,\n                                ),\n                                child: const Text("Log Daily SKUs"),\n                              ),\n                            ],\n                          ),\n                          const SizedBox(height: 10),',
-      '$skuTrackerCode                          Row(\n                            children: [\n                              ElevatedButton(\n                                onPressed: () => _showSkuLogDialog(context, c),\n                                style: ElevatedButton.styleFrom(\n                                  backgroundColor: const Color(0xFF0D0E0E),\n                                  foregroundColor: Colors.white,\n                                ),\n                                child: const Text("Log Daily SKUs"),\n                              ),\n                            ],\n                          ),\n                          const SizedBox(height: 10),'
+      '$skuTrackerCode                          Row(\n                            children: [\n                              ElevatedButton(\n                                onPressed: () => _showSkuLogDialog(context, c),\n                                style: ElevatedButton.styleFrom(\n                                  backgroundColor: const Color(0xFF0D0E0E),\n                                  foregroundColor: Colors.white,\n                                ),\n                                child: const Text("Log Daily SKUs"),\n                              ),\n                            ],\n                          ),\n                          const SizedBox(height: 10),',
     );
 
     // 2. Fix the state dropdown logic to initialize local values based on a clean casing
     content = content.replaceAll(
       'String localServiceType = \'Marketing\';',
-      'String localServiceType = c.serviceType.toLowerCase().contains(\'commerce\') ? \'E-Commerce\' : c.serviceType;'
+      'String localServiceType = c.serviceType.toLowerCase().contains(\'commerce\') ? \'E-Commerce\' : c.serviceType;',
     );
     content = content.replaceAll(
       'String serviceType = c.serviceType;',
-      'String serviceType = c.serviceType.toLowerCase().contains(\'commerce\') ? \'E-Commerce\' : c.serviceType;'
+      'String serviceType = c.serviceType.toLowerCase().contains(\'commerce\') ? \'E-Commerce\' : c.serviceType;',
     );
 
     file.writeAsStringSync(content);
@@ -81,7 +84,7 @@ void main() {
   var modelContent = modelFile.readAsStringSync();
   modelContent = modelContent.replaceAll(
     'serviceType: data[\'serviceType\'] ?? \'Marketing\',',
-    'serviceType: (data[\'serviceType\'] ?? \'Marketing\').toString().toLowerCase() == \'e-commerce\' ? \'E-Commerce\' : (data[\'serviceType\'] ?? \'Marketing\'),'
+    'serviceType: (data[\'serviceType\'] ?? \'Marketing\').toString().toLowerCase() == \'e-commerce\' ? \'E-Commerce\' : (data[\'serviceType\'] ?? \'Marketing\'),',
   );
   modelFile.writeAsStringSync(modelContent);
   print("Updated models.dart");

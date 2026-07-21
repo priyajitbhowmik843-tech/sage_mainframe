@@ -53,7 +53,8 @@ void replaceMethod(File file, String methodName, String newMethod) {
   }
   if (endIndex != -1) {
     int methodStart = content.lastIndexOf('void ', startIndex);
-    if (methodStart == -1 || methodStart < startIndex - 20) methodStart = startIndex;
+    if (methodStart == -1 || methodStart < startIndex - 20)
+      methodStart = startIndex;
     content = content.replaceRange(methodStart, endIndex, newMethod);
     file.writeAsStringSync(content);
   }
@@ -61,7 +62,7 @@ void replaceMethod(File file, String methodName, String newMethod) {
 
 void main() {
   final ceoFile = File('lib/screens/ceo_dashboard.dart');
-  
+
   String addMemberMethod = '''
   void _showAddMemberDialog(BuildContext context) {
     final nameCtrl = TextEditingController();
@@ -298,6 +299,6 @@ void main() {
   replaceMethod(ceoFile, 'void _showAddMemberDialog', addMemberMethod);
   replaceMethod(ceoFile, 'void _showAddLedgerDialog', addLedgerMethod);
   replaceMethod(ceoFile, 'void _showEditEmployeeDialog', editMemberMethod);
-  
+
   print('Done patching CEO dashboard');
 }

@@ -22,7 +22,7 @@ String replaceMyTasks(String content) {
           margin: const EdgeInsets.only(bottom: 6),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.black, width: 1.5)),''';
-          
+
   final newPrefix = '''      children: myTasks.map((t) {
         final typeStr = (t.taskType ?? '').toLowerCase();
         Color typeColor = Colors.black;
@@ -37,7 +37,7 @@ String replaceMyTasks(String content) {
           margin: const EdgeInsets.only(bottom: 6),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: typeColor == Colors.black ? Colors.white : typeColor.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: typeColor == Colors.black ? Colors.black : typeColor, width: 1.5)),''';
-          
+
   if (content.contains(oldPrefix)) {
     content = content.replaceAll(oldPrefix, newPrefix);
   }
@@ -88,7 +88,7 @@ String replacePendingTasks(String content) {
           margin: const EdgeInsets.only(bottom: 6),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.red.shade200)),''';
-          
+
   final newPrefix = '''      children: pendingTasks.map((t) {
         final typeStr = (t.taskType ?? '').toLowerCase();
         Color typeColor = Colors.black;
@@ -103,7 +103,7 @@ String replacePendingTasks(String content) {
           margin: const EdgeInsets.only(bottom: 6),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: typeColor == Colors.black ? Colors.white : typeColor.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: typeColor == Colors.black ? Colors.black : typeColor, width: 1.5)),''';
-          
+
   if (content.contains(oldPrefix)) {
     content = content.replaceAll(oldPrefix, newPrefix);
   }

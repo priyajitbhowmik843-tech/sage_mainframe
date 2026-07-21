@@ -1,4 +1,3 @@
-
 import "dart:io";
 
 void main() {
@@ -12,4 +11,3 @@ void main() {
     print("Could not find method.");
   }
 }
-

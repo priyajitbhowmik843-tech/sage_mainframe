@@ -3,15 +3,16 @@ import 'dart:io';
 void main() {
   final file = File('lib/screens/videographer_dashboard.dart');
   String content = file.readAsStringSync();
-  
+
   final startStr = 'Widget _buildFinanceTab';
   final endStr = 'Widget _buildProfileTab';
-  
+
   final startIndex = content.indexOf(startStr);
   final endIndex = content.indexOf(endStr);
-  
+
   if (startIndex != -1 && endIndex != -1) {
-    final cleanFinanceTab = '''Widget _buildFinanceTab(BuildContext context, AppState state, Persona persona) {
+    final cleanFinanceTab =
+        '''Widget _buildFinanceTab(BuildContext context, AppState state, Persona persona) {
     final now = DateTime.now();
     final myTasks = state.tasks.where((t) => t.assignedTo == persona.id && t.taskType == 'Session').toList();
     final monthSessions = myTasks.where((t) => t.deadline.year == now.year && t.deadline.month == now.month).toList();
@@ -76,7 +77,7 @@ void main() {
   }
 
   ''';
-    
+
     content = content.replaceRange(startIndex, endIndex, cleanFinanceTab);
     file.writeAsStringSync(content);
     print("Fixed videographer finance tab!");

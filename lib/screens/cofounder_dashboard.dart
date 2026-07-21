@@ -39,6 +39,7 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
     TextEditingController skuCtrl = TextEditingController(text: "0");
     TextEditingController dupSkuCtrl = TextEditingController(text: "0");
     TextEditingController catCtrl = TextEditingController(text: "0");
+    TextEditingController discountCtrl = TextEditingController(text: "0");
 
     showDialog(
       context: context,
@@ -94,6 +95,12 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: discountCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: "Discount (\u20B9)"),
                   ),
                   if (c.serviceType.toLowerCase().contains('commerce') &&
                       c.ecomPaymentType == 'Per SKU') ...[
@@ -165,10 +172,821 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                       paymentMethod,
                       paymentDate,
                       amountOverride,
+                      double.tryParse(discountCtrl.text) ?? 0.0,
                     );
                     Navigator.pop(ctx);
                   },
                   child: const Text("SAVE PAYMENT"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAddOnPaymentDialog(
+    BuildContext context,
+    Client c,
+    ClientAddOn addOn,
+  ) {
+    String paymentMethod = 'UPI';
+    DateTime paymentDate = DateTime.now();
+    bool isPartial = false;
+    final partialCtrl = TextEditingController();
+    final discountCtrl = TextEditingController(text: "0");
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          backgroundColor: SageColors.background,
+          title: Text(
+            "Pay Add-On: ${addOn.type}",
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: paymentMethod,
+                  items: ['UPI', 'Bank Transfer', 'Cash']
+                      .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                      .toList(),
+                  onChanged: (v) => setState(() => paymentMethod = v!),
+                  decoration: const InputDecoration(
+                    labelText: "Payment Method",
+                  ),
+                ),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () async {
+                    final d = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2030),
+                    );
+                    if (d != null) setState(() => paymentDate = d);
+                  },
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: "Date",
+                      border: OutlineInputBorder(),
+                    ),
+                    child: Text(paymentDate.toString().substring(0, 10)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Amount: \u20B9${addOn.amount.toStringAsFixed(0)}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Switch(
+                          value: isPartial,
+                          onChanged: (val) {
+                            setState(() => isPartial = val);
+                          },
+                          activeColor: SageColors.primary,
+                        ),
+                        const Text("Partial?", style: TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  ],
+                ),
+                if (isPartial) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: partialCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: "Partial Amount (\u20B9)",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text(
+                "CANCEL",
+                style: TextStyle(color: Colors.black54),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: SageColors.primary,
+              ),
+              onPressed: () {
+                double? amt;
+                if (isPartial) {
+                  amt = double.tryParse(partialCtrl.text);
+                  if (amt == null || amt <= 0) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text("Enter a valid amount")),
+                    );
+                    return;
+                  }
+                }
+                
+                context.read<AppState>().payClientAddOn(
+                  c.id,
+                  addOn.id,
+                  paymentMethod,
+                  paymentDate,
+                  amountPaid: amt,
+                );
+                Navigator.pop(ctx);
+              },
+              child: const Text("SAVE PAYMENT"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLeadMeetingDialog(BuildContext context, String leadId) {
+    List<String> assignees = [];
+    bool isPhysical = true;
+    final commentsCtrl = TextEditingController();
+    DateTime? selectedDate = DateTime.now();
+    TimeOfDay selectedTime = const TimeOfDay(hour: 10, minute: 0);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) {
+          final state = context.watch<AppState>();
+          final lead = state.clients.where((c) => c.id == leadId).firstOrNull;
+          if (lead == null) return const SizedBox();
+
+          return Dialog(
+            backgroundColor: SageColors.background,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              width: 400,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "SCHEDULE LEAD MEETING",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  Text(
+                    "Lead: ${lead.name}",
+                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 16),
+                  SageMultiSelectDropdown<Map<String, String>>(
+                    selectedItems: (() {
+                      final List<Map<String, String>> options = [
+                        {'id': 'CEO-SOH-001', 'name': 'CEO Sohini'},
+                        {'id': 'COF-PRI-001', 'name': 'CFO Priyajit'},
+                        {'id': 'COF-RIT-001', 'name': 'CFO Ritam'},
+                      ];
+                      options.addAll(
+                        state.employees
+                            .where((e) => e.hasRole('marketing'))
+                            .map((e) => {'id': e.id, 'name': e.name}),
+                      );
+                      return options
+                          .where((e) => assignees.contains(e['id']))
+                          .toList();
+                    })(),
+                    items: (() {
+                      final List<Map<String, String>> options = [
+                        {'id': 'CEO-SOH-001', 'name': 'CEO Sohini'},
+                        {'id': 'COF-PRI-001', 'name': 'CFO Priyajit'},
+                        {'id': 'COF-RIT-001', 'name': 'CFO Ritam'},
+                      ];
+                      options.addAll(
+                        state.employees
+                            .where((e) => e.hasRole('marketing'))
+                            .map((e) => {'id': e.id, 'name': e.name}),
+                      );
+                      return options;
+                    })(),
+                    labelBuilder: (item) => item['name']!,
+                    labelText: "Assign To (Select multiple)",
+                    onChanged: (v) =>
+                        setS(() => assignees = v.map((e) => e['id']!).toList()),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            final d = await showDatePicker(
+                              context: context,
+                              initialDate: DateTime.now(),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime(2030),
+                            );
+                            if (d != null) setS(() => selectedDate = d);
+                          },
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: "Date",
+                              border: OutlineInputBorder(),
+                            ),
+                            child: Text(
+                              selectedDate?.toString().substring(0, 10) ??
+                                  "Select Date",
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            final t = await showTimePicker(
+                              context: context,
+                              initialTime: selectedTime,
+                            );
+                            if (t != null) setS(() => selectedTime = t);
+                          },
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: "Time",
+                              border: OutlineInputBorder(),
+                            ),
+                            child: Text(selectedTime.format(context)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    title: Text(
+                      isPhysical ? "Physical Meeting" : "Digital Meeting",
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    value: isPhysical,
+                    onChanged: (v) => setS(() => isPhysical = v),
+                    activeColor: Colors.green,
+                  ),
+                  const SizedBox(height: 12),
+                  SageTextField(
+                    controller: commentsCtrl,
+                    label: "Comments",
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text(
+                          "CANCEL",
+                          style: TextStyle(color: Colors.black54),
+                        ),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: SageColors.primary,
+                        ),
+                        onPressed: (assignees.isEmpty || selectedDate == null)
+                            ? null
+                            : () async {
+                                final finalDeadline = DateTime(
+                                  selectedDate!.year,
+                                  selectedDate!.month,
+                                  selectedDate!.day,
+                                  selectedTime.hour,
+                                  selectedTime.minute,
+                                );
+                                final meetingMode = isPhysical
+                                    ? "[Physical]"
+                                    : "[Digital]";
+
+                                context.read<AppState>().addClientFollowUp(
+                                  leadId,
+                                  selectedDate!.toString().substring(0, 10),
+                                );
+
+                                for (final assignee in assignees) {
+                                  await context.read<AppState>().assignTask(
+                                    title: "Lead Meeting - ${lead.name}",
+                                    description:
+                                        "$meetingMode ${commentsCtrl.text}",
+                                    assignedTo: assignee,
+                                    deadline: finalDeadline,
+                                    taskType: 'Lead Meeting',
+                                    clientId: leadId,
+                                  );
+                                }
+                                Navigator.pop(ctx);
+                              },
+                        child: const Text("SCHEDULE & FOLLOW-UP"),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final persona = state.activePersona;
+
+    return WillPopScope(
+      onWillPop: () async {
+        if (_tab != 0) {
+          _switchTab(0);
+          return false;
+        }
+        return true;
+      },
+      child: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
+          // Reset calendar when tapping anywhere outside the calendar selection
+          setState(() {
+            _selectedCalendarDate = null;
+            _calendarMonth = DateTime(
+              DateTime.now().year,
+              DateTime.now().month,
+              1,
+            );
+          });
+        },
+        behavior: HitTestBehavior.translucent,
+        child: Scaffold(
+          backgroundColor: SageColors.background,
+          body: Stack(
+            children: [
+              // Header Background Color Block
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 180,
+                  decoration: BoxDecoration(
+                    color: _getHeaderColor(),
+                    border: const Border(
+                      bottom: BorderSide(color: Colors.black, width: 1.5),
+                    ),
+                  ),
+                ),
+              ),
+
+              SafeArea(
+                bottom: false,
+                child: Column(
+                  children: [
+                    // Top Custom Header Row
+                    _buildTopHeader(context, persona),
+
+                    // Active Page Content
+                    Expanded(
+                      child: PageView(
+                        controller: _pageController,
+                        onPageChanged: (index) {
+                          if (_tab != index) {
+                            setState(() {
+                              _tab = index;
+                              _tabKeyCounter++;
+                              _bucket = PageStorageBucket();
+                              _clientExpControllers.clear();
+                              _empExpControllers.clear();
+                              _personaExpControllers.clear();
+                              _clientSubTab = 'ACTIVE';
+                              _taskSubTab = 'CALENDAR';
+                              if (index == 3) {
+                                _calendarMonth = DateTime.now();
+                                _selectedCalendarDate = null;
+                              }
+                            });
+                          }
+                        },
+                        children: [
+                          SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(14, 10, 14, 100),
+                            child: _buildHomeTab(),
+                          ),
+                          SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(14, 10, 14, 100),
+                            child: _buildClientsTab(),
+                          ),
+                          SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(14, 10, 14, 100),
+                            child: _buildPersonnelTab(),
+                          ),
+                          SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(14, 10, 14, 100),
+                            child: _buildTasksTab(),
+                          ),
+                          SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(14, 10, 14, 100),
+                            child: _buildFinanceTab(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Floating Bottom Navigation Bar (5 icons)
+              Positioned(
+                bottom: 20,
+                left: 16,
+                right: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: SageColors.yellowAccent,
+                    borderRadius: BorderRadius.circular(40),
+                    border: Border.all(color: Colors.black, width: 1.5),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black,
+                        offset: Offset(4, 4),
+                        blurRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildBottomIcon(0, Icons.home_outlined, Icons.home),
+                      _buildBottomIcon(
+                        1,
+                        Icons.business_outlined,
+                        Icons.business,
+                        badgeCount: state.clients
+                            .where((c) => !c.isApprovedByCeo)
+                            .length,
+                      ),
+                      _buildBottomIcon(2, Icons.badge_outlined, Icons.badge),
+                      _buildBottomIcon(
+                        3,
+                        Icons.assignment_outlined,
+                        Icons.assignment,
+                        badgeCount: _getNavTaskBadgeCount(state),
+                      ),
+                      _buildBottomIcon(
+                        4,
+                        Icons.account_balance_outlined,
+                        Icons.account_balance,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  int _getNavTaskBadgeCount(AppState state) {
+    return state.tasks.where((t) {
+      if (t.isCompleted) return false;
+      if (t.assignedTo == state.activePersona.id) return true;
+      if (t.isSubmitted || t.isPostponeRequested) return true;
+      final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day);
+      final isToday =
+          t.deadline.year == now.year &&
+          t.deadline.month == now.month &&
+          t.deadline.day == now.day;
+      final isOverdue = t.deadline.isBefore(todayStart);
+      if (isToday || isOverdue) return true;
+      return false;
+    }).length;
+  }
+
+  Color _getHeaderColor() {
+    switch (_tab) {
+      case 0:
+        return SageColors.yellowAccentContainer;
+      case 1:
+        return SageColors.primaryContainer; // Light green for clients
+      case 2:
+        return SageColors.secondaryContainer; // Coral for team
+      case 3:
+        return SageColors.primaryContainer; // Green for tasks
+      case 4:
+        return SageColors.tertiaryContainer; // Purple for finance
+      default:
+        return SageColors.background;
+    }
+  }
+
+  void _showInvoiceMonthDialog(BuildContext context, Client c) {
+    final pendingMonths = c.pendingMonths;
+    if (pendingMonths.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: SageColors.surface,
+          title: const Text(
+            "No Pending Invoices",
+            style: TextStyle(color: SageColors.onSurface),
+          ),
+          content: const Text(
+            "This client has no pending months to generate an invoice for. They have either paid for all active months, or they just joined.",
+            style: TextStyle(color: SageColors.onSurfaceVariant),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                "OK",
+                style: TextStyle(color: SageColors.primary),
+              ),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    int selectedMonth = pendingMonths.first;
+    List<ClientAddOn> unbilledAddOns = c.addOns
+        .where((a) => !a.isBilled && !a.isPaid)
+        .toList();
+    List<String> selectedAddOnIds = [];
+    Map<String, bool> partialPaymentToggles = {};
+    Map<String, TextEditingController> partialPaymentControllers = {};
+    final monthDiscountCtrl = TextEditingController(text: "0");
+    final discountCtrl = TextEditingController(text: "0");
+
+    for (var a in unbilledAddOns) {
+      partialPaymentToggles[a.id] = false;
+      partialPaymentControllers[a.id] = TextEditingController();
+    }
+
+    // Helper to get month string
+    String getMonthName(int m) {
+      return DateFormat('MMMM').format(DateTime(2000, m, 1));
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: SageColors.surface,
+              title: const Text(
+                "Select Pending Month",
+                style: TextStyle(color: SageColors.onSurface),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Choose which pending month to generate the invoice for:",
+                      style: TextStyle(color: SageColors.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<int>(
+                      value: selectedMonth,
+                      dropdownColor: SageColors.surface,
+                      style: const TextStyle(color: SageColors.onSurface),
+                      items: pendingMonths.map((m) {
+                        return DropdownMenuItem<int>(
+                          value: m,
+                          child: Text(getMonthName(m)),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => selectedMonth = val);
+                        }
+                      },
+                      decoration: const InputDecoration(
+                        filled: true,
+                        fillColor: SageColors.background,
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: discountCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: "Month Discount (\u20B9)",
+                        filled: true,
+                        fillColor: SageColors.background,
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: monthDiscountCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: "Month Discount (\u20B9)",
+                        filled: true,
+                        fillColor: SageColors.background,
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    if (unbilledAddOns.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      const Text(
+                        "Include Add-Ons in this invoice:",
+                        style: TextStyle(
+                          color: SageColors.onSurfaceVariant,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ...unbilledAddOns.map((addOn) {
+                        bool isSelected = selectedAddOnIds.contains(addOn.id);
+                        bool isPartial = partialPaymentToggles[addOn.id] ?? false;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CheckboxListTile(
+                              title: Text(
+                                "${addOn.type} - \u20B9${addOn.amount.toStringAsFixed(0)}",
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              subtitle:
+                                  addOn.description != null &&
+                                          addOn.description!.isNotEmpty
+                                      ? Text(
+                                          addOn.description!,
+                                          style: const TextStyle(fontSize: 10),
+                                        )
+                                      : null,
+                              value: isSelected,
+                              onChanged: (val) {
+                                setState(() {
+                                  if (val == true) {
+                                    selectedAddOnIds.add(addOn.id);
+                                  } else {
+                                    selectedAddOnIds.remove(addOn.id);
+                                  }
+                                });
+                              },
+                              controlAffinity: ListTileControlAffinity.leading,
+                              contentPadding: EdgeInsets.zero,
+                              activeColor: SageColors.primary,
+                            ),
+                            if (isSelected)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 32.0, bottom: 8.0),
+                                child: Row(
+                                  children: [
+                                    Switch(
+                                      value: isPartial,
+                                      onChanged: (val) {
+                                        setState(() {
+                                          partialPaymentToggles[addOn.id] = val;
+                                        });
+                                      },
+                                      activeColor: SageColors.primary,
+                                    ),
+                                    const Text("Partial Payment", style: TextStyle(fontSize: 11, color: SageColors.onSurfaceVariant)),
+                                    if (isPartial) ...[
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: TextField(
+                                          controller: partialPaymentControllers[addOn.id],
+                                          keyboardType: TextInputType.number,
+                                          style: const TextStyle(color: SageColors.onSurface, fontSize: 12),
+                                          decoration: const InputDecoration(
+                                            hintText: "Amount (\u20B9)",
+                                            isDense: true,
+                                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                          ),
+                                        ),
+                                      ),
+                                    ]
+                                  ],
+                                ),
+                              ),
+                          ],
+                        );
+                      }),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    "CANCEL",
+                    style: TextStyle(color: SageColors.onSurfaceVariant),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Generating Invoice...")),
+                    );
+                    try {
+                      DateTime invoiceDate = DateTime(
+                        DateTime.now().year,
+                        selectedMonth,
+                      );
+
+                      Map<String, double> partialPayments = {};
+                      List<ClientAddOn> selectedAddOnsForInvoice = [];
+                      List<String> fullyBilledAddOnIds = [];
+
+                      for (var addOn in c.addOns) {
+                        if (selectedAddOnIds.contains(addOn.id)) {
+                          bool isPartial = partialPaymentToggles[addOn.id] ?? false;
+                          double partialAmt = double.tryParse(partialPaymentControllers[addOn.id]?.text ?? '') ?? 0.0;
+
+                          if (isPartial && partialAmt > 0 && partialAmt < addOn.amount) {
+                            partialPayments[addOn.id] = partialAmt;
+                            selectedAddOnsForInvoice.add(
+                              ClientAddOn(
+                                id: addOn.id,
+                                type: addOn.type,
+                                description: "${addOn.description ?? ''} (Partial Payment)".trim(),
+                                amount: partialAmt,
+                                isBilled: false,
+                                isPaid: false,
+                                dateAdded: addOn.dateAdded,
+                              ),
+                            );
+                          } else {
+                            fullyBilledAddOnIds.add(addOn.id);
+                            selectedAddOnsForInvoice.add(addOn);
+                          }
+                        }
+                      }
+
+                      await InvoiceService.generateAndShareInvoice(
+                        c,
+                        invoiceDate,
+                        selectedAddOns: selectedAddOnsForInvoice,
+                        monthDiscount: double.tryParse(discountCtrl.text) ?? 0.0,
+                      );
+                      
+                      if (fullyBilledAddOnIds.isNotEmpty || partialPayments.isNotEmpty) {
+                        context.read<AppState>().processAddOnPayments(
+                          c.id,
+                          fullyBilledAddOnIds,
+                          partialPayments,
+                        );
+                      }
+
+                      if (context.mounted)
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Invoice Generated")),
+                        );
+                    } catch (e) {
+                      if (context.mounted)
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+                    }
+                  },
+                  child: const Text(
+                    "GENERATE",
+                    style: TextStyle(
+                      color: SageColors.secondary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             );
@@ -2423,6 +3241,139 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                         ],
                       ),
                     ],
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: SageColors.background,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: SwitchListTile(
+                        title: const Text("Website Handling Service", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54)),
+                        value: c.isWebsiteHandlingActive,
+                        activeColor: SageColors.primary,
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (val) async {
+                          if (val) {
+                            final ok = await showConfirmDialog(context, "Enable Website Handling", "Are you sure you want to enable the Website Handling Service for ${c.name}?");
+                            if (!ok || !context.mounted) return;
+                            showDialog(
+                              context: context,
+                              builder: (ctx) {
+                                final feeCtrl = TextEditingController(text: c.websiteHandlingFee.toString());
+                                return AlertDialog(
+                                  title: const Text("Website Handling Fee"),
+                                  content: TextField(controller: feeCtrl, keyboardType: TextInputType.number),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+                                    TextButton(
+                                      onPressed: () {
+                                        context.read<AppState>().updateClient(c.id, isWebsiteHandlingActive: true, websiteHandlingFee: double.tryParse(feeCtrl.text) ?? 0.0);
+                                        Navigator.pop(ctx);
+                                      },
+                                      child: const Text("SAVE"),
+                                    ),
+                                  ],
+                                );
+                              }
+                            );
+                          } else {
+                            final ok = await showConfirmDialog(context, "Disable Website Handling", "Are you sure you want to disable the Website Handling Service for ${c.name}?");
+                            if (!ok || !context.mounted) return;
+                            context.read<AppState>().updateClient(c.id, isWebsiteHandlingActive: false, websiteHandlingFee: 0.0);
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      "Add-Ons",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (c.addOns.isNotEmpty)
+                      ...c.addOns.map(
+                        (addOn) => Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                "${addOn.type} ${addOn.description != null && addOn.description!.isNotEmpty ? '- ${addOn.description}' : ''}",
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Text(
+                                  "(+\u20B9${addOn.amount.toStringAsFixed(0)})",
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (!addOn.isPaid)
+                                  TextButton(
+                                    onPressed: () => _showAddOnPaymentDialog(
+                                      context,
+                                      c,
+                                      addOn,
+                                    ),
+                                    child: const Text(
+                                      "Pay",
+                                      style: TextStyle(
+                                        color: SageColors.primary,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8.0,
+                                    ),
+                                    child: Text(
+                                      "Paid",
+                                      style: TextStyle(
+                                        color: Colors.green,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    size: 16,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () async {
+                                    final ok = await showConfirmDialog(context, "Delete Add-On", "Are you sure you want to delete this Add-On?");
+                                    if (!ok || !context.mounted) return;
+                                    context.read<AppState>().deleteClientAddOn(c.id, addOn.id);
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () => _showAddOnDialog(context, c),
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text(
+                          "Add New Add-On",
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ),
+
                     const Divider(color: Colors.black26),
                     if (c.postRequirements.isNotEmpty &&
                         c.postRequirements != 'TBD')
@@ -2546,6 +3497,20 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          if (_clientSubTab == 'ACTIVE')
+                            TextButton(
+                              onPressed: () {
+                                _showInvoiceMonthDialog(context, c);
+                              },
+                              child: const Text(
+                                "GENERATE INVOICE",
+                                style: TextStyle(
+                                  color: SageColors.secondary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
                           TextButton(
                             onPressed: () => _showEditClientDialog(context, c),
                             child: const Text(

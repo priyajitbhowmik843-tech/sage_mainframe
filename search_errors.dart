@@ -6,7 +6,7 @@ void main() {
     if (!file.existsSync()) return;
 
     final lines = file.readAsStringSync().split('\n');
-    final regex = RegExp(r'[^(\[\{:,=]\s*"₹\$\{'); 
+    final regex = RegExp(r'[^(\[\{:,=]\s*"₹\$\{');
 
     for (int i = 0; i < lines.length; i++) {
       if (regex.hasMatch(lines[i])) {

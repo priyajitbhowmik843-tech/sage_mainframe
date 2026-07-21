@@ -1,25 +1,32 @@
-
 import "dart:io";
 
 void main() {
   final ceoFile = File("lib/screens/ceo_dashboard.dart");
   var ceoText = ceoFile.readAsStringSync();
-  
+
   final cfoFile = File("lib/screens/cofounder_dashboard.dart");
   var cfoText = cfoFile.readAsStringSync();
-  
+
   // Extract _showAddOnPaymentDialog from ceo_dashboard
   int startIdx = ceoText.indexOf("  void _showAddOnPaymentDialog(");
   int endIdx = ceoText.indexOf("  void _showFinanceAddModal", startIdx);
   if (endIdx == -1) endIdx = ceoText.indexOf("  void ", startIdx + 10);
-  
+
   String dialogCode = ceoText.substring(startIdx, endIdx);
-  
+
   // Inject into cofounder_dashboard
   if (!cfoText.contains("void _showAddOnPaymentDialog(")) {
     int insertIdx = cfoText.indexOf("  void _showFinanceAddModal");
-    if (insertIdx == -1) insertIdx = cfoText.indexOf("  void ", cfoText.indexOf("class _CofounderDashboardState"));
-    cfoText = cfoText.substring(0, insertIdx) + dialogCode + "\n" + cfoText.substring(insertIdx);
+    if (insertIdx == -1)
+      insertIdx = cfoText.indexOf(
+        "  void ",
+        cfoText.indexOf("class _CofounderDashboardState"),
+      );
+    cfoText =
+        cfoText.substring(0, insertIdx) +
+        dialogCode +
+        "\n" +
+        cfoText.substring(insertIdx);
   }
 
   // --- CFO Dashboard Add-On UI Replacement ---
@@ -123,6 +130,4 @@ void main() {
 
   cfoFile.writeAsStringSync(cfoText);
   print("Updated cofounder_dashboard.dart");
-
 }
-

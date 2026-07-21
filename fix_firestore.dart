@@ -1,4 +1,3 @@
-
 import "dart:io";
 
 void main() {
@@ -75,7 +74,8 @@ void main() {
   content = content.replaceAll(oldToFirestore, newToFirestore);
 
   // Fix Client.fromFirestore
-  String oldFromFirestore = """      isPaidForMonth: data['isPaidForMonth'] ?? false,
+  String oldFromFirestore =
+      """      isPaidForMonth: data['isPaidForMonth'] ?? false,
       assignedVideographerId: data['assignedVideographerId'],
       sessionRate: (data['sessionRate'] ?? 0).toDouble(),
       serviceType: data['serviceType'] ?? 'Social Media Management',
@@ -93,7 +93,8 @@ void main() {
     );
   }""";
 
-  String newFromFirestore = """      isPaidForMonth: data['isPaidForMonth'] ?? false,
+  String newFromFirestore =
+      """      isPaidForMonth: data['isPaidForMonth'] ?? false,
       assignedVideographerId: data['assignedVideographerId'],
       sessionRate: (data['sessionRate'] ?? 0).toDouble(),
       serviceType: data['serviceType'] ?? 'Social Media Management',
@@ -118,6 +119,7 @@ void main() {
   }
 
   file.writeAsStringSync(content);
-  print("Updated models.dart to include websiteHandling in Firestore serialization.");
+  print(
+    "Updated models.dart to include websiteHandling in Firestore serialization.",
+  );
 }
-

@@ -26,9 +26,9 @@ void main() {
   for (final file in files) {
     final f = File(file);
     if (!f.existsSync()) continue;
-    
+
     var content = f.readAsStringSync();
-    
+
     final pattern = '''              children: [
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -39,9 +39,11 @@ void main() {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text("System Core Persona"''';
-                      
+
     if (content.contains(pattern)) {
-        final replacement = insertBlock + '''\n                Container(
+      final replacement =
+          insertBlock +
+          '''\n                Container(
                   padding: const EdgeInsets.all(16),
                   decoration: const BoxDecoration(
                     border: Border(top: BorderSide(color: Colors.black, width: 1.5)),
@@ -50,11 +52,11 @@ void main() {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text("System Core Persona"''';
-        content = content.replaceFirst(pattern, replacement);
-        f.writeAsStringSync(content);
-        print('Fixed ' + file);
+      content = content.replaceFirst(pattern, replacement);
+      f.writeAsStringSync(content);
+      print('Fixed ' + file);
     } else {
-        print('Could not find pattern in ' + file);
+      print('Could not find pattern in ' + file);
     }
   }
 }
