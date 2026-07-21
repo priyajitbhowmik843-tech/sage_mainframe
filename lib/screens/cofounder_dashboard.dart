@@ -456,12 +456,14 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
     Map<String, bool> partialPaymentToggles = {};
     Map<String, TextEditingController> partialPaymentControllers = {};
     Map<String, TextEditingController> discountControllers = {};
+    Map<String, bool> discountToggles = {};
     final monthDiscountCtrl = TextEditingController(text: "0");
 
     for (var a in unbilledAddOns) {
       partialPaymentToggles[a.id] = false;
       partialPaymentControllers[a.id] = TextEditingController();
       discountControllers[a.id] = TextEditingController();
+      discountToggles[a.id] = false;
     }
 
     // Helper to get month string
@@ -506,6 +508,17 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                         }
                       },
                       decoration: const InputDecoration(
+                        filled: true,
+                        fillColor: SageColors.background,
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: monthDiscountCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: "Month Discount (\u20B9)",
                         filled: true,
                         fillColor: SageColors.background,
                         border: OutlineInputBorder(),
@@ -563,21 +576,32 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                                   children: [
                                     Row(
                                       children: [
-                                        const Text("Discount: ", style: TextStyle(fontSize: 11, color: SageColors.onSurfaceVariant)),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: TextField(
-                                            controller: discountControllers[addOn.id],
-                                            keyboardType: TextInputType.number,
-                                            style: const TextStyle(color: SageColors.onSurface, fontSize: 12),
-                                            decoration: const InputDecoration(
-                                              hintText: "Amount (\u20B9)",
-                                              isDense: true,
-                                              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                        Switch(
+                                          value: discountToggles[addOn.id] ?? false,
+                                          onChanged: (val) {
+                                            setState(() {
+                                              discountToggles[addOn.id] = val;
+                                            });
+                                          },
+                                          activeColor: SageColors.primary,
+                                        ),
+                                        const Text("Apply Discount", style: TextStyle(fontSize: 11, color: SageColors.onSurfaceVariant)),
+                                        if (discountToggles[addOn.id] == true) ...[
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: TextField(
+                                              controller: discountControllers[addOn.id],
+                                              keyboardType: TextInputType.number,
+                                              style: const TextStyle(color: SageColors.onSurface, fontSize: 12),
+                                              decoration: const InputDecoration(
+                                                hintText: "Amount (\u20B9)",
+                                                isDense: true,
+                                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ]
+                                        ]
+                                      ],
                                     ),
                                     const SizedBox(height: 8),
                                     Row(
@@ -646,8 +670,9 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                       for (var addOn in c.addOns) {
                         if (selectedAddOnIds.contains(addOn.id)) {
                           bool isPartial = partialPaymentToggles[addOn.id] ?? false;
+                          bool isDiscount = discountToggles[addOn.id] ?? false;
                           double partialAmt = double.tryParse(partialPaymentControllers[addOn.id]?.text ?? '') ?? 0.0;
-                          double discountAmt = double.tryParse(discountControllers[addOn.id]?.text ?? '') ?? 0.0;
+                          double discountAmt = isDiscount ? (double.tryParse(discountControllers[addOn.id]?.text ?? '') ?? 0.0) : 0.0;
 
                           if (isPartial && partialAmt > 0 && (partialAmt + discountAmt) < addOn.amount) {
                             partialPayments[addOn.id] = partialAmt + discountAmt;
@@ -687,6 +712,7 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                         c,
                         invoiceDate,
                         selectedAddOns: selectedAddOnsForInvoice,
+                        monthDiscount: double.tryParse(monthDiscountCtrl.text) ?? 0.0,
                       );
                       
                       if (fullyBilledAddOnIds.isNotEmpty || partialPayments.isNotEmpty) {
