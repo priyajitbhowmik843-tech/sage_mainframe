@@ -461,6 +461,7 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
     for (var a in unbilledAddOns) {
       partialPaymentToggles[a.id] = false;
       partialPaymentControllers[a.id] = TextEditingController();
+      discountControllers[a.id] = TextEditingController();
     }
 
     // Helper to get month string
@@ -557,33 +558,57 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                             if (isSelected)
                               Padding(
                                 padding: const EdgeInsets.only(left: 32.0, bottom: 8.0),
-                                child: Row(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Switch(
-                                      value: isPartial,
-                                      onChanged: (val) {
-                                        setState(() {
-                                          partialPaymentToggles[addOn.id] = val;
-                                        });
-                                      },
-                                      activeColor: SageColors.primary,
-                                    ),
-                                    const Text("Partial Payment", style: TextStyle(fontSize: 11, color: SageColors.onSurfaceVariant)),
-                                    if (isPartial) ...[
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: TextField(
-                                          controller: partialPaymentControllers[addOn.id],
-                                          keyboardType: TextInputType.number,
-                                          style: const TextStyle(color: SageColors.onSurface, fontSize: 12),
-                                          decoration: const InputDecoration(
-                                            hintText: "Amount (\u20B9)",
-                                            isDense: true,
-                                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    Row(
+                                      children: [
+                                        const Text("Discount: ", style: TextStyle(fontSize: 11, color: SageColors.onSurfaceVariant)),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: TextField(
+                                            controller: discountControllers[addOn.id],
+                                            keyboardType: TextInputType.number,
+                                            style: const TextStyle(color: SageColors.onSurface, fontSize: 12),
+                                            decoration: const InputDecoration(
+                                              hintText: "Amount (\u20B9)",
+                                              isDense: true,
+                                              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    ]
+                                      ]
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Switch(
+                                          value: isPartial,
+                                          onChanged: (val) {
+                                            setState(() {
+                                              partialPaymentToggles[addOn.id] = val;
+                                            });
+                                          },
+                                          activeColor: SageColors.primary,
+                                        ),
+                                        const Text("Partial Payment", style: TextStyle(fontSize: 11, color: SageColors.onSurfaceVariant)),
+                                        if (isPartial) ...[
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: TextField(
+                                              controller: partialPaymentControllers[addOn.id],
+                                              keyboardType: TextInputType.number,
+                                              style: const TextStyle(color: SageColors.onSurface, fontSize: 12),
+                                              decoration: const InputDecoration(
+                                                hintText: "Amount (\u20B9)",
+                                                isDense: true,
+                                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                              ),
+                                            ),
+                                          ),
+                                        ]
+                                      ],
+                                    ),
                                   ],
                                 ),
                               ),
@@ -622,14 +647,15 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                         if (selectedAddOnIds.contains(addOn.id)) {
                           bool isPartial = partialPaymentToggles[addOn.id] ?? false;
                           double partialAmt = double.tryParse(partialPaymentControllers[addOn.id]?.text ?? '') ?? 0.0;
+                          double discountAmt = double.tryParse(discountControllers[addOn.id]?.text ?? '') ?? 0.0;
 
-                          if (isPartial && partialAmt > 0 && partialAmt < addOn.amount) {
-                            partialPayments[addOn.id] = partialAmt;
+                          if (isPartial && partialAmt > 0 && (partialAmt + discountAmt) < addOn.amount) {
+                            partialPayments[addOn.id] = partialAmt + discountAmt;
                             selectedAddOnsForInvoice.add(
                               ClientAddOn(
                                 id: addOn.id,
                                 type: addOn.type,
-                                description: "${addOn.description ?? ''} (Partial Payment)".trim(),
+                                description: "${addOn.description ?? ''} (Partial Payment) ${discountAmt > 0 ? '(Discount: \u20B9$discountAmt)' : ''}".trim(),
                                 amount: partialAmt,
                                 isBilled: false,
                                 isPaid: false,
@@ -638,7 +664,21 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                             );
                           } else {
                             fullyBilledAddOnIds.add(addOn.id);
-                            selectedAddOnsForInvoice.add(addOn);
+                            if (discountAmt > 0) {
+                              selectedAddOnsForInvoice.add(
+                                ClientAddOn(
+                                  id: addOn.id,
+                                  type: addOn.type,
+                                  description: "${addOn.description ?? ''} (Discount: \u20B9$discountAmt)".trim(),
+                                  amount: addOn.amount - discountAmt,
+                                  isBilled: false,
+                                  isPaid: false,
+                                  dateAdded: addOn.dateAdded,
+                                ),
+                              );
+                            } else {
+                              selectedAddOnsForInvoice.add(addOn);
+                            }
                           }
                         }
                       }
