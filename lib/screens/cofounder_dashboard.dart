@@ -3999,6 +3999,7 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
     1,
   );
   DateTime? _selectedCalendarDate;
+  final GlobalKey _calendarTasksKey = GlobalKey();
 
   final Map<String, String> _holidays = {
     '01-01': 'New Year\'s Day',
@@ -4623,8 +4624,24 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                       .toList();
 
                   return GestureDetector(
-                    onTap: () =>
-                        setState(() => _selectedCalendarDate = dateForDay),
+                    onTap: () {
+                      setState(() {
+                        if (isSelected) {
+                          _selectedCalendarDate = null;
+                        } else {
+                          _selectedCalendarDate = dateForDay;
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (_calendarTasksKey.currentContext != null) {
+                              Scrollable.ensureVisible(
+                                _calendarTasksKey.currentContext!,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              );
+                            }
+                          });
+                        }
+                      });
+                    },
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
@@ -4840,6 +4857,7 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
             onTap: () {}, // Consume taps so the global unselect doesn't fire
             behavior: HitTestBehavior.opaque,
             child: Container(
+              key: _calendarTasksKey,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: const Color(0xFFFFF5E1),
