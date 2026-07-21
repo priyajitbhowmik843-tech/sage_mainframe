@@ -1,3 +1,29 @@
+import 'package:sage_mainframe/widgets/sage_expansion_tile.dart';
+import 'executive_profile_dashboard.dart';
+import 'package:intl/intl.dart';
+import 'dart:math';
+import 'package:flutter/material.dart';
+import '../widgets/employee_metrics_panel.dart';
+import 'package:provider/provider.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:sage_mainframe/state/app_state.dart';
+import 'package:sage_mainframe/theme/app_theme.dart';
+import 'package:sage_mainframe/widgets/common_widgets.dart';
+import 'package:sage_mainframe/models/models.dart';
+import 'package:sage_mainframe/main.dart';
+import 'package:sage_mainframe/screens/employee_dashboard.dart';
+import 'package:sage_mainframe/widgets/income_combo_chart.dart';
+import 'package:sage_mainframe/widgets/forecast_chart.dart';
+import 'package:sage_mainframe/widgets/deficit_line_chart.dart';
+import 'package:sage_mainframe/widgets/ecom_ledger_dialog.dart';
+import 'package:sage_mainframe/services/invoice_service.dart';
+
+class CeoDashboard extends StatefulWidget {
+  const CeoDashboard({super.key});
+  @override
+  State<CeoDashboard> createState() => _CeoDashboardState();
+}
 import 'executive_profile_dashboard.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
@@ -31,6 +57,19 @@ class _CeoDashboardState extends State<CeoDashboard> {
   PageStorageBucket _bucket = PageStorageBucket();
   DateTime _selectedDate = DateTime.now();
   late PageController _pageController;
+  final GlobalKey _calendarTasksKey = GlobalKey();
+
+  void _scrollToCalendarTasks() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_calendarTasksKey.currentContext != null) {
+        Scrollable.ensureVisible(
+          _calendarTasksKey.currentContext!,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -2228,7 +2267,7 @@ class _CeoDashboardState extends State<CeoDashboard> {
                   ),
                 ],
               ),
-              child: ExpansionTile(
+              child: SageExpansionTile(
                 controller: _clientExpControllers.putIfAbsent(
                   c.id,
                   () => ExpansionTileController(),
@@ -3581,7 +3620,7 @@ class _CeoDashboardState extends State<CeoDashboard> {
                 ),
               ],
             ),
-            child: ExpansionTile(
+            child: SageExpansionTile(
               controller: _personaExpControllers.putIfAbsent(
                 i,
                 () => ExpansionTileController(),
@@ -3889,7 +3928,7 @@ class _CeoDashboardState extends State<CeoDashboard> {
                 ),
               ],
             ),
-            child: ExpansionTile(
+            child: SageExpansionTile(
               controller: _empExpControllers.putIfAbsent(
                 employee.id,
                 () => ExpansionTileController(),
@@ -3967,983 +4006,159 @@ class _CeoDashboardState extends State<CeoDashboard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      EmployeeMetricsPanel(
-                        employee: employee,
-                        state: state,
-                        isVideo: isVideo,
-                        isVideoEditorPerVideo: isVideoEditorPerVideo,
-                        isEcomExec: isEcomExec,
-                        isGraphicsEditor: isGraphicsEditor,
-                        isME: isME,
-                        
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              if (isVideo)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8.0),
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                      foregroundColor: Colors.black,
-                                    ),
-                                    onPressed: () {
-                                      _showPaySessionsDialog(
-                                        context,
-                                        state,
-                                        employee,
-                                        unpaidSessionsCount,
-                                        true,
-                                      );
-                                    },
-                                    child: const Text(
-                                      "PAY SESSIONS",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              if (isVideoEditorPerVideo)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8.0),
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                      foregroundColor: Colors.black,
-                                    ),
-                                    onPressed: () {
-                                      _showPaySessionsDialog(
-                                        context,
-                                        state,
-                                        employee,
-                                        unpaidVideosCount,
-                                        false,
-                                      );
-                                    },
-                                    child: const Text(
-                                      "PAY VIDEOS",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              if (isEcomExec)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8.0),
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                      foregroundColor: Colors.black,
-                                    ),
-                                    onPressed: () {
-                                      _showPaySkusDialog(
-                                        context,
-                                        state,
-                                        employee,
-                                      );
-                                    },
-                                    child: const Text(
-                                      "PAY SKUS",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              if (isGraphicsEditor)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8.0),
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                      foregroundColor: Colors.black,
-                                    ),
-                                    onPressed: () {
-                                      _showPayDesignsDialog(context, state, employee, unpaidDesignsCount);
-                                    },
-                                    child: const Text(
-                                      "PAY DESIGNS",
-                                      style: TextStyle(fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                ),
-                              if (!isVideo &&
-                                  !isVideoEditorPerVideo &&
-                                  !isEcomExec &&
-                                  !isGraphicsEditor)
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white,
-                                    foregroundColor: Colors.black,
-                                  ),
-                                  onPressed: () {
-                                    _showPayEmployeeDialog(
-                                      context,
-                                      state,
-                                      employee,
-                                    );
-                                  },
-                                  child: Text(
-                                    isME ? "CLEAR PAYMENT" : "PAY SALARY",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.edit_outlined,
-                                  color: Colors.black,
-                                ),
-                                onPressed: () =>
-                                    _showEditEmployeeDialog(context, employee),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  color: SageColors.error,
-                                ),
-                                onPressed: () async {
-                                  final ok = await showConfirmDialog(
-                                    context,
-                                    "TERMINATE EMPLOYEE",
-                                    "Are you sure you want to terminate ${employee.name}?",
-                                  );
-                                  if (ok && context.mounted) {
-                                    context.read<AppState>().terminateEmployee(
-                                      employee.id,
-                                    );
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  String _taskSubTab = 'CALENDAR'; // 'CALENDAR', 'TEAM'
-  String? _selectedPersonnelId;
-
-  String _newTaskType = 'Daily Video';
-  List<String> _newTaskAssigneeIds = [];
-  String? _dailyVideoAssigneeId;
-  String? _dailyPostAssigneeId;
-  List<String> _newTaskClients = [];
-  final TextEditingController _newTaskTitleCtrl = TextEditingController();
-  final TextEditingController _newTaskDescCtrl = TextEditingController();
-  TimeOfDay _newTaskTime = const TimeOfDay(hour: 17, minute: 0);
-  bool _isAddTaskExpanded = false;
-  // Session booking state
-  String? _sessionVideographerId;
-  List<String> _sessionClientIds = [];
-  bool _meetingIsPhysical = true;
-
-  DateTime _calendarMonth = DateTime(
-    DateTime.now().year,
-    DateTime.now().month,
-    1,
-  );
-  DateTime? _selectedCalendarDate;
-
-  final Map<String, String> _holidays = {
-    '01-01': 'New Year\'s Day',
-    '26-01': 'Republic Day',
-    '14-02': 'Valentine\'s Day',
-    '08-03': 'Maha Shivaratri',
-    '25-03': 'Holi',
-    '29-03': 'Good Friday',
-    '09-04': 'Ugadi / Gudi Padwa',
-    '11-04': 'Eid al-Fitr',
-    '17-04': 'Rama Navami',
-    '01-05': 'Labour Day',
-    '17-06': 'Eid al-Adha',
-    '17-07': 'Muharram',
-    '15-08': 'Independence Day',
-    '26-08': 'Janmashtami',
-    '07-09': 'Ganesh Chaturthi',
-    '02-10': 'Gandhi Jayanti',
-    '11-10': 'Dussehra',
-    '31-10': 'Diwali',
-    '25-12': 'Christmas',
-  };
-
-  Map<String, String> _googleHolidays = {};
-  bool _isLoadingHolidays = false;
-
-  @override
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(initialPage: _tab);
-    _fetchGoogleHolidays();
-  }
-
-  Future<void> _fetchGoogleHolidays() async {
-    setState(() => _isLoadingHolidays = true);
-    setState(() {
-      _googleHolidays = {
-        '2025-01-01': 'New Year\'s Day',
-        '2025-01-06': 'Guru Govind Singh Jayanti',
-        '2025-01-14': 'Pongal',
-        '2025-01-26': 'Republic Day',
-        '2025-02-02': 'Vasant Panchami',
-        '2025-02-12': 'Guru Ravidas Jayanti',
-        '2025-02-19': 'Shivaji Jayanti',
-        '2025-02-23': 'Maharishi Dayanand Saraswati Jayanti',
-        '2025-02-26': 'Maha Shivaratri',
-        '2025-03-02': 'Ramadan Start',
-        '2025-03-13': 'Holika Dahana',
-        '2025-03-14': 'Dolyatra',
-        '2025-03-28': 'Jamat Ul-Vida',
-        '2025-03-30': 'Ugadi',
-        '2025-03-31': 'Ramzan Id',
-        '2025-04-06': 'Rama Navami',
-        '2025-04-10': 'Mahavir Jayanti',
-        '2025-04-13': 'Vaisakhi',
-        '2025-04-14': 'Mesadi',
-        '2025-04-15': 'Bahag Bihu',
-        '2025-04-18': 'Good Friday',
-        '2025-04-20': 'Easter Day',
-        '2025-05-09': 'Birthday of Rabindranath',
-        '2025-05-12': 'Buddha Purnima',
-        '2025-06-07': 'Bakrid',
-        '2025-06-27': 'Rath Yatra',
-        '2025-07-06': 'Muharram/Ashura',
-        '2025-08-09': 'Raksha Bandhan',
-        '2025-08-15': 'Parsi New Year',
-        '2025-08-16': 'Janmashtami',
-        '2025-08-27': 'Ganesh Chaturthi',
-        '2025-09-05': 'Milad un-Nabi',
-        '2025-09-22': 'First Day of Sharad Navratri',
-        '2025-09-28': 'First Day of Durga Puja Festivities',
-        '2025-09-29': 'Maha Saptami',
-        '2025-09-30': 'Maha Ashtami',
-        '2025-10-01': 'Maha Navami',
-        '2025-10-02': 'Mahatma Gandhi Jayanti',
-        '2025-10-07': 'Maharishi Valmiki Jayanti',
-        '2025-10-10': 'Karaka Chaturthi',
-        '2025-10-20': 'Naraka Chaturdasi',
-        '2025-10-22': 'Govardhan Puja',
-        '2025-10-23': 'Bhai Duj',
-        '2025-10-28': 'Chhat Puja (Pratihar Sashthi/Surya Sashthi)',
-        '2025-11-05': 'Guru Nanak Jayanti',
-        '2025-11-24': 'Guru Tegh Bahadur\'s Martyrdom Day',
-        '2025-12-24': 'Christmas Eve',
-        '2025-12-25': 'Christmas',
-        '2026-01-01': 'New Year\'s Day',
-        '2026-01-03': 'Hazarat Ali\'s Birthday',
-        '2026-01-14': 'Makar Sankranti',
-        '2026-01-23': 'Vasant Panchami',
-        '2026-01-26': 'Republic Day',
-        '2026-02-01': 'Guru Ravidas Jayanti',
-        '2026-02-12': 'Maharishi Dayanand Saraswati Jayanti',
-        '2026-02-15': 'Maha Shivaratri',
-        '2026-02-19': 'Ramadan Start',
-        '2026-03-03': 'Holika Dahana',
-        '2026-03-04': 'Holi',
-        '2026-03-19': 'Ugadi',
-        '2026-03-20': 'Jamat Ul-Vida',
-        '2026-03-21': 'Ramzan Id',
-        '2026-03-26': 'Rama Navami',
-        '2026-03-31': 'Mahavir Jayanti',
-        '2026-04-03': 'Good Friday',
-        '2026-04-05': 'Easter Day',
-        '2026-04-14': 'Ambedkar Jayanti',
-        '2026-04-15': 'Bahag Bihu',
-        '2026-05-01': 'Buddha Purnima',
-        '2026-05-09': 'Birthday of Rabindranath',
-        '2026-05-28': 'Bakrid',
-        '2026-06-26': 'Muharram/Ashura (tentative)',
-        '2026-07-16': 'Rath Yatra',
-        '2026-08-15': 'Independence Day',
-        '2026-08-26': 'Milad un-Nabi (tentative)',
-        '2026-08-28': 'Raksha Bandhan',
-        '2026-09-04': 'Janmashtami (Smarta)',
-        '2026-09-14': 'Ganesh Chaturthi',
-        '2026-10-02': 'Mahatma Gandhi Jayanti',
-        '2026-10-11': 'First Day of Sharad Navratri',
-        '2026-10-17': 'First Day of Durga Puja Festivities',
-        '2026-10-18': 'Maha Saptami',
-        '2026-10-19': 'Maha Ashtami',
-        '2026-10-20': 'Dussehra',
-        '2026-10-26': 'Maharishi Valmiki Jayanti',
-        '2026-10-29': 'Karaka Chaturthi',
-        '2026-11-08': 'Naraka Chaturdasi',
-        '2026-11-09': 'Govardhan Puja',
-        '2026-11-11': 'Bhai Duj',
-        '2026-11-15': 'Chhat Puja (Pratihar Sashthi/Surya Sashthi)',
-        '2026-11-24': 'Guru Nanak Jayanti',
-        '2026-12-23': 'Hazarat Ali\'s Birthday',
-        '2026-12-24': 'Christmas Eve',
-        '2026-12-25': 'Christmas',
-        '2027-01-01': 'New Year\'s Day',
-        '2027-01-15': 'Makar Sankranti',
-        '2027-01-26': 'Republic Day',
-        '2027-02-09': 'Ramadan Start (tentative)',
-        '2027-02-11': 'Vasant Panchami',
-        '2027-02-19': 'Shivaji Jayanti',
-        '2027-03-06': 'Maha Shivaratri',
-        '2027-03-10': 'Ramzan Id (tentative)',
-        '2027-03-22': 'Holi',
-        '2027-03-26': 'Good Friday',
-        '2027-03-28': 'Easter Day',
-        '2027-04-07': 'Gudi Padwa',
-        '2027-04-14': 'Ambedkar Jayanti',
-        '2027-04-15': 'Rama Navami',
-        '2027-05-17': 'Bakrid (tentative)',
-        '2027-06-16': 'Muharram/Ashura (tentative)',
-        '2027-07-05': 'Rath Yatra',
-        '2027-08-15': 'Independence Day',
-        '2027-08-17': 'Raksha Bandhan',
-        '2027-08-25': 'Janmashtami',
-        '2027-09-04': 'Ganesh Chaturthi',
-        '2027-09-12': 'Onam',
-        '2027-09-30': 'First Day of Sharad Navratri',
-        '2027-10-02': 'Mahatma Gandhi Jayanti',
-        '2027-10-05': 'First Day of Durga Puja Festivities',
-        '2027-10-09': 'Dussehra',
-        '2027-10-18': 'Karaka Chaturthi',
-        '2027-10-29': 'Diwali/Deepavali',
-        '2027-10-31': 'Bhai Duj',
-        '2027-11-04': 'Chhat Puja (Pratihar Sashthi/Surya Sashthi)',
-        '2027-11-24': 'Guru Tegh Bahadur\'s Martyrdom Day',
-        '2027-12-12': 'Hazarat Ali\'s Birthday',
-        '2027-12-24': 'Christmas Eve',
-        '2027-12-25': 'Christmas',
-        '2028-01-01': 'New Year\'s Day',
-        '2028-01-15': 'Makar Sankranti',
-        '2028-01-26': 'Republic Day',
-        '2028-01-29': 'Ramadan Start (tentative)',
-        '2028-01-31': 'Vasant Panchami',
-        '2028-02-19': 'Shivaji Jayanti',
-        '2028-02-23': 'Maha Shivaratri',
-        '2028-02-27': 'Ramzan Id (tentative)',
-        '2028-03-11': 'Holi',
-        '2028-03-27': 'Ugadi',
-        '2028-04-03': 'Rama Navami',
-        '2028-04-14': 'Good Friday',
-        '2028-04-16': 'Easter Day',
-        '2028-05-06': 'Bakrid (tentative)',
-        '2028-06-04': 'Muharram/Ashura (tentative)',
-        '2028-06-24': 'Rath Yatra',
-        '2028-08-05': 'Raksha Bandhan',
-        '2028-08-13': 'Janmashtami',
-        '2028-08-15': 'Independence Day',
-        '2028-08-23': 'Ganesh Chaturthi',
-        '2028-09-01': 'Onam',
-        '2028-09-19': 'First Day of Sharad Navratri',
-        '2028-09-24': 'First Day of Durga Puja Festivities',
-        '2028-09-27': 'Dussehra',
-        '2028-10-02': 'Mahatma Gandhi Jayanti',
-        '2028-10-07': 'Karaka Chaturthi',
-        '2028-10-17': 'Diwali/Deepavali',
-        '2028-10-19': 'Bhai Duj',
-        '2028-10-23': 'Chhat Puja (Pratihar Sashthi/Surya Sashthi)',
-        '2028-11-24': 'Guru Tegh Bahadur\'s Martyrdom Day',
-        '2028-12-01': 'Hazarat Ali\'s Birthday',
-        '2028-12-24': 'Christmas Eve',
-        '2028-12-25': 'Christmas',
-      };
-    });
-    if (mounted) setState(() => _isLoadingHolidays = false);
-  }
-
-  Widget _buildTaskSubTabBtn(String title, {int badgeCount = 0}) {
-    final isSelected = _taskSubTab == title;
-    final child = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? Colors.black : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black, width: 1.5),
-      ),
-      child: Text(
-        title,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: isSelected ? Colors.white : Colors.black,
-        ),
-      ),
-    );
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => setState(() {
-        _taskSubTab = title;
-        if (title == 'CALENDAR') {
-          _calendarMonth = DateTime(
-            DateTime.now().year,
-            DateTime.now().month,
-            1,
-          );
-          _selectedCalendarDate = null;
-        }
-      }),
-      child: badgeCount > 0
-          ? Badge(label: Text(badgeCount.toString()), child: child)
-          : child,
-    );
-  }
-
-  Widget _buildTasksTab() {
-    final state = context.watch<AppState>();
-    final int pendingCount = state.tasks.where((t) {
-      if (t.isCompleted) return false;
-      if ((t.taskType ?? '').toLowerCase().contains('upload') ||
-          t.title.toLowerCase().contains('upload'))
-        return false;
-      final now = DateTime.now();
-      final todayStart = DateTime(now.year, now.month, now.day);
-      final isToday =
-          t.deadline.year == now.year &&
-          t.deadline.month == now.month &&
-          t.deadline.day == now.day;
-      final isOverdue = t.deadline.isBefore(todayStart);
-      return isToday || isOverdue;
-    }).length;
-    final int myTasksCount = state.tasks
-        .where((t) => t.assignedTo == state.activePersona.id && !t.isCompleted)
-        .length;
-    final int reviewCount = state.tasks
-        .where(
-          (t) => (t.isSubmitted && !t.isCompleted) || t.isPostponeRequested,
-        )
-        .length;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildTaskSubTabBtn('CALENDAR'),
-              const SizedBox(width: 4),
-              _buildTaskSubTabBtn('MY TASKS', badgeCount: myTasksCount),
-              const SizedBox(width: 4),
-              _buildTaskSubTabBtn('PENDING', badgeCount: pendingCount),
-              const SizedBox(width: 4),
-              _buildTaskSubTabBtn('REVIEW', badgeCount: reviewCount),
-              const SizedBox(width: 4),
-              _buildTaskSubTabBtn('COMPLETED'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        if (_taskSubTab == 'CALENDAR') _buildTaskCalendarSubTab(),
-        if (_taskSubTab == 'MY TASKS') _buildTaskMyTasksSubTab('CFO'),
-        if (_taskSubTab == 'PENDING') _buildTaskPendingSubTab(),
-        if (_taskSubTab == 'REVIEW') _buildTaskReviewSubTab(),
-        if (_taskSubTab == 'COMPLETED') _buildTaskCompletedSubTab(),
-      ],
-    );
-  }
-
-  Widget _buildTaskCalendarSubTab() {
-    final state = context.watch<AppState>();
-    final now = DateTime.now();
-    final firstDay = DateTime(_calendarMonth.year, _calendarMonth.month, 1);
-    final daysInMonth = DateTime(
-      _calendarMonth.year,
-      _calendarMonth.month + 1,
-      0,
-    ).day;
-    final startOffset = firstDay.weekday % 7;
-
-    final allTasks = state.tasks.where((t) {
-      final title = t.title.toLowerCase();
-      final typeStr = (t.taskType ?? '').toLowerCase();
-      return !title.contains('upload') && !typeStr.contains('upload');
-    }).toList();
-    final monthNames = [
-      'JAN',
-      'FEB',
-      'MAR',
-      'APR',
-      'MAY',
-      'JUN',
-      'JUL',
-      'AUG',
-      'SEP',
-      'OCT',
-      'NOV',
-      'DEC',
-    ];
-
-    List<Task> selectedTasks = [];
-    if (_selectedCalendarDate != null) {
-      selectedTasks = allTasks
-          .where(
-            (t) =>
-                t.deadline.day == _selectedCalendarDate!.day &&
-                t.deadline.month == _selectedCalendarDate!.month &&
-                t.deadline.year == _selectedCalendarDate!.year,
-          )
-          .toList();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SageCalendar(
-          currentMonth: _calendarMonth,
-          onPreviousMonth: () => setState(
-            () => _calendarMonth = DateTime(
-              _calendarMonth.year,
-              _calendarMonth.month - 1,
-              1,
-            ),
-          ),
-          onNextMonth: () => setState(
-            () => _calendarMonth = DateTime(
-              _calendarMonth.year,
-              _calendarMonth.month + 1,
-              1,
-            ),
-          ),
-          legend: Wrap(
-            spacing: 12,
-            runSpacing: 4,
-            alignment: WrapAlignment.center,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.deepOrange.withOpacity(0.2),
-                      border: Border.all(color: Colors.deepOrange),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      "#",
-                      style: TextStyle(
-                        color: Colors.deepOrange,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    "Video",
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.teal.withOpacity(0.2),
-                      border: Border.all(color: Colors.teal),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      "#",
-                      style: TextStyle(
-                        color: Colors.teal,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    "Design/Post",
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.indigo.withOpacity(0.2),
-                      border: Border.all(color: Colors.indigo),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      "#",
-                      style: TextStyle(
-                        color: Colors.indigo,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    "Active Client",
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.2),
-                      border: Border.all(color: Colors.purple),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      "#",
-                      style: TextStyle(
-                        color: Colors.purple,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    "Lead Mtg",
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.blueGrey.withOpacity(0.2),
-                      border: Border.all(color: Colors.blueGrey),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      "#",
-                      style: TextStyle(
-                        color: Colors.blueGrey,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    "Other",
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 7,
-            childAspectRatio: 0.8,
-            crossAxisSpacing: 6,
-            mainAxisSpacing: 6,
-          ),
-          cellBuilder: (context, date) {
-            final day = date.day;
-            final dateStr =
-                "${date.year}-${date.month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}";
-            final holiday = _googleHolidays[dateStr];
-
-            final isWeekend =
-                date.weekday == DateTime.saturday ||
-                date.weekday == DateTime.sunday;
-            final isToday =
-                day == now.day &&
-                date.month == now.month &&
-                date.year == now.year;
-            final isSelected =
-                _selectedCalendarDate?.day == day &&
-                _selectedCalendarDate?.month == date.month &&
-                _selectedCalendarDate?.year == date.year;
-
-            final dayTasks = allTasks
-                .where(
-                  (t) =>
-                      t.deadline.day == day &&
-                      t.deadline.month == date.month &&
-                      t.deadline.year == date.year,
-                )
-                .toList();
-
-            return GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                setState(() {
-                  if (isSelected) {
-                    _selectedCalendarDate = null;
-                  } else {
-                    _selectedCalendarDate = date;
-                  }
-                });
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.black,
-                    width: isSelected ? 2.5 : 1.0,
-                  ),
-                  color: isSelected
-                      ? const Color(0xFFFFF9C4)
-                      : (isToday
-                            ? SageColors.primaryContainer
-                            : (holiday != null
-                                  ? SageColors.secondaryContainer
-                                  : (isWeekend
-                                        ? const Color(0xFFEEEEEE)
-                                        : Colors.white))),
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: isSelected
-                      ? const [
-                          BoxShadow(color: Colors.black, offset: Offset(2, 2)),
-                        ]
-                      : null,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-                    Text(
-                      "$day",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: holiday != null
-                            ? SageColors.secondary
-                            : Colors.black,
-                        fontSize: 12,
-                      ),
-                    ),
-                    if (holiday != null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                        child: Text(
-                          holiday,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 8,
-                            color: SageColors.secondary,
-                            fontWeight: FontWeight.bold,
-                            height: 1.1,
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 2),
-                    Builder(
-                      builder: (ctx) {
-                        int vCount = 0;
-                        int pCount = 0;
-                        int aCount = 0;
-                        int lCount = 0;
-                        int oCount = 0;
-                        for (var t in dayTasks) {
-                          final title = t.title.toLowerCase();
-                          if (title.contains('video'))
-                            vCount++;
-                          else if (title.contains('post') ||
-                              title.contains('design'))
-                            pCount++;
-                          else if (title.contains('active client'))
-                            aCount++;
-                          else if (title.contains('lead') ||
-                              title.contains('marketing'))
-                            lCount++;
-                          else
-                            oCount++;
-                        }
-
-                        return Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 2,
-                          runSpacing: 2,
+                      Theme(
+                        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                        child: SageExpansionTile(
+                          title: const Text("Personal Details", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           children: [
-                            if (vCount > 0)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 3,
-                                  vertical: 1,
+                            Row(
+                              children: [
+                                const Icon(Icons.phone, size: 14, color: Colors.black87),
+                                const SizedBox(width: 6),
+                                Text(
+                                  employee.phone.isNotEmpty ? employee.phone : 'Not Provided',
+                                  style: const TextStyle(fontSize: 12, color: Colors.black87),
                                 ),
-                                decoration: BoxDecoration(
-                                  color: Colors.deepOrange.withOpacity(0.2),
-                                  border: Border.all(color: Colors.deepOrange),
-                                  borderRadius: BorderRadius.circular(4),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.email, size: 14, color: Colors.black87),
+                                const SizedBox(width: 6),
+                                Text(
+                                  employee.email.isNotEmpty ? employee.email : 'Not Provided',
+                                  style: const TextStyle(fontSize: 12, color: Colors.black87),
                                 ),
-                                child: Text(
-                                  vCount.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.deepOrange,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on, size: 14, color: Colors.black87),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    employee.address.isNotEmpty ? employee.address : 'Not Provided',
+                                    style: const TextStyle(fontSize: 12, color: Colors.black87),
                                   ),
                                 ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            if (employee.preferredName.isNotEmpty)
+                              Row(
+                                children: [
+                                  const Icon(Icons.person, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Preferred Name: " + employee.preferredName,
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            if (pCount > 0)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 3,
-                                  vertical: 1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.teal.withOpacity(0.2),
-                                  border: Border.all(color: Colors.teal),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  pCount.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.teal,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
+                            if (employee.workLocation.isNotEmpty)
+                              Row(
+                                children: [
+                                  const Icon(Icons.business, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Work Location: " + employee.workLocation,
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
-                            if (aCount > 0)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 3,
-                                  vertical: 1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.indigo.withOpacity(0.2),
-                                  border: Border.all(color: Colors.indigo),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  aCount.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.indigo,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
+                            if (employee.emergencyContact.isNotEmpty)
+                              Row(
+                                children: [
+                                  const Icon(Icons.warning, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Emergency Contact: " + employee.emergencyContact,
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
-                            if (lCount > 0)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 3,
-                                  vertical: 1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.purple.withOpacity(0.2),
-                                  border: Border.all(color: Colors.purple),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  lCount.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.purple,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
+                            if (employee.professionalBio.isNotEmpty)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.description, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Bio: " + employee.professionalBio,
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
-                            if (oCount > 0)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 3,
-                                  vertical: 1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.blueGrey.withOpacity(0.2),
-                                  border: Border.all(color: Colors.blueGrey),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  oCount.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.blueGrey,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
+                            if (employee.keySkills.isNotEmpty)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.build, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Skills: " + employee.keySkills.join(', '),
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
                                   ),
-                                ),
+                                ],
+                              ),
+                            if (employee.strengths.isNotEmpty)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.fitness_center, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Strengths: " + employee.strengths.join(', '),
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            if (employee.workStylePreference.isNotEmpty)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.track_changes, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Work Style: " + employee.workStylePreference,
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            if (employee.interests.isNotEmpty)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.local_fire_department, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Interests: " + employee.interests,
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
+                                  ),
+                                ],
                               ),
                           ],
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-        if (_selectedCalendarDate != null) ...[
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: () {}, // Consume taps so the global unselect doesn't fire
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF5E1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.black, width: 1.5),
-                boxShadow: const [
+                        ),
+                      ),
                   BoxShadow(color: Colors.black, offset: Offset(3, 3)),
                 ],
               ),
@@ -5497,62 +4712,27 @@ class _CeoDashboardState extends State<CeoDashboard> {
                               )
                             else if (_newTaskType == 'Lead Meeting' ||
                                 _newTaskType == 'Active Client Meeting') ...[
-                              // Assignee Selection
-                              SageMultiSelectDropdown<Map<String, String>>(
-                                selectedItems: (() {
-                                  final List<Map<String, String>> options = [
-                                    {'id': 'CEO-SOH-001', 'name': 'CEO Sohini'},
-                                    {
-                                      'id': 'COF-PRI-001',
-                                      'name': 'CFO Priyajit',
-                                    },
-                                    {'id': 'COF-RIT-001', 'name': 'CFO Ritam'},
-                                  ];
-                                  if (_newTaskType == 'Lead Meeting') {
-                                    options.addAll(
-                                      state.employees
-                                          .where((e) => e.hasRole('marketing'))
-                                          .map(
-                                            (e) => {'id': e.id, 'name': e.name},
-                                          ),
-                                    );
-                                  }
-                                  return options
-                                      .where(
-                                        (e) => _newTaskAssigneeIds.contains(
-                                          e['id'],
-                                        ),
-                                      )
-                                      .toList();
-                                })(),
-                                items: (() {
-                                  final List<Map<String, String>> options = [
-                                    {'id': 'CEO-SOH-001', 'name': 'CEO Sohini'},
-                                    {
-                                      'id': 'COF-PRI-001',
-                                      'name': 'CFO Priyajit',
-                                    },
-                                    {'id': 'COF-RIT-001', 'name': 'CFO Ritam'},
-                                  ];
-                                  if (_newTaskType == 'Lead Meeting') {
-                                    options.addAll(
-                                      state.employees
-                                          .where((e) => e.hasRole('marketing'))
-                                          .map(
-                                            (e) => {'id': e.id, 'name': e.name},
-                                          ),
-                                    );
-                                  }
-                                  return options;
-                                })(),
-                                labelBuilder: (item) => item['name']!,
-                                labelText: "Assign To (Select multiple)",
-                                onChanged: (v) => setState(
-                                  () => _newTaskAssigneeIds = v
-                                      .map((e) => e['id']!)
-                                      .toList(),
-                                ),
-                              ),
+                              (() {
+                                final List<Map<String, String>> options = [
+                                  {'id': 'CEO-SOH-001', 'name': 'CEO Sohini'},
+                                  {'id': 'COF-PRI-001', 'name': 'CFO Priyajit'},
+                                  {'id': 'COF-RIT-001', 'name': 'CFO Ritam'},
+                                ];
+                                if (_newTaskType == 'Lead Meeting' || _newTaskType == 'Active Client Meeting') {
+                                  options.addAll(
+                                    state.employees
+                                        .where((e) => e.hasRole('marketing'))
+                                        .map((e) => {'id': e.id, 'name': e.name}),
+                                  );
+                                }
+                                return SageMultiSelectDropdown<String>(
+                                  selectedItems: _newTaskAssigneeIds.where((id) => options.any((o) => o['id'] == id)).toList(),
+                                  items: options.map((e) => e['id']!).toList(),
+                                  labelBuilder: (id) => options.firstWhere((e) => e['id'] == id, orElse: () => {'name': id})['name']!,
+                                  labelText: "Assign To (Select multiple)",
+                                  onChanged: (v) => setState(() => _newTaskAssigneeIds = v),
+                                );
+                              })(),
                               const SizedBox(height: 12),
                               // Client Selection
                               DropdownButtonFormField<String>(
@@ -5567,10 +4747,20 @@ class _CeoDashboardState extends State<CeoDashboard> {
                                 dropdownColor: Colors.white,
                                 items: state.clients
                                     .where((c) {
-                                      if (_newTaskType == 'Lead Meeting')
+                                      if (_newTaskType == 'Lead Meeting') {
                                         return c.status == 'Lead';
-                                      return c.status != 'Lead' &&
-                                          c.isApprovedByCeo;
+                                      }
+                                      if (_newTaskType == 'Active Client Meeting') {
+                                        // Restrict to ME's clients if an ME is assigned
+                                        List<String> assignedMeIds = _newTaskAssigneeIds.where((id) {
+                                          final e = state.employees.where((emp) => emp.id == id).firstOrNull;
+                                          return e != null && e.hasRole('marketing');
+                                        }).toList();
+                                        if (assignedMeIds.isNotEmpty && !assignedMeIds.contains(c.marketingExecutiveId)) {
+                                          return false;
+                                        }
+                                      }
+                                      return c.status != 'Lead' && c.isApprovedByCeo;
                                     })
                                     .map(
                                       (c) => DropdownMenuItem(
@@ -5850,7 +5040,7 @@ class _CeoDashboardState extends State<CeoDashboard> {
                                 : typeColor,
                           ),
                         ),
-                        child: ExpansionTile(
+                        child: SageExpansionTile(
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -6381,6 +5571,23 @@ class _CeoDashboardState extends State<CeoDashboard> {
     return list;
   }
 
+  void _showPostponeDialog(BuildContext context, AppState state, String taskId) async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 90)),
+    );
+    if (pickedDate != null && context.mounted) {
+      state.requestPostponeTask(taskId, pickedDate);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Postpone request sent to CEO for approval."),
+        backgroundColor: Colors.green,
+      ));
+    }
+  }
+
+
   String _getAssigneeName(String id, AppState state) {
     final p = AppState.personas.where((p) => p.id == id).firstOrNull;
     if (p != null) return p.name;
@@ -6448,7 +5655,7 @@ class _CeoDashboardState extends State<CeoDashboard> {
                   ? Colors.black54
                   : Colors.white70,
             ),
-            child: ExpansionTile(
+            child: SageExpansionTile(
               tilePadding: const EdgeInsets.symmetric(
                 horizontal: 8,
                 vertical: 0,
@@ -6524,6 +5731,23 @@ class _CeoDashboardState extends State<CeoDashboard> {
                           color: typeColor == Colors.black
                               ? Colors.black87
                               : Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                if ((t.taskType == 'Lead Meeting' || t.taskType == 'Active Client Meeting') && !t.isPostponeRequested)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showPostponeDialog(context, state, t.id),
+                        icon: const Icon(Icons.calendar_today, size: 16),
+                        label: const Text("POSTPONE", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                         ),
                       ),
                     ),
@@ -7723,7 +6947,7 @@ class _CeoDashboardState extends State<CeoDashboard> {
                 data: Theme.of(
                   context,
                 ).copyWith(dividerColor: Colors.transparent),
-                child: ExpansionTile(
+                child: SageExpansionTile(
                   tilePadding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 4,

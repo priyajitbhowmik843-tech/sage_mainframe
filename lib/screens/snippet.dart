@@ -1,3 +1,4 @@
+import 'package:sage_mainframe/widgets/sage_expansion_tile.dart';
         ...AppState.personas.asMap().entries.map((entry) {
           final i = entry.key;
           final p = entry.value;
@@ -15,7 +16,7 @@
               border: Border.all(color: Colors.black, width: 1.5),
               boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0)],
             ),
-            child: ExpansionTile(
+            child: SageExpansionTile(
               controller: _personaExpControllers.putIfAbsent(i, () => ExpansionTileController()),
               onExpansionChanged: (expanded) {
                 if (expanded) {
@@ -137,7 +138,7 @@
               border: Border.all(color: Colors.black, width: 1.5),
               boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0)],
             ),
-            child: ExpansionTile(
+            child: SageExpansionTile(
               controller: _empExpControllers.putIfAbsent(employee.id, () => ExpansionTileController()),
               onExpansionChanged: (expanded) {
                 if (expanded) {

@@ -1,3 +1,4 @@
+import 'package:sage_mainframe/widgets/sage_expansion_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -102,7 +103,7 @@ class EmployeeMetricsPanel extends StatelessWidget {
       }
     }
 
-    return ExpansionTile(
+    return SageExpansionTile(
       title: const Text("Graphics Editor Metrics", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
       childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       children: [
@@ -278,7 +279,7 @@ class EmployeeMetricsPanel extends StatelessWidget {
       }
     }
 
-    return ExpansionTile(
+    return SageExpansionTile(
       title: const Text("Video Editor Metrics", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
       childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       children: children,
@@ -313,7 +314,7 @@ class EmployeeMetricsPanel extends StatelessWidget {
       );
     }).toList();
 
-    return ExpansionTile(
+    return SageExpansionTile(
       title: const Text("Videographer Metrics", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
       childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       children: [

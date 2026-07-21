@@ -27,6 +27,20 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
   DateTime? _selectedCalendarDate;
   bool _isAddTaskExpanded = false;
 
+  final GlobalKey _calendarTasksKey = GlobalKey();
+
+  void _scrollToCalendarTasks() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_calendarTasksKey.currentContext != null) {
+        Scrollable.ensureVisible(
+          _calendarTasksKey.currentContext!,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -444,6 +458,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                       _selectedCalendarDate = null;
                     } else {
                       _selectedCalendarDate = date;
+                      _scrollToCalendarTasks();
                     }
                   });
                 },
@@ -483,6 +498,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
               onTap: () {}, // Consume taps
               behavior: HitTestBehavior.opaque,
               child: Container(
+                key: _calendarTasksKey,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFF5E1),

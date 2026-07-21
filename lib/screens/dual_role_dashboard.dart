@@ -27,6 +27,19 @@ class _DualRoleDashboardState extends State<DualRoleDashboard> {
   bool _isAddTaskExpanded = false;
 
   late PageController _pageController;
+  final GlobalKey _calendarTasksKey = GlobalKey();
+
+  void _scrollToCalendarTasks() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_calendarTasksKey.currentContext != null) {
+        Scrollable.ensureVisible(
+          _calendarTasksKey.currentContext!,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -47,6 +60,7 @@ class _DualRoleDashboardState extends State<DualRoleDashboard> {
       case 1: return SageColors.primaryContainer;
       case 2: return SageColors.tertiaryContainer;
       case 3: return SageColors.secondaryContainer;
+      case 4: return SageColors.surfaceContainerHigh;
       default: return SageColors.background;
     }
   }
@@ -57,6 +71,7 @@ class _DualRoleDashboardState extends State<DualRoleDashboard> {
       case 1: return 'ACTIVITY';
       case 2: return 'CLIENTS';
       case 3: return 'PROFILE';
+      case 4: return 'TEAM';
       default: return 'HOME';
     }
   }
@@ -160,6 +175,7 @@ class _DualRoleDashboardState extends State<DualRoleDashboard> {
                           SingleChildScrollView(padding: const EdgeInsets.fromLTRB(14, 10, 14, 100), child: _buildActivityTab(context, state, persona)),
                           SingleChildScrollView(padding: const EdgeInsets.fromLTRB(0, 0, 0, 100), child: const ClientResourcesScreen(readOnly: true)),
                           SingleChildScrollView(padding: const EdgeInsets.fromLTRB(14, 10, 14, 100), child: _buildProfileTab(context, state, persona)),
+                          const SingleChildScrollView(padding: EdgeInsets.fromLTRB(14, 10, 14, 100), child: TeamMembersView()),
                         ],
                       ),
                     ),
@@ -686,6 +702,7 @@ class _DualRoleDashboardState extends State<DualRoleDashboard> {
                       _selectedCalendarDate = null;
                     } else {
                       _selectedCalendarDate = date;
+                      _scrollToCalendarTasks();
                     }
                   });
                 },
@@ -723,6 +740,7 @@ class _DualRoleDashboardState extends State<DualRoleDashboard> {
               onTap: () {}, // Consume taps
               behavior: HitTestBehavior.opaque,
               child: Container(
+                key: _calendarTasksKey,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFF5E1),
@@ -775,7 +793,7 @@ class _DualRoleDashboardState extends State<DualRoleDashboard> {
                                     color: statusColor, size: 20),
                               ],
                             ),
-                            if (!t.isCompleted && !t.isSubmitted && !t.isPostponeRequested && t.isApprovedByVideographer) ...[
+                            if (!t.isCompleted && !t.isSubmitted && !t.isPostponeRequested && (t.isApprovedByVideographer || t.taskType == 'Lead Meeting' || t.taskType == 'Active Client Meeting')) ...[
                               const SizedBox(height: 10),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.end,

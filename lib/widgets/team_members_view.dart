@@ -1,3 +1,4 @@
+import 'package:sage_mainframe/widgets/sage_expansion_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sage_mainframe/state/app_state.dart';
@@ -14,6 +15,13 @@ class _TeamMemberData {
   final String phone;
   final String interests;
   final int avatarIndex;
+  final String address;
+  final String workLocation;
+  final String emergencyContact;
+  final String professionalBio;
+  final List<String> keySkills;
+  final List<String> strengths;
+  final String workStylePreference;
 
   _TeamMemberData({
     required this.name,
@@ -24,6 +32,13 @@ class _TeamMemberData {
     required this.phone,
     required this.interests,
     required this.avatarIndex,
+    required this.address,
+    required this.workLocation,
+    required this.emergencyContact,
+    required this.professionalBio,
+    required this.keySkills,
+    required this.strengths,
+    required this.workStylePreference,
   });
 }
 
@@ -48,6 +63,13 @@ class TeamMembersView extends StatelessWidget {
           phone: emp.phone,
           interests: emp.interests,
           avatarIndex: emp.avatar,
+          address: emp.address,
+          workLocation: emp.workLocation,
+          emergencyContact: emp.emergencyContact,
+          professionalBio: emp.professionalBio,
+          keySkills: emp.keySkills,
+          strengths: emp.strengths,
+          workStylePreference: emp.workStylePreference,
         ));
       }
     }
@@ -63,6 +85,13 @@ class TeamMembersView extends StatelessWidget {
         phone: p.phone,
         interests: p.interests,
         avatarIndex: p.avatar,
+        address: p.address,
+        workLocation: p.workLocation,
+        emergencyContact: p.emergencyContact,
+        professionalBio: p.professionalBio,
+        keySkills: p.keySkills,
+        strengths: p.strengths,
+        workStylePreference: p.workStylePreference,
       ));
     }
 
@@ -86,49 +115,77 @@ class TeamMembersView extends StatelessWidget {
           itemBuilder: (context, index) {
             final emp = allMembers[index];
             final displayName = emp.preferredName.isNotEmpty 
-                ? "${emp.preferredName.toUpperCase()} (${emp.name.toUpperCase()})"
+                ? "${emp.name.toUpperCase()} (${emp.preferredName})"
                 : emp.name.toUpperCase();
             
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: TerminalPanel(
                 title: displayName,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Column(
                   children: [
-                    // Avatar
-                    Container(
-                      margin: const EdgeInsets.only(right: 16, top: 4),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.black, width: 1.5),
-                        boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2, 2))],
-                      ),
-                      child: ClipOval(
-                          child: Transform.scale(
-                            scale: 1.7,
-                            child: Image.asset(
-                              availableAvatars[emp.avatarIndex % availableAvatars.length],
-                              fit: BoxFit.cover,
-                              width: 64,
-                              height: 64,
-                            ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Avatar
+                        Container(
+                          margin: const EdgeInsets.only(right: 16, top: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.black, width: 1.5),
+                            boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2, 2))],
                           ),
-                      ),
+                          child: ClipOval(
+                              child: Transform.scale(
+                                scale: 1.7,
+                                child: Image.asset(
+                                  availableAvatars[emp.avatarIndex % availableAvatars.length],
+                                  fit: BoxFit.cover,
+                                  width: 64,
+                                  height: 64,
+                                ),
+                              ),
+                          ),
+                        ),
+                        
+                        // Basic Details
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildDetailRow(Icons.work_outline, "Role", emp.role),
+
+                              if (emp.email.isNotEmpty)
+                                _buildDetailRow(Icons.email_outlined, "Email", emp.email),
+                              if (emp.phone.isNotEmpty)
+                                _buildDetailRow(Icons.phone_outlined, "Phone", emp.phone),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    
-                    // Details
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 8),
+                    Theme(
+                      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                      child: SageExpansionTile(
+                        title: const Text("Personal Details", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         children: [
-                          _buildDetailRow(Icons.work_outline, "Role", emp.role),
-                          if (emp.department.isNotEmpty)
-                            _buildDetailRow(Icons.business_outlined, "Department", emp.department),
-                          if (emp.email.isNotEmpty)
-                            _buildDetailRow(Icons.email_outlined, "Email", emp.email),
-                          if (emp.phone.isNotEmpty)
-                            _buildDetailRow(Icons.phone_outlined, "Phone", emp.phone),
+                          if (emp.address.isNotEmpty)
+                            _buildDetailRow(Icons.location_on, "Address", emp.address),
+                          if (emp.workLocation.isNotEmpty)
+                            _buildDetailRow(Icons.business, "Work Location", emp.workLocation),
+                          if (emp.emergencyContact.isNotEmpty)
+                            _buildDetailRow(Icons.warning, "Emergency Contact", emp.emergencyContact),
+                          if (emp.professionalBio.isNotEmpty)
+                            _buildDetailRow(Icons.description, "Bio", emp.professionalBio),
+                          if (emp.keySkills.isNotEmpty)
+                            _buildDetailRow(Icons.build, "Skills", emp.keySkills.join(', ')),
+                          if (emp.strengths.isNotEmpty)
+                            _buildDetailRow(Icons.fitness_center, "Strengths", emp.strengths.join(', ')),
+                          if (emp.workStylePreference.isNotEmpty)
+                            _buildDetailRow(Icons.track_changes, "Work Style", emp.workStylePreference),
                           if (emp.interests.isNotEmpty)
                             _buildDetailRow(Icons.favorite_outline, "Hobbies", emp.interests),
                         ],
@@ -153,7 +210,7 @@ class TeamMembersView extends StatelessWidget {
           Icon(icon, size: 14, color: SageColors.primary),
           const SizedBox(width: 6),
           SizedBox(
-            width: 75,
+            width: 110,
             child: Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54)),
           ),
           Expanded(

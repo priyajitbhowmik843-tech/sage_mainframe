@@ -1,3 +1,4 @@
+import 'package:sage_mainframe/widgets/sage_expansion_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -372,7 +373,7 @@ class _ExecutiveProfileDashboardState extends State<ExecutiveProfileDashboard> w
                     return Container(
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: SageColors.brutalistDecoration(backgroundColor: Colors.white),
-                      child: ExpansionTile(
+                      child: SageExpansionTile(
                         leading: const Icon(Icons.folder_special, color: SageColors.tertiary, size: 36),
                         shape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),
                         collapsedShape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),
@@ -466,7 +467,7 @@ class _ExecutiveProfileDashboardState extends State<ExecutiveProfileDashboard> w
                     return Container(
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: SageColors.brutalistDecoration(backgroundColor: Colors.white),
-                      child: ExpansionTile(
+                      child: SageExpansionTile(
                         leading: const Icon(Icons.notifications_paused, color: SageColors.secondary, size: 36),
                         shape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),
                         collapsedShape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),

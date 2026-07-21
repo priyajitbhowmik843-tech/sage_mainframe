@@ -1,3 +1,28 @@
+import 'package:sage_mainframe/widgets/sage_expansion_tile.dart';
+import 'executive_profile_dashboard.dart';
+import 'package:intl/intl.dart';
+import 'dart:math';
+import 'package:flutter/material.dart';
+import '../widgets/employee_metrics_panel.dart';
+import '../services/invoice_service.dart';
+import 'package:provider/provider.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:sage_mainframe/state/app_state.dart';
+import 'package:sage_mainframe/theme/app_theme.dart';
+import 'package:sage_mainframe/widgets/common_widgets.dart';
+import 'package:sage_mainframe/models/models.dart';
+import 'package:sage_mainframe/main.dart';
+import 'package:sage_mainframe/screens/employee_dashboard.dart';
+import 'package:sage_mainframe/widgets/income_combo_chart.dart';
+import 'package:sage_mainframe/widgets/forecast_chart.dart';
+import 'package:sage_mainframe/widgets/deficit_line_chart.dart';
+import 'package:sage_mainframe/widgets/ecom_ledger_dialog.dart';
+
+class CofounderDashboard extends StatefulWidget {
+  const CofounderDashboard({super.key});
+  @override
+  State<CofounderDashboard> createState() => _CofounderDashboardState();
 import 'executive_profile_dashboard.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
@@ -30,6 +55,19 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
   PageStorageBucket _bucket = PageStorageBucket();
   DateTime _selectedDate = DateTime.now();
   late PageController _pageController;
+  final GlobalKey _calendarTasksKey = GlobalKey();
+
+  void _scrollToCalendarTasks() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_calendarTasksKey.currentContext != null) {
+        Scrollable.ensureVisible(
+          _calendarTasksKey.currentContext!,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
 
 
   @override
@@ -1446,7 +1484,7 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                   ),
                 ],
               ),
-              child: ExpansionTile(
+              child: SageExpansionTile(
                 controller: _clientExpControllers.putIfAbsent(c.id, () => ExpansionTileController()),
                 onExpansionChanged: (expanded) {
                   if (expanded) {
@@ -2341,7 +2379,7 @@ Widget _buildPersonnelTab() {
               border: Border.all(color: Colors.black, width: 1.5),
               boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0)],
             ),
-            child: ExpansionTile(
+            child: SageExpansionTile(
               controller: _personaExpControllers.putIfAbsent(i, () => ExpansionTileController()),
               onExpansionChanged: (expanded) {
                 if (expanded) {
@@ -2472,7 +2510,7 @@ Widget _buildPersonnelTab() {
               border: Border.all(color: Colors.black, width: 1.5),
               boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0)],
             ),
-            child: ExpansionTile(
+            child: SageExpansionTile(
               controller: _empExpControllers.putIfAbsent(employee.id, () => ExpansionTileController()),
               onExpansionChanged: (expanded) {
                 if (expanded) {
@@ -2515,6 +2553,159 @@ Widget _buildPersonnelTab() {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Theme(
+                        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                        child: SageExpansionTile(
+                          title: const Text("Personal Details", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.phone, size: 14, color: Colors.black87),
+                                const SizedBox(width: 6),
+                                Text(
+                                  employee.phone.isNotEmpty ? employee.phone : 'Not Provided',
+                                  style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.email, size: 14, color: Colors.black87),
+                                const SizedBox(width: 6),
+                                Text(
+                                  employee.email.isNotEmpty ? employee.email : 'Not Provided',
+                                  style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on, size: 14, color: Colors.black87),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    employee.address.isNotEmpty ? employee.address : 'Not Provided',
+                                    style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            if (employee.preferredName.isNotEmpty)
+                              Row(
+                                children: [
+                                  const Icon(Icons.person, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Preferred Name: " + employee.preferredName,
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            if (employee.workLocation.isNotEmpty)
+                              Row(
+                                children: [
+                                  const Icon(Icons.business, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Work Location: " + employee.workLocation,
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            if (employee.emergencyContact.isNotEmpty)
+                              Row(
+                                children: [
+                                  const Icon(Icons.warning, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Emergency Contact: " + employee.emergencyContact,
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            if (employee.professionalBio.isNotEmpty)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.description, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Bio: " + employee.professionalBio,
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            if (employee.keySkills.isNotEmpty)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.build, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Skills: " + employee.keySkills.join(', '),
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            if (employee.strengths.isNotEmpty)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.fitness_center, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Strengths: " + employee.strengths.join(', '),
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            if (employee.workStylePreference.isNotEmpty)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.track_changes, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Work Style: " + employee.workStylePreference,
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            if (employee.interests.isNotEmpty)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.local_fire_department, size: 14, color: Colors.black87),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Interests: " + employee.interests,
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ),
                       EmployeeMetricsPanel(
                         employee: employee,
                         state: state,
@@ -2984,8 +3175,7 @@ Widget _buildPersonnelTab() {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'].map((d) => SizedBox(width: 30, child: Center(child: Text(d, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54))))).toList(),
               ),
-              const SizedBox(height: 8),
-              GridView.builder(
+              const S              GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -2994,100 +3184,153 @@ Widget _buildPersonnelTab() {
                   crossAxisSpacing: 6,
                   mainAxisSpacing: 6,
                 ),
-                  itemCount: daysInMonth + startOffset,
-                  itemBuilder: (context, index) {
-                    if (index < startOffset) return const SizedBox();
-                    final day = index - startOffset + 1;
-                    final dateStr = "${_calendarMonth.year}-${_calendarMonth.month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}";
-                    final holiday = _googleHolidays[dateStr];
-                    
-                    final dateForDay = DateTime(_calendarMonth.year, _calendarMonth.month, day);
-                    final isWeekend = dateForDay.weekday == DateTime.saturday || dateForDay.weekday == DateTime.sunday;
-                    final isToday = day == now.day && _calendarMonth.month == now.month && _calendarMonth.year == now.year;
-                    final isSelected = _selectedCalendarDate?.day == day && _selectedCalendarDate?.month == _calendarMonth.month && _selectedCalendarDate?.year == _calendarMonth.year;
-                    
-                    final dayTasks = allTasks.where((t) => t.deadline.day == day && t.deadline.month == _calendarMonth.month && t.deadline.year == _calendarMonth.year).toList();
-                    
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedCalendarDate = dateForDay),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black, width: isSelected ? 2.5 : 1.0),
-                          color: isSelected ? const Color(0xFFFFF9C4) : (isToday ? SageColors.primaryContainer : (holiday != null ? SageColors.secondaryContainer : (isWeekend ? const Color(0xFFEEEEEE) : Colors.white))),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: isSelected ? const [BoxShadow(color: Colors.black, offset: Offset(2, 2))] : null,
+                itemCount: daysInMonth + startOffset,
+                itemBuilder: (context, index) {
+                  if (index < startOffset) return const SizedBox();
+                  final day = index - startOffset + 1;
+                  final dateStr = "${_calendarMonth.year}-${_calendarMonth.month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}";
+                  final holiday = _googleHolidays[dateStr];
+                  
+                  final dateForDay = DateTime(_calendarMonth.year, _calendarMonth.month, day);
+                  final isWeekend = dateForDay.weekday == DateTime.saturday || dateForDay.weekday == DateTime.sunday;
+                  final isToday = day == now.day && _calendarMonth.month == now.month && _calendarMonth.year == now.year;
+                  final isSelected = _selectedCalendarDate?.day == day && _selectedCalendarDate?.month == _calendarMonth.month && _selectedCalendarDate?.year == _calendarMonth.year;
+                  
+                  final dayTasks = allTasks.where((t) => t.deadline.day == day && t.deadline.month == _calendarMonth.month && t.deadline.year == _calendarMonth.year).toList();
+                  
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      setState(() {
+                        if (isSelected) {
+                          _selectedCalendarDate = null;
+                        } else {
+                          _selectedCalendarDate = dateForDay;
+                          _scrollToCalendarTasks();
+                        }
+                      });
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.black,
+                          width: isSelected ? 2.5 : 1.0,
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 4),
-                            Text("$day", style: TextStyle(fontWeight: FontWeight.bold, color: holiday != null ? SageColors.secondary : Colors.black, fontSize: 12)),
-                            if (holiday != null) Padding(padding: const EdgeInsets.symmetric(horizontal: 2.0), child: Text(holiday, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 8, color: SageColors.secondary, fontWeight: FontWeight.bold, height: 1.1))),
-                            const SizedBox(height: 2),
-                            Builder(builder: (ctx) {
-                      int vCount = 0;
-                      int pCount = 0;
-                      int aCount = 0;
-                      int lCount = 0;
-                      int oCount = 0;
-                      for (var t in dayTasks) {
-                         final title = t.title.toLowerCase();
-                         if (title.contains('video')) vCount++;
-                         else if (title.contains('post') || title.contains('design')) pCount++;
-                         else if (title.contains('active client')) aCount++;
-                         else if (title.contains('lead') || title.contains('marketing')) lCount++;
-                         else oCount++;
-                      }
-                      
-                      return Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 2,
-                        runSpacing: 2,
-                        children: [
-                          if (vCount > 0) Container(padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1), decoration: BoxDecoration(color: Colors.deepOrange.withOpacity(0.2), border: Border.all(color: Colors.deepOrange), borderRadius: BorderRadius.circular(4)), child: Text(vCount.toString(), style: const TextStyle(color: Colors.deepOrange, fontSize: 9, fontWeight: FontWeight.bold))),
-                          if (pCount > 0) Container(padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1), decoration: BoxDecoration(color: Colors.teal.withOpacity(0.2), border: Border.all(color: Colors.teal), borderRadius: BorderRadius.circular(4)), child: Text(pCount.toString(), style: const TextStyle(color: Colors.teal, fontSize: 9, fontWeight: FontWeight.bold))),
-                          if (aCount > 0) Container(padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1), decoration: BoxDecoration(color: Colors.indigo.withOpacity(0.2), border: Border.all(color: Colors.indigo), borderRadius: BorderRadius.circular(4)), child: Text(aCount.toString(), style: const TextStyle(color: Colors.indigo, fontSize: 9, fontWeight: FontWeight.bold))),
-                          if (lCount > 0) Container(padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1), decoration: BoxDecoration(color: Colors.purple.withOpacity(0.2), border: Border.all(color: Colors.purple), borderRadius: BorderRadius.circular(4)), child: Text(lCount.toString(), style: const TextStyle(color: Colors.purple, fontSize: 9, fontWeight: FontWeight.bold))),
-                          if (oCount > 0) Container(padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1), decoration: BoxDecoration(color: Colors.blueGrey.withOpacity(0.2), border: Border.all(color: Colors.blueGrey), borderRadius: BorderRadius.circular(4)), child: Text(oCount.toString(), style: const TextStyle(color: Colors.blueGrey, fontSize: 9, fontWeight: FontWeight.bold))),
-                        ],
-                      );
-                    }),
-                          ],
-                        ),
+                        color: isSelected
+                            ? const Color(0xFFFFF9C4)
+                            : (isToday
+                                  ? SageColors.primaryContainer
+                                  : (holiday != null
+                                        ? SageColors.secondaryContainer
+                                        : (isWeekend
+                                              ? const Color(0xFFEEEEEE)
+                                              : Colors.white))),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: isSelected
+                            ? const [
+                                BoxShadow(color: Colors.black, offset: Offset(2, 2)),
+                              ]
+                            : null,
                       ),
-                    );
-                  },
-                ),
-            ],
-          ),
-        ),
-        if (_selectedCalendarDate != null) ...[
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: () {}, // Consume taps so the global unselect doesn't fire
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF5E1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.black, width: 1.5),
-                boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3))],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("TASKS FOR ${_selectedCalendarDate!.day}/${_selectedCalendarDate!.month}/${_selectedCalendarDate!.year}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    ElevatedButton.icon(
-                      onPressed: () => setState(() => _isAddTaskExpanded = !_isAddTaskExpanded),
-                      icon: Icon(_isAddTaskExpanded ? Icons.close : Icons.add, size: 16),
-                      label: Text(_isAddTaskExpanded ? "CLOSE" : "ADD TASK"),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Text(
+                            "$day",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: holiday != null
+                                  ? SageColors.secondary
+                                  : Colors.black,
+                              fontSize: 12,
+                            ),
+                          ),
+                          if (holiday != null)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                              child: Text(
+                                holiday,
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 6,
+                                  color: SageColors.secondary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          const Spacer(),
+                          if (dayTasks.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 4.0),
+                              child: Wrap(
+                                spacing: 2,
+                                runSpacing: 2,
+                                alignment: WrapAlignment.center,
+                                children: _buildTaskIndicators(dayTasks),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ],
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 12,
+                runSpacing: 4,
+                alignment: WrapAlignment.center,
+                children: [
+                   Row(mainAxisSize: MainAxisSize.min, children: [Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1), decoration: BoxDecoration(color: Colors.deepOrange.withOpacity(0.2), border: Border.all(color: Colors.deepOrange), borderRadius: BorderRadius.circular(4)), child: const Text("#", style: TextStyle(color: Colors.deepOrange, fontSize: 9, fontWeight: FontWeight.bold))), const SizedBox(width: 4), const Text("Video", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54))]),
+                   Row(mainAxisSize: MainAxisSize.min, children: [Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1), decoration: BoxDecoration(color: Colors.teal.withOpacity(0.2), border: Border.all(color: Colors.teal), borderRadius: BorderRadius.circular(4)), child: const Text("#", style: TextStyle(color: Colors.teal, fontSize: 9, fontWeight: FontWeight.bold))), const SizedBox(width: 4), const Text("Design/Post", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54))]),
+                   Row(mainAxisSize: MainAxisSize.min, children: [Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1), decoration: BoxDecoration(color: Colors.indigo.withOpacity(0.2), border: Border.all(color: Colors.indigo), borderRadius: BorderRadius.circular(4)), child: const Text("#", style: TextStyle(color: Colors.indigo, fontSize: 9, fontWeight: FontWeight.bold))), const SizedBox(width: 4), const Text("Active Client", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54))]),
+                   Row(mainAxisSize: MainAxisSize.min, children: [Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1), decoration: BoxDecoration(color: Colors.purple.withOpacity(0.2), border: Border.all(color: Colors.purple), borderRadius: BorderRadius.circular(4)), child: const Text("#", style: TextStyle(color: Colors.purple, fontSize: 9, fontWeight: FontWeight.bold))), const SizedBox(width: 4), const Text("Lead Mtg", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54))]),
+                   Row(mainAxisSize: MainAxisSize.min, children: [Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1), decoration: BoxDecoration(color: Colors.blueGrey.withOpacity(0.2), border: Border.all(color: Colors.blueGrey), borderRadius: BorderRadius.circular(4)), child: const Text("#", style: TextStyle(color: Colors.blueGrey, fontSize: 9, fontWeight: FontWeight.bold))), const SizedBox(width: 4), const Text("Other", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54))]),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: const Text("GENERATE SOCIAL MEDIA PLAN"),
+                    onPressed: () {
+                      _generateSocialMediaPlan(context, state);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: SageColors.secondary,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              
+              if (_selectedCalendarDate != null) ...[
+                const SizedBox(height: 16),
+                GestureDetector(
+                  onTap: () {}, // Consume taps to prevent unselecting calendar date
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    key: _calendarTasksKey,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF5E1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.black, width: 1.5),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black, offset: Offset(3, 3)),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
                 ),
                 if (_isAddTaskExpanded) ...[
                   const SizedBox(height: 16),
@@ -3342,33 +3585,23 @@ Widget _buildPersonnelTab() {
                             )
                           else if (_newTaskType == 'Lead Meeting' || _newTaskType == 'Active Client Meeting') ...[
                           // Assignee Selection
-                          SageMultiSelectDropdown<Map<String, String>>(
-                            selectedItems: (() {
-                               final List<Map<String, String>> options = [
-                                 {'id': 'CEO-SOH-001', 'name': 'CEO Sohini'},
-                                 {'id': 'COF-PRI-001', 'name': 'CFO Priyajit'},
-                                 {'id': 'COF-RIT-001', 'name': 'CFO Ritam'}
-                               ];
-                               if (_newTaskType == 'Lead Meeting') {
-                                 options.addAll(state.employees.where((e) => e.hasRole('marketing')).map((e) => {'id': e.id, 'name': e.name}));
-                               }
-                               return options.where((e) => _newTaskAssigneeIds.contains(e['id'])).toList();
-                            })(),
-                            items: (() {
-                               final List<Map<String, String>> options = [
-                                 {'id': 'CEO-SOH-001', 'name': 'CEO Sohini'},
-                                 {'id': 'COF-PRI-001', 'name': 'CFO Priyajit'},
-                                 {'id': 'COF-RIT-001', 'name': 'CFO Ritam'}
-                               ];
-                               if (_newTaskType == 'Lead Meeting') {
-                                 options.addAll(state.employees.where((e) => e.hasRole('marketing')).map((e) => {'id': e.id, 'name': e.name}));
-                               }
-                               return options;
-                            })(),
-                            labelBuilder: (item) => item['name']!,
-                            labelText: "Assign To (Select multiple)",
-                            onChanged: (v) => setState(() => _newTaskAssigneeIds = v.map((e) => e['id']!).toList()),
-                          ),
+                          (() {
+                             final List<Map<String, String>> options = [
+                               {'id': 'CEO-SOH-001', 'name': 'CEO Sohini'},
+                               {'id': 'COF-PRI-001', 'name': 'CFO Priyajit'},
+                               {'id': 'COF-RIT-001', 'name': 'CFO Ritam'}
+                             ];
+                             if (_newTaskType == 'Lead Meeting' || _newTaskType == 'Active Client Meeting') {
+                               options.addAll(state.employees.where((e) => e.hasRole('marketing')).map((e) => {'id': e.id, 'name': e.name}));
+                             }
+                             return SageMultiSelectDropdown<String>(
+                               selectedItems: _newTaskAssigneeIds.where((id) => options.any((o) => o['id'] == id)).toList(),
+                               items: options.map((e) => e['id']!).toList(),
+                               labelBuilder: (id) => options.firstWhere((e) => e['id'] == id, orElse: () => {'name': id})['name']!,
+                               labelText: "Assign To (Select multiple)",
+                               onChanged: (v) => setState(() => _newTaskAssigneeIds = v),
+                             );
+                          })(),
                           const SizedBox(height: 12),
                           // Client Selection
                           DropdownButtonFormField<String>(
@@ -3377,6 +3610,15 @@ Widget _buildPersonnelTab() {
                             dropdownColor: Colors.white,
                             items: state.clients.where((c) {
                               if (_newTaskType == 'Lead Meeting') return c.status == 'Lead';
+                              if (_newTaskType == 'Active Client Meeting') {
+                                List<String> assignedMeIds = _newTaskAssigneeIds.where((id) {
+                                  final e = state.employees.where((emp) => emp.id == id).firstOrNull;
+                                  return e != null && e.hasRole('marketing');
+                                }).toList();
+                                if (assignedMeIds.isNotEmpty && !assignedMeIds.contains(c.marketingExecutiveId)) {
+                                  return false;
+                                }
+                              }
                               return c.status != 'Lead' && c.isApprovedByCeo;
                             }).map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
                             onChanged: (v) => setState(() => _newTaskClients = [v!]),
@@ -3520,7 +3762,7 @@ Widget _buildPersonnelTab() {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: typeColor == Colors.black ? Colors.black12 : typeColor),
                       ),
-                      child: ExpansionTile(
+                      child: SageExpansionTile(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         tilePadding: const EdgeInsets.only(right: 12),
                         title: Row(
@@ -3647,6 +3889,22 @@ Widget _buildPersonnelTab() {
   }
 
 
+  void _showPostponeDialog(BuildContext context, AppState state, String taskId) async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 90)),
+    );
+    if (pickedDate != null && context.mounted) {
+      state.requestPostponeTask(taskId, pickedDate);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Postpone request sent to CEO for approval."),
+        backgroundColor: Colors.green,
+      ));
+    }
+  }
+
   Widget _buildTaskMyTasksSubTab(String personaPrefix) {
     final state = context.watch<AppState>();
     final myTasks = state.tasks.where((t) => t.assignedTo == state.activePersona.id && !t.isCompleted).toList();
@@ -3692,7 +3950,7 @@ Widget _buildPersonnelTab() {
               dividerColor: Colors.transparent,
               unselectedWidgetColor: typeColor == Colors.black ? Colors.black54 : Colors.white70,
             ),
-            child: ExpansionTile(
+            child: SageExpansionTile(
               tilePadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
               iconColor: typeColor == Colors.black ? Colors.black54 : Colors.white,
               collapsedIconColor: typeColor == Colors.black ? Colors.black54 : Colors.white,
@@ -3720,6 +3978,23 @@ Widget _buildPersonnelTab() {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(t.description, style: TextStyle(fontSize: 12, color: typeColor == Colors.black ? Colors.black87 : Colors.white)),
+                    ),
+                  ),
+                if ((t.taskType == 'Lead Meeting' || t.taskType == 'Active Client Meeting') && !t.isPostponeRequested)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showPostponeDialog(context, state, t.id),
+                        icon: const Icon(Icons.calendar_today, size: 16),
+                        label: const Text("POSTPONE", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                        ),
+                      ),
                     ),
                   ),
               ],
@@ -4490,7 +4765,7 @@ Widget _buildPersonnelTab() {
               ),
               child: Theme(
                 data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                child: ExpansionTile(
+                child: SageExpansionTile(
                   tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   childrenPadding: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
                   leading: Icon(

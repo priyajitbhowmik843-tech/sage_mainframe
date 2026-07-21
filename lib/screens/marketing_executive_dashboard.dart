@@ -1,3 +1,4 @@
+import 'package:sage_mainframe/widgets/sage_expansion_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:sage_mainframe/widgets/team_members_view.dart';
 import 'package:provider/provider.dart';
@@ -539,7 +540,7 @@ class _MarketingExecutiveDashboardState extends State<MarketingExecutiveDashboar
         border: Border.all(color: Colors.black, width: 1.5),
         boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0)],
       ),
-      child: ExpansionTile(
+      child: SageExpansionTile(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(

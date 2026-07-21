@@ -85,9 +85,6 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
   late AnimationController _pulse;
-  final _idCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
-  String? _error;
 
   @override
   void initState() {
@@ -99,8 +96,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   @override
   void dispose() {
     _pulse.dispose();
-    _idCtrl.dispose();
-    _passCtrl.dispose();
     super.dispose();
   }
 
@@ -156,60 +151,57 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   ),
                   const SizedBox(height: 40),
                   TerminalPanel(
-                    title: 'SECURE SYSTEM LOGIN',
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'ENTER CREDENTIALS:',
-                          style: TextStyle(color: SageColors.onSurfaceVariant, fontSize: 10, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _idCtrl,
-                          style: const TextStyle(color: SageColors.onSurface),
-                          decoration: InputDecoration(
-                            labelText: 'Employee ID',
-                            labelStyle: const TextStyle(color: SageColors.onSurfaceVariant),
-                            filled: true,
-                            fillColor: SageColors.surface,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _passCtrl,
-                          obscureText: true,
-                          style: const TextStyle(color: SageColors.onSurface),
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            labelStyle: const TextStyle(color: SageColors.onSurfaceVariant),
-                            filled: true,
-                            fillColor: SageColors.surface,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        if (_error != null) ...[
-                          Text(_error!, style: const TextStyle(color: SageColors.error, fontSize: 12)),
-                          const SizedBox(height: 12),
-                        ],
-                        SizedBox(
-                          width: double.infinity,
-                          height: 45,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: SageColors.yellowAccent,
-                              foregroundColor: Colors.black,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                side: const BorderSide(color: Colors.black, width: 1.5),
-                              ),
-                              elevation: 0,
+                    title: 'SELECT PERSONA',
+                    child: Consumer<AppState>(
+                      builder: (context, state, child) {
+                        final allPersonas = [
+                          ...AppState.personas,
+                          ...state.employees.map((e) => Persona(
+                                id: e.id,
+                                name: e.name,
+                                role: PersonaRole.employee,
+                                initials: e.name.isNotEmpty ? e.name[0].toUpperCase() : 'E',
+                                password: e.password,
+                              )),
+                        ];
+
+                        if (allPersonas.isEmpty) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: CircularProgressIndicator(color: SageColors.yellowAccent),
                             ),
-                            onPressed: _doLogin,
-                            child: const Text('AUTHORIZE', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                          );
+                        }
+
+                        return Container(
+                          constraints: const BoxConstraints(maxHeight: 400),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: allPersonas.length,
+                            separatorBuilder: (context, index) => const SizedBox(height: 8),
+                            itemBuilder: (context, index) {
+                              final p = allPersonas[index];
+                              return ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: SageColors.surface,
+                                  foregroundColor: SageColors.onSurface,
+                                  alignment: Alignment.centerLeft,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    side: const BorderSide(color: SageColors.outline),
+                                  ),
+                                ),
+                                onPressed: () async {
+                                  await context.read<AppState>().login(p);
+                                },
+                                child: Text('${p.name} - ${p.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                              );
+                            },
                           ),
-                        ),
-                      ],
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -219,16 +211,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         ],
       ),
     );
-  }
-
-  void _doLogin() async {
-    setState(() => _error = null);
-    final p = context.read<AppState>().authenticate(_idCtrl.text, _passCtrl.text);
-    if (p == null) {
-      setState(() => _error = 'Invalid credentials or missing password.');
-    } else {
-      await context.read<AppState>().login(p);
-    }
   }
 }
 
