@@ -2,6 +2,7 @@ import 'executive_profile_dashboard.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:sage_mainframe/services/invoice_service.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -186,6 +187,89 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
     );
   }
 
+  void _showAddOnDialog(BuildContext context, Client c) {
+    String selectedType = 'Video Production';
+    final amountCtrl = TextEditingController();
+    final descriptionCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          backgroundColor: SageColors.background,
+          title: const Text(
+            "Add New Add-On",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  items: ['Video Production', 'Website/App', 'Miscellaneous']
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                      .toList(),
+                  onChanged: (v) => setState(() => selectedType = v!),
+                  decoration: const InputDecoration(labelText: "Type"),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: "Amount (\u20B9)",
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descriptionCtrl,
+                  decoration: const InputDecoration(
+                    labelText: "Custom Description (Optional)",
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text(
+                "CANCEL",
+                style: TextStyle(color: Colors.black54),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: SageColors.primary,
+              ),
+              onPressed: () {
+                final double amount = double.tryParse(amountCtrl.text) ?? 0;
+                if (amount <= 0) return;
+
+                final addOn = ClientAddOn(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  type: selectedType,
+                  amount: amount,
+                  description: descriptionCtrl.text.trim(),
+                  isBilled: false,
+                  isPaid: false,
+                );
+                context.read<AppState>().addClientAddOn(c.id, addOn);
+                Navigator.pop(ctx);
+              },
+              child: const Text("ADD"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showAddOnPaymentDialog(
     BuildContext context,
     Client c,
@@ -269,6 +353,15 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: discountCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: "Discount (\u20B9)",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
                 if (isPartial) ...[
                   const SizedBox(height: 12),
                   TextField(
@@ -296,6 +389,7 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                 backgroundColor: SageColors.primary,
               ),
               onPressed: () {
+                double discountAmt = double.tryParse(discountCtrl.text) ?? 0.0;
                 double? amt;
                 if (isPartial) {
                   amt = double.tryParse(partialCtrl.text);
@@ -313,6 +407,7 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                   paymentMethod,
                   paymentDate,
                   amountPaid: amt,
+                  discountAmount: discountAmt,
                 );
                 Navigator.pop(ctx);
               },
@@ -322,390 +417,6 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
         ),
       ),
     );
-  }
-
-  void _showLeadMeetingDialog(BuildContext context, String leadId) {
-    List<String> assignees = [];
-    bool isPhysical = true;
-    final commentsCtrl = TextEditingController();
-    DateTime? selectedDate = DateTime.now();
-    TimeOfDay selectedTime = const TimeOfDay(hour: 10, minute: 0);
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) {
-          final state = context.watch<AppState>();
-          final lead = state.clients.where((c) => c.id == leadId).firstOrNull;
-          if (lead == null) return const SizedBox();
-
-          return Dialog(
-            backgroundColor: SageColors.background,
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              width: 400,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    "SCHEDULE LEAD MEETING",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  Text(
-                    "Lead: ${lead.name}",
-                    style: const TextStyle(fontSize: 12, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 16),
-                  SageMultiSelectDropdown<Map<String, String>>(
-                    selectedItems: (() {
-                      final List<Map<String, String>> options = [
-                        {'id': 'CEO-SOH-001', 'name': 'CEO Sohini'},
-                        {'id': 'COF-PRI-001', 'name': 'CFO Priyajit'},
-                        {'id': 'COF-RIT-001', 'name': 'CFO Ritam'},
-                      ];
-                      options.addAll(
-                        state.employees
-                            .where((e) => e.hasRole('marketing'))
-                            .map((e) => {'id': e.id, 'name': e.name}),
-                      );
-                      return options
-                          .where((e) => assignees.contains(e['id']))
-                          .toList();
-                    })(),
-                    items: (() {
-                      final List<Map<String, String>> options = [
-                        {'id': 'CEO-SOH-001', 'name': 'CEO Sohini'},
-                        {'id': 'COF-PRI-001', 'name': 'CFO Priyajit'},
-                        {'id': 'COF-RIT-001', 'name': 'CFO Ritam'},
-                      ];
-                      options.addAll(
-                        state.employees
-                            .where((e) => e.hasRole('marketing'))
-                            .map((e) => {'id': e.id, 'name': e.name}),
-                      );
-                      return options;
-                    })(),
-                    labelBuilder: (item) => item['name']!,
-                    labelText: "Assign To (Select multiple)",
-                    onChanged: (v) =>
-                        setS(() => assignees = v.map((e) => e['id']!).toList()),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () async {
-                            final d = await showDatePicker(
-                              context: context,
-                              initialDate: DateTime.now(),
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime(2030),
-                            );
-                            if (d != null) setS(() => selectedDate = d);
-                          },
-                          child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: "Date",
-                              border: OutlineInputBorder(),
-                            ),
-                            child: Text(
-                              selectedDate?.toString().substring(0, 10) ??
-                                  "Select Date",
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () async {
-                            final t = await showTimePicker(
-                              context: context,
-                              initialTime: selectedTime,
-                            );
-                            if (t != null) setS(() => selectedTime = t);
-                          },
-                          child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: "Time",
-                              border: OutlineInputBorder(),
-                            ),
-                            child: Text(selectedTime.format(context)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SwitchListTile(
-                    title: Text(
-                      isPhysical ? "Physical Meeting" : "Digital Meeting",
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    value: isPhysical,
-                    onChanged: (v) => setS(() => isPhysical = v),
-                    activeColor: Colors.green,
-                  ),
-                  const SizedBox(height: 12),
-                  SageTextField(
-                    controller: commentsCtrl,
-                    label: "Comments",
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text(
-                          "CANCEL",
-                          style: TextStyle(color: Colors.black54),
-                        ),
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: SageColors.primary,
-                        ),
-                        onPressed: (assignees.isEmpty || selectedDate == null)
-                            ? null
-                            : () async {
-                                final finalDeadline = DateTime(
-                                  selectedDate!.year,
-                                  selectedDate!.month,
-                                  selectedDate!.day,
-                                  selectedTime.hour,
-                                  selectedTime.minute,
-                                );
-                                final meetingMode = isPhysical
-                                    ? "[Physical]"
-                                    : "[Digital]";
-
-                                context.read<AppState>().addClientFollowUp(
-                                  leadId,
-                                  selectedDate!.toString().substring(0, 10),
-                                );
-
-                                for (final assignee in assignees) {
-                                  await context.read<AppState>().assignTask(
-                                    title: "Lead Meeting - ${lead.name}",
-                                    description:
-                                        "$meetingMode ${commentsCtrl.text}",
-                                    assignedTo: assignee,
-                                    deadline: finalDeadline,
-                                    taskType: 'Lead Meeting',
-                                    clientId: leadId,
-                                  );
-                                }
-                                Navigator.pop(ctx);
-                              },
-                        child: const Text("SCHEDULE & FOLLOW-UP"),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final state = context.watch<AppState>();
-    final persona = state.activePersona;
-
-    return WillPopScope(
-      onWillPop: () async {
-        if (_tab != 0) {
-          _switchTab(0);
-          return false;
-        }
-        return true;
-      },
-      child: GestureDetector(
-        onTap: () {
-          FocusScope.of(context).unfocus();
-          // Reset calendar when tapping anywhere outside the calendar selection
-          setState(() {
-            _selectedCalendarDate = null;
-            _calendarMonth = DateTime(
-              DateTime.now().year,
-              DateTime.now().month,
-              1,
-            );
-          });
-        },
-        behavior: HitTestBehavior.translucent,
-        child: Scaffold(
-          backgroundColor: SageColors.background,
-          body: Stack(
-            children: [
-              // Header Background Color Block
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: 180,
-                  decoration: BoxDecoration(
-                    color: _getHeaderColor(),
-                    border: const Border(
-                      bottom: BorderSide(color: Colors.black, width: 1.5),
-                    ),
-                  ),
-                ),
-              ),
-
-              SafeArea(
-                bottom: false,
-                child: Column(
-                  children: [
-                    // Top Custom Header Row
-                    _buildTopHeader(context, persona),
-
-                    // Active Page Content
-                    Expanded(
-                      child: PageView(
-                        controller: _pageController,
-                        onPageChanged: (index) {
-                          if (_tab != index) {
-                            setState(() {
-                              _tab = index;
-                              _tabKeyCounter++;
-                              _bucket = PageStorageBucket();
-                              _clientExpControllers.clear();
-                              _empExpControllers.clear();
-                              _personaExpControllers.clear();
-                              _clientSubTab = 'ACTIVE';
-                              _taskSubTab = 'CALENDAR';
-                              if (index == 3) {
-                                _calendarMonth = DateTime.now();
-                                _selectedCalendarDate = null;
-                              }
-                            });
-                          }
-                        },
-                        children: [
-                          SingleChildScrollView(
-                            padding: const EdgeInsets.fromLTRB(14, 10, 14, 100),
-                            child: _buildHomeTab(),
-                          ),
-                          SingleChildScrollView(
-                            padding: const EdgeInsets.fromLTRB(14, 10, 14, 100),
-                            child: _buildClientsTab(),
-                          ),
-                          SingleChildScrollView(
-                            padding: const EdgeInsets.fromLTRB(14, 10, 14, 100),
-                            child: _buildPersonnelTab(),
-                          ),
-                          SingleChildScrollView(
-                            padding: const EdgeInsets.fromLTRB(14, 10, 14, 100),
-                            child: _buildTasksTab(),
-                          ),
-                          SingleChildScrollView(
-                            padding: const EdgeInsets.fromLTRB(14, 10, 14, 100),
-                            child: _buildFinanceTab(),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Floating Bottom Navigation Bar (5 icons)
-              Positioned(
-                bottom: 20,
-                left: 16,
-                right: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 10,
-                    horizontal: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: SageColors.yellowAccent,
-                    borderRadius: BorderRadius.circular(40),
-                    border: Border.all(color: Colors.black, width: 1.5),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black,
-                        offset: Offset(4, 4),
-                        blurRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildBottomIcon(0, Icons.home_outlined, Icons.home),
-                      _buildBottomIcon(
-                        1,
-                        Icons.business_outlined,
-                        Icons.business,
-                        badgeCount: state.clients
-                            .where((c) => !c.isApprovedByCeo)
-                            .length,
-                      ),
-                      _buildBottomIcon(2, Icons.badge_outlined, Icons.badge),
-                      _buildBottomIcon(
-                        3,
-                        Icons.assignment_outlined,
-                        Icons.assignment,
-                        badgeCount: _getNavTaskBadgeCount(state),
-                      ),
-                      _buildBottomIcon(
-                        4,
-                        Icons.account_balance_outlined,
-                        Icons.account_balance,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  int _getNavTaskBadgeCount(AppState state) {
-    return state.tasks.where((t) {
-      if (t.isCompleted) return false;
-      if (t.assignedTo == state.activePersona.id) return true;
-      if (t.isSubmitted || t.isPostponeRequested) return true;
-      final now = DateTime.now();
-      final todayStart = DateTime(now.year, now.month, now.day);
-      final isToday =
-          t.deadline.year == now.year &&
-          t.deadline.month == now.month &&
-          t.deadline.day == now.day;
-      final isOverdue = t.deadline.isBefore(todayStart);
-      if (isToday || isOverdue) return true;
-      return false;
-    }).length;
-  }
-
-  Color _getHeaderColor() {
-    switch (_tab) {
-      case 0:
-        return SageColors.yellowAccentContainer;
-      case 1:
-        return SageColors.primaryContainer; // Light green for clients
-      case 2:
-        return SageColors.secondaryContainer; // Coral for team
-      case 3:
-        return SageColors.primaryContainer; // Green for tasks
-      case 4:
-        return SageColors.tertiaryContainer; // Purple for finance
-      default:
-        return SageColors.background;
-    }
   }
 
   void _showInvoiceMonthDialog(BuildContext context, Client c) {
@@ -745,7 +456,6 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
     Map<String, bool> partialPaymentToggles = {};
     Map<String, TextEditingController> partialPaymentControllers = {};
     final monthDiscountCtrl = TextEditingController(text: "0");
-    final discountCtrl = TextEditingController(text: "0");
 
     for (var a in unbilledAddOns) {
       partialPaymentToggles[a.id] = false;
@@ -794,28 +504,6 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                         }
                       },
                       decoration: const InputDecoration(
-                        filled: true,
-                        fillColor: SageColors.background,
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: discountCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: "Month Discount (\u20B9)",
-                        filled: true,
-                        fillColor: SageColors.background,
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: monthDiscountCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: "Month Discount (\u20B9)",
                         filled: true,
                         fillColor: SageColors.background,
                         border: OutlineInputBorder(),
@@ -958,7 +646,6 @@ class _CofounderDashboardState extends State<CofounderDashboard> {
                         c,
                         invoiceDate,
                         selectedAddOns: selectedAddOnsForInvoice,
-                        monthDiscount: double.tryParse(discountCtrl.text) ?? 0.0,
                       );
                       
                       if (fullyBilledAddOnIds.isNotEmpty || partialPayments.isNotEmpty) {
